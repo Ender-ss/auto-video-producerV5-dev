@@ -360,6 +360,41 @@ class PromptVariator:
             "Integre elementos descritivos do ambiente quando adequado",
             "Insira descrições atmosféricas quando pertinente"
         ]
+        
+        # Nomes específicos por tipo de agente para evitar repetições
+        self.character_names = {
+            'millionaire_stories': {
+                'male': ['Marcus Sterling', 'Alexander Cross', 'Vincent Kane', 'Sebastian Wright', 'Damien Stone', 'Rafael Montenegro', 'Leonardo Voss', 'Gabriel Sinclair'],
+                'female': ['Victoria Sterling', 'Isabella Cross', 'Sophia Kane', 'Anastasia Wright', 'Valentina Stone', 'Camila Montenegro', 'Adriana Voss', 'Helena Sinclair']
+            },
+            'romance_agent': {
+                'male': ['Ethan Rivers', 'Noah Bennett', 'Lucas Harper', 'Adrian Cole', 'Ryan Mitchell', 'Daniel Santos', 'Felipe Almeida', 'Mateus Oliveira'],
+                'female': ['Emma Rivers', 'Olivia Bennett', 'Sophia Harper', 'Isabella Cole', 'Ava Mitchell', 'Ana Santos', 'Beatriz Almeida', 'Larissa Oliveira']
+            },
+            'horror_agent': {
+                'male': ['Damien Ravencroft', 'Victor Grimm', 'Edgar Raven', 'Silas Dark', 'Mordecai Shadow', 'Lúcio Sombra', 'Dante Noturno', 'Caio Trevas'],
+                'female': ['Lilith Ravencroft', 'Morgana Grimm', 'Raven Dark', 'Selene Shadow', 'Bellatrix Sombra', 'Luna Noturna', 'Ísis Trevas', 'Nyx Obscura']
+            },
+            'motivational_agent': {
+                'male': ['Michael Champion', 'David Victory', 'Carlos Triumph', 'Roberto Success', 'André Conquista', 'Bruno Vitória', 'Thiago Superação', 'Rafael Determinação'],
+                'female': ['Sarah Champion', 'Maria Victory', 'Ana Triumph', 'Carla Success', 'Fernanda Conquista', 'Juliana Vitória', 'Patrícia Superação', 'Renata Determinação']
+            },
+            'business_agent': {
+                'male': ['Richard Entrepreneur', 'James Innovation', 'William Strategy', 'Thomas Leadership', 'Eduardo Empreendedor', 'Rodrigo Inovação', 'Gustavo Estratégia', 'Marcelo Liderança'],
+                'female': ['Elizabeth Entrepreneur', 'Jennifer Innovation', 'Patricia Strategy', 'Linda Leadership', 'Mariana Empreendedora', 'Fernanda Inovação', 'Camila Estratégia', 'Roberta Liderança']
+            }
+        }
+    
+    def get_random_character_names(self, agent_type: str, count: int = 3) -> Dict[str, List[str]]:
+        """Retorna nomes aleatórios específicos do agente"""
+        if agent_type not in self.character_names:
+            agent_type = 'millionaire_stories'  # fallback
+        
+        names = self.character_names[agent_type]
+        return {
+            'male': random.sample(names['male'], min(count, len(names['male']))),
+            'female': random.sample(names['female'], min(count, len(names['female'])))
+        }
     
     def generate_varied_prompt(self, title: str, premise: str, agent_type: str, 
                              target_chars: int, chapter_num: int, total_chapters: int,
@@ -395,6 +430,16 @@ class PromptVariator:
         
         context = agent_contexts.get(agent_type, agent_contexts['millionaire_stories'])
         
+        # Gera nomes específicos do agente
+        suggested_names = self.get_random_character_names(agent_type, 4)
+        name_suggestions = f"""
+        NOMES OBRIGATÓRIOS PARA PERSONAGENS (use APENAS estes nomes):
+        - Masculinos: {', '.join(suggested_names['male'])}
+        - Femininos: {', '.join(suggested_names['female'])}
+        
+        IMPORTANTE: Use APENAS os nomes listados acima. NÃO crie nomes próprios.
+        """
+        
         # Adiciona instruções anti-repetição se há capítulos anteriores
         anti_repetition = ""
         if previous_chapters and len(previous_chapters) > 0:
@@ -405,20 +450,42 @@ class PromptVariator:
         - Use vocabulário e construções diferentes
         - Varie o estilo de abertura e desenvolvimento
         - Crie diálogos únicos e situações originais
+        - Use nomes de personagens únicos e criativos, evitando nomes genéricos ou repetitivos
         """
         
-        # Monta prompt variado
-        prompt = f"""
-        {opening} de uma história {context['context']} com aproximadamente {target_chars} caracteres.
+        # Monta prompt variado - SEM incluir premissa quando remove_chapter_headers=True
+        if remove_chapter_headers:
+            # Prompt SEM premissa para roteiro final limpo
+            prompt = f"""
+            {opening} de uma história {context['context']} com aproximadamente {target_chars} caracteres.
+            
+            HISTÓRIA BASEADA EM: {title}
+            
+            ESTE É O CAPÍTULO {chapter_num} DE {total_chapters} CAPÍTULOS TOTAIS.
+            """
+        else:
+            # Prompt COM premissa para desenvolvimento interno
+            prompt = f"""
+            {opening} de uma história {context['context']} com aproximadamente {target_chars} caracteres.
+            
+            HISTÓRIA BASEADA EM: {title}
+            
+            ORIENTAÇÕES NARRATIVAS (use como guia interno, não inclua no roteiro):
+            - Desenvolva a história seguindo esta direção: {premise}
+            - Mantenha foco nos elementos centrais da premissa
+            - Use a premissa como base para desenvolvimento de personagens e conflitos
+            
+            ESTE É O CAPÍTULO {chapter_num} DE {total_chapters} CAPÍTULOS TOTAIS.
+            """
         
-        TÍTULO DA HISTÓRIA: {title}
-        PREMISSA GERAL: {premise}
-        
-        ESTE É O CAPÍTULO {chapter_num} DE {total_chapters} CAPÍTULOS TOTAIS.
+        # Continua com o restante do prompt comum
+        prompt += f"""
         
         CONTEXTO: {context['context']}
         TOM: {context['tone']}
         ELEMENTOS-CHAVE: {context['elements']}
+        
+        {name_suggestions}
         
         TAMANHO ALVO: Aproximadamente {target_chars} caracteres (flexível)
         {anti_repetition}
@@ -429,6 +496,8 @@ class PromptVariator:
         - {character_instruction}
         - {description_style}
         - Avance a trama de forma natural
+        - NÃO mencione ou cite a premissa diretamente no roteiro
+        - Crie conteúdo completo e independente baseado nas orientações
         
         {"INCLUA UM CLIMAX OU GANCHO NO FINAL" if chapter_num < total_chapters else "CONCLUA A HISTÓRIA DE FORMA SATISFATÓRIA"}
         
@@ -680,10 +749,9 @@ class StorytellerService:
             }
             final_chapters.append(chapter_data)
         
-        # Monta roteiro completo como texto único
+        # Monta roteiro completo como texto único (SEM incluir a premissa)
         full_script_parts = []
-        full_script_parts.append(f"# {title}")
-        full_script_parts.append(f"\n{premise}\n")
+        # Não incluir título nem premissa no roteiro final - apenas o conteúdo narrativo
         
         for chapter in final_chapters:
             chapter_content = chapter['content']
@@ -707,7 +775,6 @@ class StorytellerService:
         # Metadados do roteiro
         script_metadata = {
             'title': title,
-            'premise': premise,
             'agent_type': agent_type,
             'total_chapters': len(chapters),
             'total_duration': estimated_duration,
@@ -870,7 +937,6 @@ class StorytellerService:
             # Retorna estrutura completa
             return {
                 'title': title,
-                'premise': premise,
                 'full_script': final_script.get('full_script', '\n\n'.join([ch['content'] for ch in chapters])),
                 'chapters': final_script.get('chapters', chapters),
                 'estimated_duration': final_script.get('total_duration', 600),

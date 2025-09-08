@@ -38,20 +38,24 @@ def generate_long_script(update_callback=None):
         
         print("🎬 Iniciando Storyteller Unlimited...")
         
-        # Preparar premissa aprimorada para o Storyteller
+        # Preparar orientações para o Storyteller (premissa como guia interno)
         enhanced_premise = f"""
-        Título: {title}
+        ORIENTAÇÕES NARRATIVAS (use como guia interno, não inclua no roteiro):
+        - Desenvolva o roteiro seguindo esta direção: {premise}
+        - Use os elementos da premissa como base para personagens e conflitos
+        - Mantenha foco nos temas centrais da premissa
         
-        Contexto: {premise}
-        
-        Objetivo: Criar um roteiro envolvente dividido em {number_of_chapters} capítulos com aproximadamente {target_words} palavras no total.
-        
-        Requisitos:
-        - Cada capítulo deve ter entre 300-500 palavras
+        REQUISITOS DO ROTEIRO:
+        - Título base: {title}
+        - Dividir em {number_of_chapters} capítulos
+        - Aproximadamente {target_words} palavras no total
+        - Cada capítulo: 300-500 palavras
         - Manter continuidade narrativa entre capítulos
         - Usar estrutura de storytelling envolvente
         - Finalizar com gancho para próximo capítulo (exceto o último)
         - Adaptar linguagem para público brasileiro
+        - NÃO mencionar ou citar a premissa diretamente no roteiro
+        - Criar conteúdo completo e independente baseado nas orientações
         """
 
         # Gerar roteiro com Storyteller Unlimited
@@ -133,7 +137,7 @@ def execute_prompt_1(title, premise, ai_provider, openrouter_model, api_keys, ti
 A saída deve ter o seguinte formato:
 
 {{
-    "Contexto": "{premise}"
+    "Contexto": "Roteiro baseado nas orientações narrativas fornecidas"
 }}
 
 Certifique-se de que a chave gerada siga o padrão exigido."""
@@ -565,7 +569,7 @@ def generate_long_script(script_data, update_callback=None):
         
         # Usar diretamente as funções de geração sem Flask request
         print(f"📝 Gerando roteiro: {title}")
-        print(f"📖 Premissa: {premise}")
+        print(f"📖 Usando orientações narrativas como base")
         print(f"📊 Capítulos: {chapters}")
         
         # Inicializar o gerador de títulos para ter acesso às APIs

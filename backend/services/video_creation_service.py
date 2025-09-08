@@ -275,7 +275,7 @@ class VideoCreationService:
     
     def _calculate_image_timings(self, images: List[Dict[str, Any]], 
                                total_duration: float, script_text: str = "") -> List[Tuple[float, float]]:
-        """Calcular timing de cada imagem com base no conteúdo e estrutura do roteiro"""
+        """Calcular timing de cada imagem distribuindo uniformemente ao longo da duração total"""
         num_images = len(images)
         
         if num_images == 0:
@@ -285,11 +285,76 @@ class VideoCreationService:
         if num_images == 1:
             return [(0.0, total_duration)]
         
-        # Analisar script para determinar timing inteligente
+        # Usar distribuição uniforme como padrão para garantir que as imagens
+        # sejam espalhadas ao longo de toda a duração do vídeo
+        timings = self._calculate_uniform_timings(images, total_duration)
+        if timings:
+            return timings
+        
+        # Fallback: se a distribuição uniforme falhar, usar timing inteligente
         if script_text:
             timings = self._calculate_intelligent_timings(images, total_duration, script_text)
             if timings:
                 return timings
+    
+    def _calculate_uniform_timings(self, images: List[Dict[str, Any]], 
+                                 total_duration: float) -> List[Tuple[float, float]]:
+        """Calcular timing uniforme distribuindo imagens igualmente ao longo da duração total"""
+        try:
+            num_images = len(images)
+            
+            # Calcular duração base por imagem
+            base_duration = total_duration / num_images
+            
+            # Definir limites mínimo e máximo por imagem
+            min_duration = 1.5  # Mínimo 1.5 segundos
+            max_duration = min(10.0, total_duration * 0.3)  # Máximo 10s ou 30% do total
+            
+            # Ajustar duração se necessário
+            if base_duration < min_duration:
+                # Se a duração base é muito pequena, usar o mínimo
+                duration_per_image = min_duration
+            elif base_duration > max_duration:
+                # Se a duração base é muito grande, usar o máximo
+                duration_per_image = max_duration
+            else:
+                # Usar a duração base calculada
+                duration_per_image = base_duration
+            
+            # Criar timings uniformes
+            timings = []
+            current_time = 0.0
+            
+            for i in range(num_images):
+                start_time = current_time
+                
+                # Para a última imagem, garantir que termine na duração total
+                if i == num_images - 1:
+                    end_time = total_duration
+                else:
+                    end_time = current_time + duration_per_image
+                    # Garantir que não exceda a duração total
+                    end_time = min(end_time, total_duration)
+                
+                timings.append((start_time, end_time))
+                current_time = end_time
+                
+                # Se chegamos ao final antes da última imagem, parar
+                if current_time >= total_duration:
+                    break
+            
+            # Verificar se todos os timings são válidos
+            for i, (start, end) in enumerate(timings):
+                if start >= end or start < 0 or end > total_duration:
+                    self._log('warning', f'Timing inválido para imagem {i+1}: {start:.2f}-{end:.2f}s')
+                    return []
+            
+            self._log('info', f'Distribuição uniforme: {num_images} imagens, {duration_per_image:.2f}s cada')
+            return timings
+            
+        except Exception as e:
+            self._log('warning', f'Erro na distribuição uniforme: {str(e)}')
+            return []
     
     def _calculate_intelligent_timings(self, images: List[Dict[str, Any]], 
                                      total_duration: float, script_text: str) -> List[Tuple[float, float]]:

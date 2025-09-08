@@ -213,7 +213,6 @@ class Pipeline(db.Model):
             'results': {
                 'extraction': extraction_results,
                 'titles': titles_results,
-                'premises': premises_results,
                 'scripts': scripts_results,
                 'script_processing': script_processing_results,
                 'tts': tts_results,
@@ -253,11 +252,7 @@ class Pipeline(db.Model):
                 'result': json.loads(self.titles_results) if self.titles_results else None
             }
         
-        if config.get('premises', {}).get('enabled', True):
-            steps['premises'] = {
-                'status': 'completed' if self.premises_results else 'pending',
-                'result': json.loads(self.premises_results) if self.premises_results else None
-            }
+
         
         if config.get('scripts', {}).get('enabled', True):
             steps['scripts'] = {
@@ -519,7 +514,7 @@ def register_blueprints():
         from routes.image_queue import image_queue_bp
         from routes.prompts_config import prompts_config_bp
         from routes.storyteller import storyteller_bp
-        from routes.test_config import test_config_bp
+        # from routes.test_config import test_config_bp  # Arquivo não existe
 
         # Carregar chaves na inicialização
         load_rapidapi_keys()
@@ -543,7 +538,7 @@ def register_blueprints():
         app.register_blueprint(image_queue_bp, url_prefix='/api/image-queue')
         app.register_blueprint(prompts_config_bp, url_prefix='/api')
         app.register_blueprint(storyteller_bp)  # já tem url_prefix='/api/storyteller' definido
-        app.register_blueprint(test_config_bp, url_prefix='/api')
+        # app.register_blueprint(test_config_bp, url_prefix='/api')  # Arquivo não existe
 
         logger.info("✅ Rotas registradas com sucesso!")
     except Exception as e:

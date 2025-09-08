@@ -97,6 +97,7 @@ const AutomationsMain = () => {
   const [premisePrompt, setPremisePrompt] = useState('')
   const [premiseAiProvider, setPremiseAiProvider] = useState('auto')
   const [openRouterModel, setOpenRouterModel] = useState('auto')
+  const [selectedAgent, setSelectedAgent] = useState('') // Agente selecionado para premissas
 
   // Estados para geração de roteiros
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false)
@@ -736,7 +737,9 @@ Para cada título, forneça:
           prompt: finalPrompt,
           ai_provider: premiseAiProvider,
           openrouter_model: openRouterModel,
-          api_keys: apiKeys
+          api_keys: apiKeys,
+          agent: selectedAgent, // Incluir agente selecionado
+          storyteller_agent: selectedAgent
         })
       })
 
@@ -2097,6 +2100,59 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
               </p>
             </div>
           )}
+        </div>
+
+        {/* Seleção de Agente */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            🎭 Agente Especializado
+          </label>
+          <select
+            value={selectedAgent}
+            onChange={(e) => setSelectedAgent(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            <option value="">📝 Prompt Padrão do Sistema</option>
+            <option value="millionaire_stories">💰 Histórias de Milionários</option>
+            <option value="romance_agent">💕 Romance</option>
+            <option value="horror_agent">👻 Terror</option>
+            <option value="motivational_agent">⚡ Motivacional</option>
+          </select>
+          
+          {/* Indicador Visual do Prompt Ativo */}
+          <div className="mt-2 p-3 rounded-lg border">
+            {selectedAgent === 'millionaire_stories' ? (
+              <div className="bg-yellow-900/30 border-yellow-500/50">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                  <span className="text-yellow-300 text-sm font-medium">🎯 Prompt Ativo: Agente Milionário</span>
+                </div>
+                <p className="text-yellow-200 text-xs mt-1">
+                  Especializado em histórias de transformação financeira, contraste social e descobertas emocionais
+                </p>
+              </div>
+            ) : selectedAgent ? (
+              <div className="bg-purple-900/30 border-purple-500/50">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                  <span className="text-purple-300 text-sm font-medium">🎯 Prompt Ativo: {selectedAgent.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                </div>
+                <p className="text-purple-200 text-xs mt-1">
+                  Usando prompt especializado do agente selecionado
+                </p>
+              </div>
+            ) : (
+              <div className="bg-gray-700/50 border-gray-600">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <span className="text-gray-300 text-sm font-medium">📝 Prompt Ativo: Sistema Padrão</span>
+                </div>
+                <p className="text-gray-400 text-xs mt-1">
+                  Usando prompt genérico para geração de premissas
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Configurações de IA */}

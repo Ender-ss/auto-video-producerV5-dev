@@ -735,7 +735,6 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
                 'word_count': word_count,
                 'summaries': resumos,
                 'title': titulo,
-                'premise': premissa,
                 'number_of_chapters': numero_capitulos,
                 'performance_stats': {
                     'total_generation_time': total_time,
@@ -818,7 +817,11 @@ def _clean_narrative_content(content: str) -> str:
     content = re.sub(r'NÚMERO DE CAPÍTULOS:.*\n', '', content)
     content = re.sub(r'ESTIMATIVA DE DURAÇÃO:.*\n', '', content)
     content = re.sub(r'TÍTULO:.*\n', '', content)
-    content = re.sub(r'PREMISSA:.*\n', '', content)
+    content = re.sub(r'[Pp][Rr][Ee][Mm][Ii][Ss][Ss][Aa]:.*\n', '', content)  # Remove PREMISSA: ou Premissa:
+    
+    # Remover linhas que contenham apenas a premissa (sem prefixo)
+    content = re.sub(r'^\s*A Limpeza da Alma\s*$', '', content, flags=re.MULTILINE)
+    content = re.sub(r'^\s*Premissa:\s*A Limpeza da Alma\s*$', '', content, flags=re.MULTILINE)
     
     # Limpar quebras de linha excessivas
     content = re.sub(r'\n\s*\n\s*\n+', '\n\n', content)  # Múltiplas quebras -> 2 quebras
