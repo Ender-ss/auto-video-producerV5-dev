@@ -19,7 +19,8 @@ import {
   BookOpen,
   Save,
   Eye,
-  User
+  User,
+  CheckCircle
 } from 'lucide-react'
 
 const AutomationCompleteForm = ({ onSubmit, onClose }) => {
@@ -609,6 +610,7 @@ Foque em:
   const sections = [
     { id: 'basic', label: 'Básico', icon: Youtube },
     { id: 'agents', label: 'Agentes', icon: Bot },
+    { id: 'preview', label: 'Prévia Prompts', icon: CheckCircle },
     { id: 'ai', label: 'IA & Conteúdo', icon: Sparkles },
     { id: 'media', label: 'Mídia & Vídeo', icon: Video },
     { id: 'prompts', label: 'Prompts', icon: FileText },
@@ -689,6 +691,9 @@ Foque em:
                   specialized_agents={customAgents}
                   onUpdateAgent={setCustomAgents}
                 />
+              )}
+              {activeSection === 'preview' && (
+                <PromptPreviewSection formData={formData} />
               )}
               {activeSection === 'ai' && (
                 <AISection 
@@ -1277,7 +1282,49 @@ const AISection = ({ formData, onChange, onOpenPromptManager }) => {
           <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
             <BookOpen size={18} className="text-green-400" />
             <span>Geração de Premissas</span>
+            {formData.agent?.type === 'specialized' && formData.agent?.specialized_type === 'millionaire_stories' && (
+              <span className="ml-2 px-2 py-1 bg-purple-600 text-white text-xs rounded-full flex items-center space-x-1">
+                <span>🤖</span>
+                <span>Agente Milionário</span>
+              </span>
+            )}
           </h4>
+          
+          {/* Aviso sobre agente milionário */}
+          {formData.agent?.type === 'specialized' && formData.agent?.specialized_type === 'millionaire_stories' && (
+            <div className="mb-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <div className="text-purple-400 text-sm">💡</div>
+                <div>
+                  <h5 className="text-purple-300 font-medium text-sm mb-1">Agente Especializado Ativo</h5>
+                  <p className="text-purple-200 text-xs leading-relaxed mb-2">
+                    O agente "Histórias de Milionários" possui <strong>2 tipos de premissas especializadas</strong>:
+                  </p>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        formData.config.premises.style === 'narrative' ? 'bg-green-400' : 'bg-gray-500'
+                      }`}></span>
+                      <span className={formData.config.premises.style === 'narrative' ? 'text-green-300 font-medium' : 'text-gray-400'}>
+                        Narrativa: Contraste social e descoberta emocional
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        formData.config.premises.style === 'educational' ? 'bg-green-400' : 'bg-gray-500'
+                      }`}></span>
+                      <span className={formData.config.premises.style === 'educational' ? 'text-green-300 font-medium' : 'text-gray-400'}>
+                        Educacional: Lições sobre sucesso financeiro
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-purple-200 text-xs mt-2">
+                    <strong>Tipo selecionado:</strong> {formData.config.premises.style === 'narrative' ? 'Narrativa' : formData.config.premises.style === 'educational' ? 'Educacional' : 'Informativo (usará prompt padrão)'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -2464,6 +2511,142 @@ const PromptsSection = ({ formData, onChange }) => {
 }
 
 // Seção Avançada
+// Seção de Prévia de Prompts
+const PromptPreviewSection = ({ formData }) => {
+  const getPromptPreview = () => {
+    const isSpecializedAgent = formData.agent?.type === 'specialized'
+    const agentType = formData.agent?.specialized_type
+    const agentName = agentType === 'millionaire_stories' ? 'Histórias de Milionários' : 'Agente Especializado'
+    
+    return {
+      titles: {
+        source: isSpecializedAgent ? 'agent' : 'system',
+        agentName: agentName,
+        style: formData.config.titles.style,
+        description: isSpecializedAgent 
+          ? `Agente: ${agentName} - ${formData.config.titles.style}`
+          : `Sistema Padrão - ${formData.config.titles.style}`
+      },
+      premises: {
+        source: isSpecializedAgent ? 'agent' : 'system',
+        agentName: agentName,
+        style: formData.config.premises.style,
+        description: isSpecializedAgent 
+          ? `Agente: ${agentName} - premissas especializadas`
+          : `Sistema Padrão - ${formData.config.premises.style}`
+      },
+      scripts: {
+        source: isSpecializedAgent ? 'agent' : 'system',
+        agentName: agentName,
+        description: isSpecializedAgent 
+          ? `Agente: ${agentName} - roteiros contextuais`
+          : 'Sistema Padrão - roteiros genéricos'
+      }
+    }
+  }
+
+  const promptPreview = getPromptPreview()
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+          <CheckCircle size={20} className="text-green-400" />
+          <span>Prévia dos Prompts</span>
+        </h3>
+        <p className="text-gray-400 mb-6">
+          Veja quais prompts serão utilizados nesta pipeline baseado na sua configuração atual.
+        </p>
+      </div>
+
+      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <h4 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+          <Info size={18} className="text-blue-400" />
+          <span>Prompts que serão utilizados</span>
+        </h4>
+        
+        <div className="space-y-4">
+          {/* Títulos */}
+          <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <FileText size={16} className="text-blue-400" />
+              <span className="text-white font-medium">Títulos:</span>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+              promptPreview.titles.source === 'agent' 
+                ? 'bg-purple-500/20 border border-purple-400 text-purple-300'
+                : 'bg-gray-500/20 border border-gray-400 text-gray-300'
+            }`}>
+              {promptPreview.titles.source === 'agent' ? '🤖' : '⚙️'} {promptPreview.titles.description}
+            </div>
+          </div>
+
+          {/* Premissas */}
+          <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <BookOpen size={16} className="text-green-400" />
+              <span className="text-white font-medium">Premissas:</span>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+              promptPreview.premises.source === 'agent' 
+                ? 'bg-purple-500/20 border border-purple-400 text-purple-300'
+                : 'bg-gray-500/20 border border-gray-400 text-gray-300'
+            }`}>
+              {promptPreview.premises.source === 'agent' ? '🤖' : '⚙️'} {promptPreview.premises.description}
+            </div>
+          </div>
+
+          {/* Roteiros */}
+          <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <Video size={16} className="text-purple-400" />
+              <span className="text-white font-medium">Roteiros:</span>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+              promptPreview.scripts.source === 'agent' 
+                ? 'bg-purple-500/20 border border-purple-400 text-purple-300'
+                : 'bg-gray-500/20 border border-gray-400 text-gray-300'
+            }`}>
+              {promptPreview.scripts.source === 'agent' ? '🤖' : '⚙️'} {promptPreview.scripts.description}
+            </div>
+          </div>
+        </div>
+
+        {/* Legenda */}
+        <div className="mt-4 pt-4 border-t border-gray-600">
+          <div className="text-xs text-gray-400 mb-2">Legenda:</div>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center space-x-2">
+              <span className="text-purple-400">🤖</span>
+              <span className="text-gray-300">Prompt do Agente Especializado</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-400">⚙️</span>
+              <span className="text-gray-300">Prompt Padrão do Sistema</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Aviso sobre agente milionário */}
+        {formData.agent?.type === 'specialized' && formData.agent?.specialized_type === 'millionaire_stories' && (
+          <div className="mt-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <Bot size={16} className="text-purple-400 mt-0.5" />
+              <div>
+                <h5 className="text-purple-300 font-medium text-sm mb-1">Agente Milionário Ativo</h5>
+                <p className="text-purple-200 text-xs leading-relaxed">
+                  O agente "Histórias de Milionários" usará prompts especializados para gerar conteúdo focado em 
+                  contraste social, descoberta emocional e transformação de personagens ricos vs humildes.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const AdvancedSection = ({ formData, onChange }) => {
   return (
     <div className="space-y-6">

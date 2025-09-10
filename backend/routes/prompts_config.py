@@ -63,10 +63,15 @@ Premissas:""",
         "description": "Prompt usado para gerar roteiros completos",
         "prompt": """Você é um roteirista profissional especializado em conteúdo para YouTube. Crie um roteiro envolvente e bem estruturado.
 
-Título: {title}
-Premissa: {premise}
+Título do Vídeo: {title}
 Número de capítulos: {chapters}
 Palavras-alvo: {target_words}
+
+ORIENTAÇÕES NARRATIVAS (use como guia interno, não inclua no roteiro):
+- Base o roteiro nesta direção: {premise}
+- Desenvolva o conteúdo seguindo os elementos centrais da premissa
+- Use a premissa como fundamento para estrutura e desenvolvimento
+- NÃO mencione ou cite a premissa diretamente no roteiro final
 
 Estruture o roteiro seguindo este formato:
 
@@ -87,6 +92,8 @@ Estruture o roteiro seguindo este formato:
 - Encerramento envolvente
 
 Objetivo de palavras: aproximadamente {target_words} palavras
+
+Crie um roteiro completo e independente baseado nas orientações acima:
 
 Roteiro:""",
         "variables": ["title", "premise", "chapters", "target_words"]

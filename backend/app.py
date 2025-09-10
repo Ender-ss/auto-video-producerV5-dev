@@ -213,7 +213,6 @@ class Pipeline(db.Model):
             'results': {
                 'extraction': extraction_results,
                 'titles': titles_results,
-                'premises': premises_results,
                 'scripts': scripts_results,
                 'script_processing': script_processing_results,
                 'tts': tts_results,
@@ -253,11 +252,7 @@ class Pipeline(db.Model):
                 'result': json.loads(self.titles_results) if self.titles_results else None
             }
         
-        if config.get('premises', {}).get('enabled', True):
-            steps['premises'] = {
-                'status': 'completed' if self.premises_results else 'pending',
-                'result': json.loads(self.premises_results) if self.premises_results else None
-            }
+
         
         if config.get('scripts', {}).get('enabled', True):
             steps['scripts'] = {

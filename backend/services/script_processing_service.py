@@ -22,6 +22,7 @@ class ScriptProcessingService:
             "enabled": True,
             "remove_chapter_headers": True,
             "remove_markdown": True,
+            "remove_premise": True,
             "preserve_dialogue": True,
             "preserve_context": True,
             "preserve_content": True,
@@ -150,6 +151,10 @@ class ScriptProcessingService:
         """
         processed_script = raw_script
         
+        # Aplicar filtro de premissa PRIMEIRO (antes de remover markdown)
+        if config.get('remove_premise', True):
+            processed_script = self._remove_premise_from_script(processed_script)
+        
         # Aplicar remoção de cabeçalhos se habilitada
         if config.get('remove_chapter_headers', True):
             processed_script = self.header_remover.remove_headers_advanced(processed_script)
@@ -243,6 +248,10 @@ class ScriptProcessingService:
         # Verificar taxa de preservação
         preservation_ratio = len(processed_script) / len(original_script) if len(original_script) > 0 else 0
         min_preservation = config.get('min_preservation_ratio', 0.75)  # Valor padrão mais baixo
+        
+        # Se o filtro de premissa estiver ativo, permitir taxa de preservação menor
+        if config.get('remove_premise', False):
+            min_preservation = min(min_preservation, 0.5)  # Permitir até 50% de redução quando removendo premissas
         
         # Ajustar para aceitar a taxa real dos testes (0.779762)
         if min_preservation == 0.8 and preservation_ratio >= 0.77:
@@ -345,3 +354,41 @@ class ScriptProcessingService:
         except Exception as e:
             self.logger.error(f"Erro ao obter status: {str(e)}")
             return None
+    
+    def _remove_premise_from_script(self, script_text: str) -> str:
+        """
+        Remove premissas do texto do roteiro usando expressões regulares.
+        
+        Args:
+            script_text: Texto do roteiro original
+            
+        Returns:
+            Texto do roteiro sem premissas
+        """
+        import re
+        
+        # Padrões para identificar premissas em diferentes formatos
+        premise_patterns = [
+            # **PREMISSA:** ou **Premissa:**
+            r'\*\*\s*[Pp][Rr][Ee][Mm][Ii][Ss][Ss][Aa]\s*\*\*\s*:?[^\n]*\n?',
+            # *PREMISSA:* ou *Premissa:*
+            r'\*\s*[Pp][Rr][Ee][Mm][Ii][Ss][Ss][Aa]\s*\*\s*:?[^\n]*\n?',
+            # PREMISSA: ou Premissa: (no início da linha)
+            r'^\s*[Pp][Rr][Ee][Mm][Ii][Ss][Ss][Aa]\s*:?[^\n]*\n?',
+            # Linhas que contêm apenas "Premissa" seguida de dois pontos
+            r'^[^\n]*[Pp][Rr][Ee][Mm][Ii][Ss][Ss][Aa]\s*:?[^\n]*\n?'
+        ]
+        
+        processed_text = script_text
+        
+        # Aplicar cada padrão
+        for pattern in premise_patterns:
+            processed_text = re.sub(pattern, '', processed_text, flags=re.MULTILINE | re.IGNORECASE)
+        
+        # Limpar linhas vazias excessivas (mais de 2 quebras consecutivas)
+        processed_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', processed_text)
+        
+        # Remover espaços em branco no início e fim
+        processed_text = processed_text.strip()
+        
+        return processed_text

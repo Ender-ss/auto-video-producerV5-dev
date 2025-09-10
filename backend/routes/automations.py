@@ -1652,6 +1652,7 @@ def generate_premise_with_ai():
 def generate_premise_with_gemini(title, resume, prompt, api_key=None):
     """Gerar premissa usando Gemini com rotação de chaves e retry automático"""
     import google.generativeai as genai
+    from services.name_validator import NameValidator
     
     # Tentar múltiplas chaves se necessário
     # Usar a quantidade real de chaves disponíveis
@@ -1690,11 +1691,32 @@ Por favor, crie uma premissa narrativa envolvente baseada no título e resumo fo
             premise_text = response.text.strip()
             print(f"✅ Sucesso na geração de premissa com Gemini na tentativa {attempt + 1}")
             
+            # Aplicar validação de nomes
+            validator = NameValidator()
+            validation_result = validator.validate_premise(premise_text)
+            
+            if not validation_result['is_valid']:
+                print(f"⚠️ Problemas detectados na premissa: {validation_result['issues']}")
+                # Corrigir texto usando as sugestões
+                premise_text = validator.clean_premise_text(
+                    premise_text,
+                    validation_result['forbidden_names'] + validation_result.get('overused_names', []),
+                    validation_result['suggestions']
+                )
+                print(f"✅ Premissa corrigida automaticamente")
+            
             return {
                 'success': True,
                 'premise': premise_text,
                 'title': title,
-                'resume': resume
+                'resume': resume,
+                'validation_stats': {
+                    'names_found': validation_result.get('names_found', []),
+                    'forbidden_names': validation_result.get('forbidden_names', []),
+                    'overused_names': validation_result.get('overused_names', []),
+                    'is_valid': validation_result.get('is_valid', True)
+                },
+                'validation_warnings': validation_result.get('issues', [])
             }
             
         except Exception as e:
@@ -4755,6 +4777,8 @@ def extract_youtube_ytdlp_endpoint():
             'success': False,
             'error': f'Erro interno: {str(e)}'
         }), 500
+
+
 
 @automations_bp.route('/test-ytdlp', methods=['POST'])
 def test_ytdlp_extraction():

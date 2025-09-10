@@ -19,6 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from services.video_creation_service import VideoCreationService
 from services.checkpoint_service import CheckpointService
 from services.script_processing_service import ScriptProcessingService
+from services.premise_cache import PremiseCache
 
 logger = logging.getLogger(__name__)
 logger.propagate = True
@@ -51,7 +52,7 @@ def get_default_prompts() -> Dict[str, Any]:
             "default": "Baseado no título '{title}', crie uma premissa detalhada para um vídeo.\n\nA premissa deve:\n- Ter aproximadamente {word_count} palavras\n- Explicar o conceito principal do vídeo\n- Definir o público-alvo\n- Estabelecer o tom e estilo\n- Incluir pontos-chave a serem abordados\n- Ser envolvente e clara\n\nRetorne apenas a premissa, sem formatação extra."
         },
         "scripts": {
-            "default": "Crie um roteiro envolvente com {chapters} capítulos, baseado no título '{title}' e premissa: {premise}. Duração alvo: {duration_target}."
+            "default": "Crie um roteiro envolvente com {chapters} capítulos para o título '{title}'. Use como orientação interna (não mencione diretamente): {premise}. Duração alvo: {duration_target}. Desenvolva conteúdo completo baseado nas orientações sem citar a premissa."
         },
         "images": {
             "default": "Crie uma descrição detalhada para geração de imagem baseada no contexto: {context}. A imagem deve ser visualmente atrativa e relevante ao conteúdo."
@@ -78,6 +79,9 @@ class PipelineService:
         # Inicializar serviço de checkpoint
         self.checkpoint_service = CheckpointService(pipeline_id)
         self.auto_checkpoint = self.config.get('auto_checkpoint', True) if self.config else True
+        
+        # Inicializar cache de premissas
+        self.premise_cache = PremiseCache()
         
         # Adicionar controle de threading para pausar/retomar
         import threading
@@ -630,7 +634,53 @@ class PipelineService:
             
             self._update_progress('premises', 50)
             
-            # Gerar premissa usando o provedor configurado
+            # Verificar cache antes de gerar nova premissa
+            cache_config = {
+                'word_count': word_count,
+                'style': premises_config.get('style', 'educational'),
+                'agent_info': self.config.get('agent', {}) if prompt_source == 'agent_specialized' else None
+            }
+            
+            cached_premise = self.premise_cache.get_cached_premise(
+                selected_title, cache_config, prompt_source, instructions
+            )
+            
+            if cached_premise:
+                self._log('info', f'📋 Premissa encontrada no cache para "{selected_title}"')
+                premise_text = cached_premise['premise']
+                
+                # Simular progresso para UX
+                for progress in range(50, 100, 10):
+                    self._update_progress('premises', progress)
+                    time.sleep(0.1)
+                
+                premises_result = {
+                    'selected_title': selected_title,
+                    'premises': [{
+                        'title': selected_title,
+                        'word_count': cached_premise['word_count']
+                    }],
+                    'word_count': cached_premise['word_count'],
+                    'provider_used': cached_premise.get('provider_used', 'cache'),
+                    'style': cached_premise.get('style', 'educational'),
+                    'prompt_source': prompt_source,
+                    'agent_info': self.config.get('agent', {}) if prompt_source == 'agent_specialized' else None,
+                    'generation_time': datetime.utcnow().isoformat(),
+                    'from_cache': True
+                }
+                
+                self.results['premises'] = premises_result
+                self._update_progress('premises', 100)
+                
+                self._log('info', 'Premissa carregada do cache com sucesso', {
+                    'title': selected_title,
+                    'word_count': cached_premise['word_count'],
+                    'cached_at': cached_premise.get('cached_at', 'unknown')
+                })
+                
+                return premises_result
+            
+            # Gerar nova premissa usando o provedor configurado
             if provider == 'gemini':
                 import google.generativeai as genai
                 # Usar sistema de rotação de chaves diretamente
@@ -765,23 +815,55 @@ class PipelineService:
             else:
                 raise Exception(f"Provedor de IA inválido: {provider}")
             
+            # Aplicar validação de nomes com contexto do agente
+            from services.name_validator import NameValidator
+            validator = NameValidator()
+            agent_context = 'millionaire_stories' if prompt_source == 'agent_specialized' else None
+            validation_result = validator.validate_premise(premise_text, agent_context)
+            
+            if not validation_result['is_valid']:
+                self._log('warning', f'⚠️ Problemas detectados na premissa: {validation_result["issues"]}')
+                # Corrigir texto usando as sugestões
+                premise_text = validator.clean_premise_text(
+                    premise_text,
+                    validation_result['forbidden_names'] + validation_result.get('overused_names', []),
+                    validation_result['suggestions']
+                )
+                self._log('info', '✅ Premissa corrigida automaticamente')
+            
             self._update_progress('premises', 100)
             
             premises_result = {
                 'selected_title': selected_title,
                 'premises': [{
                     'title': selected_title,
-                    'premise': premise_text,
                     'word_count': len(premise_text.split())
                 }],
-                'premise': premise_text,  # Manter compatibilidade
                 'word_count': len(premise_text.split()),
                 'provider_used': provider,
                 'style': premises_config.get('style', 'educational'),  # Add style information
                 'prompt_source': prompt_source,  # Indicar origem do prompt
                 'agent_info': self.config.get('agent', {}) if prompt_source == 'agent_specialized' else None,
-                'generation_time': datetime.utcnow().isoformat()
+                'generation_time': datetime.utcnow().isoformat(),
+                'from_cache': False,
+                'validation_stats': {
+                    'names_found': validation_result.get('names_found', []),
+                    'forbidden_names': validation_result.get('forbidden_names', []),
+                    'overused_names': validation_result.get('overused_names', []),
+                    'is_valid': validation_result.get('is_valid', True)
+                },
+                'validation_warnings': validation_result.get('issues', [])
             }
+            
+            # Armazenar no cache para uso futuro
+            cache_success = self.premise_cache.cache_premise(
+                selected_title, cache_config, prompt_source, instructions, premises_result
+            )
+            
+            if cache_success:
+                self._log('info', f'💾 Premissa armazenada no cache para "{selected_title}"')
+            else:
+                self._log('warning', f'⚠️ Falha ao armazenar premissa no cache para "{selected_title}"')
             
             self.results['premises'] = premises_result
             
@@ -919,11 +1001,31 @@ class PipelineService:
             if not result.get('success'):
                 raise Exception(f"Falha na geração de roteiro: {result.get('error', 'Erro desconhecido')}")
             
+            # VALIDAÇÃO CRÍTICA: Aplicar NameValidator no script final gerado
+            from services.name_validator import NameValidator
+            script_validator = NameValidator()
+            script_content = result['data']['script']
+            
+            # Validar script final
+            script_validation = script_validator.validate_premise(script_content)
+            
+            if not script_validation['is_valid']:
+                self._log('warning', f'⚠️ Nomes proibidos detectados no script final: {script_validation["issues"]}')
+                # Corrigir script final
+                cleaned_script = script_validator.clean_text_content(
+                    script_content,
+                    script_validation['forbidden_names'] + script_validation.get('overused_names', []),
+                    script_validation['suggestions']
+                )
+                result['data']['script'] = cleaned_script
+                self._log('info', '✅ Script final corrigido - nomes proibidos removidos')
+            else:
+                self._log('info', '✅ Script final validado - nenhum nome proibido encontrado')
+            
             self._update_progress('scripts', 100)
             
             scripts_result = {
                 'title': title,
-                'premise': premise,
                 'script': result['data']['script'],
                 'chapters': result['data'].get('chapters', []),
                 'chapters_generated': len(result['data'].get('chapters', [])),

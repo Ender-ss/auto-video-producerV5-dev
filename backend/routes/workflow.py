@@ -183,6 +183,8 @@ def test_workflow():
         use_custom_prompt = data.get('use_custom_prompt', False)  # Se deve usar prompt personalizado
         custom_prompt = data.get('custom_prompt', '')  # Prompt personalizado
         api_keys = data.get('api_keys', {})
+        agent_config = data.get('agent_config')  # Configuração do agente
+        specialized_agents = data.get('specialized_agents')  # Agentes especializados
 
         # DEBUG: Verificar parâmetros recebidos
         add_workflow_log(f"🔍 DEBUG: Parâmetros recebidos:")
@@ -291,7 +293,7 @@ def test_workflow():
             add_workflow_log(f"   {i}. {title}", "info")
 
         premises_result = execute_premise_generation(
-            title_generator, selected_titles, ai_provider, openrouter_model, api_keys
+            title_generator, selected_titles, ai_provider, openrouter_model, api_keys, agent_config, specialized_agents
         )
 
         if not premises_result['success']:
@@ -312,7 +314,7 @@ def test_workflow():
 
         scripts_result = execute_script_generation(
             title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
+            agent_config=agent_config, specialized_agents=specialized_agents
         )
 
         if not scripts_result['success']:
@@ -402,6 +404,8 @@ def complete_workflow():
         custom_prompt = data.get('custom_prompt', '')  # Prompt personalizado
         auto_select_best = data.get('auto_select_best', True)
         api_keys = data.get('api_keys', {})
+        agent_config = data.get('agent_config')  # Configuração do agente
+        specialized_agents = data.get('specialized_agents')  # Agentes especializados
 
         # SEMPRE carregar do arquivo e mesclar com as chaves do request
         config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
@@ -489,7 +493,7 @@ def complete_workflow():
             print(f"   {i}. {title}")
 
         premises_result = execute_premise_generation(
-            title_generator, selected_titles, ai_provider, openrouter_model, api_keys
+            title_generator, selected_titles, ai_provider, openrouter_model, api_keys, agent_config, specialized_agents
         )
         
         if not premises_result['success']:
@@ -944,13 +948,23 @@ def execute_title_generation(title_generator, source_videos, ai_provider, api_ke
             'error': error_msg
         }
 
-def execute_premise_generation(title_generator, selected_titles, ai_provider, openrouter_model, api_keys):
-    """Executar geração de premissas"""
+def execute_premise_generation(title_generator, selected_titles, ai_provider, openrouter_model, api_keys, agent_config=None, specialized_agents=None):
+    """Executar geração de premissas com suporte a agentes especializados"""
     try:
         # Usar a mesma lógica do endpoint de premissas
-        from routes.premise import generate_premises_openrouter, generate_premises_gemini, generate_premises_openai
+        from routes.premise import generate_premises_openrouter, generate_premises_gemini, generate_premises_openai, get_millionaire_agent_premise_prompt
         
-        default_prompt = """# Gerador de Premissas Profissionais para Vídeos
+        # Verificar se há agente especializado configurado
+        use_agent = (agent_config and agent_config.get('type') == 'specialized' and 
+                    agent_config.get('specialized_type') and specialized_agents)
+        
+        if use_agent and agent_config.get('specialized_type') == 'millionaire_stories':
+            # Usar prompt específico do agente milionário
+            prompt = get_millionaire_agent_premise_prompt(selected_titles)
+            add_workflow_log("🎆 Usando prompt específico do agente Millionaire Stories", "info")
+        else:
+            # Usar prompt padrão do sistema
+            default_prompt = """# Gerador de Premissas Profissionais para Vídeos
 
 Você é um especialista em criação de conteúdo e storytelling para YouTube. Sua tarefa é criar premissas envolventes e profissionais baseadas nos títulos fornecidos.
 
@@ -963,17 +977,14 @@ Você é um especialista em criação de conteúdo e storytelling para YouTube. 
 6. Adicione ganchos emocionais e curiosidade
 
 ## Formato de Resposta:
-Para cada título, forneça:
+Para cada título, forneça apenas:
 
-**TÍTULO:** [título original]
 **PREMISSA:**
-[Premissa detalhada com storytelling envolvente]
-
----
+[Premissa detalhada com storytelling envolvente. NÃO inclua o título na resposta, apenas a premissa.]
 
 ## Títulos para análise:"""
-
-        prompt = f"{default_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
+            prompt = f"{default_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
+            add_workflow_log("📝 Usando prompt padrão do sistema", "info")
         
         premises = []
         
@@ -1005,14 +1016,43 @@ Para cada título, forneça:
         if not premises:
             raise Exception("Falha ao gerar premissas com todos os providers")
 
-        add_workflow_log("📝 Premissas geradas:")
-        for i, premise in enumerate(premises, 1):
+        # Aplicar validação de nomes nas premissas geradas
+        from services.name_validator import NameValidator
+        validator = NameValidator()
+        
+        # Determinar contexto do agente para validação
+        agent_context = None
+        if use_agent and agent_config.get('specialized_type') == 'millionaire_stories':
+            agent_context = 'millionaire_stories'
+        
+        validated_premises = []
+        for premise in premises:
+            premise_text = premise.get('premise', '')
+            
+            # Validar premissa
+            validation_result = validator.validate_premise(premise_text, agent_context)
+            
+            if not validation_result['is_valid']:
+                add_workflow_log(f"⚠️ Problemas detectados na premissa: {validation_result['issues']}", "warning")
+                # Corrigir texto usando as sugestões
+                cleaned_premise = validator.clean_premise_text(
+                    premise_text,
+                    validation_result['forbidden_names'] + validation_result.get('overused_names', []),
+                    validation_result['suggestions']
+                )
+                premise['premise'] = cleaned_premise
+                add_workflow_log("✅ Premissa corrigida automaticamente", "info")
+            
+            validated_premises.append(premise)
+
+        add_workflow_log("📝 Premissas geradas e validadas:")
+        for i, premise in enumerate(validated_premises, 1):
             add_workflow_log(f"   {i}. TÍTULO: {premise['title']}", "info")
             add_workflow_log(f"      PREMISSA: {premise['premise'][:100]}...", "info")
 
         return {
             'success': True,
-            'premises': premises
+            'premises': validated_premises
         }
         
     except Exception as e:
@@ -1092,7 +1132,6 @@ def execute_script_generation(title_generator, selected_title, selected_premise,
                 
                 script_result = {
                     'title': selected_title,
-                    'premise': selected_premise['premise'],
                     'chapters': chapters,
                     'total_chapters': len(chapters),
                     'total_words': len(script_content.split()) if chapters else 0,
@@ -1161,8 +1200,6 @@ def execute_script_generation(title_generator, selected_title, selected_premise,
                 
                 script_result = {
                     'title': selected_title,
-                    'premise': selected_premise['premise'],
-                    'context': selected_premise['premise'],
                     'narrative_structure': 'Storyteller Unlimited',
                     'chapters': chapters,
                     'total_chapters': len(chapters),
@@ -1175,7 +1212,6 @@ def execute_script_generation(title_generator, selected_title, selected_premise,
 
         add_workflow_log("📖 Roteiro gerado:")
         add_workflow_log(f"   TÍTULO: {script_result['title']}", "info")
-        add_workflow_log(f"   PREMISSA: {script_result['premise'][:100]}...", "info")
         add_workflow_log(f"   CAPÍTULOS: {len(script_result['chapters'])}", "info")
         add_workflow_log(f"   PALAVRAS: {script_result['total_words']}", "info")
         add_workflow_log("   CAPÍTULOS:", "info")
