@@ -122,9 +122,18 @@ class VideoCreationService:
                 self._log('info', 'Adicionando transições entre imagens')
                 image_clips = self._add_transitions(image_clips)
             
-            # Combinar clipes de imagem
-            self._log('info', 'Combinando clipes de imagem')
-            video_clip = concatenate_videoclips(image_clips, method='compose')
+            # Combinar clipes de imagem com timing correto
+            self._log('info', 'Combinando clipes de imagem com timing distribuído')
+            # Aplicar timing correto a cada clipe
+            timed_clips = []
+            for i, (clip, (start_time, end_time)) in enumerate(zip(image_clips, image_timings)):
+                # Definir quando o clipe deve começar
+                timed_clip = clip.with_start(start_time)
+                timed_clips.append(timed_clip)
+                self._log('info', f'Clipe {i+1}: {start_time:.2f}s - {end_time:.2f}s')
+            
+            # Usar CompositeVideoClip para sobrepor os clipes nos tempos corretos
+            video_clip = CompositeVideoClip(timed_clips)
             
             # Adicionar áudio
             self._log('info', 'Adicionando áudio ao vídeo')
