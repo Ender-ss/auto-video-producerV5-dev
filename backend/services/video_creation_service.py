@@ -18,15 +18,15 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Imports do MoviePy com fallback
 MOVIEPY_AVAILABLE = False
 try:
-    from moviepy.editor import (
+    # MoviePy 2.1.2 - imports diretos (não tem editor.py)
+    from moviepy import (
         VideoFileClip, ImageClip, AudioFileClip, CompositeVideoClip,
-        TextClip, concatenate_videoclips, ColorClip
+        TextClip, concatenate_videoclips, ColorClip, vfx, afx
     )
-    from moviepy.video.fx.resize import resize
-    from moviepy.video.fx.fadein import fadein
-    from moviepy.video.fx.fadeout import fadeout
-    from moviepy.audio.fx.volumex import volumex
+    
+    import moviepy
     MOVIEPY_AVAILABLE = True
+    print(f"✅ MoviePy {moviepy.__version__} carregado com sucesso")
     
     # Fix para PIL.Image.ANTIALIAS depreciado
     try:
@@ -42,7 +42,7 @@ except ImportError as e:
     # Definir classes vazias para evitar erros de importação
     VideoFileClip = ImageClip = AudioFileClip = CompositeVideoClip = None
     TextClip = concatenate_videoclips = ColorClip = None
-    resize = fadein = fadeout = volumex = None
+    MOVIEPY_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -129,12 +129,12 @@ class VideoCreationService:
             # Adicionar áudio
             self._log('info', 'Adicionando áudio ao vídeo')
             audio_clip = AudioFileClip(audio_path)
-            video_clip = video_clip.set_audio(audio_clip)
+            video_clip = video_clip.with_audio(audio_clip)
             
             # Ajustar duração do vídeo para corresponder ao áudio
             if video_clip.duration != audio_duration:
                 self._log('info', f'Ajustando duração do vídeo: {video_clip.duration:.2f}s -> {audio_duration:.2f}s')
-                video_clip = video_clip.set_duration(audio_duration)
+                video_clip = video_clip.with_duration(audio_duration)
             
             # Adicionar legendas se solicitado
             if subtitles:
@@ -440,30 +440,24 @@ class VideoCreationService:
                 self._log('info', f'Processando imagem {i + 1}/{len(images)}: {os.path.basename(img_path)}')
                 
                 # Criar clipe de imagem
-                try:
-                    from moviepy.editor import ImageClip as MoviePyImageClip
-                    img_clip = MoviePyImageClip(img_path, duration=duration)
-                except ImportError:
-                    raise Exception('ImageClip não disponível - MoviePy não está instalado corretamente')
+                img_clip = ImageClip(img_path, duration=duration)
                 
                 # Redimensionar mantendo proporção
-                img_clip = img_clip.resize(height=height)
+                resize_effect = vfx.Resize(height=height)
+                img_clip = resize_effect.apply(img_clip)
                 
                 # Se a imagem for mais larga que o vídeo, centralizar
                 if img_clip.w > width:
-                    img_clip = img_clip.resize(width=width)
+                    resize_effect = vfx.Resize(width=width)
+                    img_clip = resize_effect.apply(img_clip)
                 
                 # Centralizar imagem
-                img_clip = img_clip.set_position('center')
+                img_clip = img_clip.with_position('center')
                 
                 # Adicionar fundo preto se necessário
                 if img_clip.w < width or img_clip.h < height:
-                    try:
-                        from moviepy.editor import ColorClip as MoviePyColorClip, CompositeVideoClip as MoviePyCompositeVideoClip
-                        background = MoviePyColorClip(size=(width, height), color=(0, 0, 0), duration=duration)
-                        img_clip = MoviePyCompositeVideoClip([background, img_clip.set_position('center')])
-                    except ImportError:
-                        self._log('warning', 'ColorClip/CompositeVideoClip não disponível, usando imagem sem fundo')
+                    background = ColorClip(size=(width, height), color=(0, 0, 0), duration=duration)
+                    img_clip = CompositeVideoClip([background, img_clip.with_position('center')])
                 
                 image_clips.append(img_clip)
                 
@@ -472,17 +466,12 @@ class VideoCreationService:
             except Exception as e:
                 self._log('warning', f'Erro ao criar clipe {i+1}: {str(e)}')
                 # Criar clipe de cor sólida como fallback
-                try:
-                    from moviepy.editor import ColorClip as MoviePyColorClip
-                    fallback_clip = MoviePyColorClip(
-                        size=(width, height), 
-                        color=(50, 50, 50), 
-                        duration=end_time - start_time
-                    )
-                    image_clips.append(fallback_clip)
-                except ImportError:
-                    self._log('error', 'Não foi possível criar clipe de fallback - ColorClip não disponível')
-                    continue
+                fallback_clip = ColorClip(
+                    size=(width, height), 
+                    color=(50, 50, 50), 
+                    duration=end_time - start_time
+                )
+                image_clips.append(fallback_clip)
         
         return image_clips
     
@@ -498,13 +487,18 @@ class VideoCreationService:
         for i, clip in enumerate(clips):
             if i == 0:
                 # Primeiro clipe: apenas fade in
-                clip = fadein(clip, transition_duration)
+                fade_in_effect = vfx.FadeIn(transition_duration)
+                clip = fade_in_effect.apply(clip)
             elif i == len(clips) - 1:
                 # Último clipe: apenas fade out
-                clip = fadeout(clip, transition_duration)
+                fade_out_effect = vfx.FadeOut(transition_duration)
+                clip = fade_out_effect.apply(clip)
             else:
                 # Clipes do meio: fade in e fade out
-                clip = fadeout(fadein(clip, transition_duration), transition_duration)
+                fade_in_effect = vfx.FadeIn(transition_duration)
+                fade_out_effect = vfx.FadeOut(transition_duration)
+                clip = fade_in_effect.apply(clip)
+                clip = fade_out_effect.apply(clip)
             
             transitioned_clips.append(clip)
         
@@ -533,7 +527,7 @@ class VideoCreationService:
                         stroke_color='black',
                         stroke_width=2,
                         font='Arial-Bold'
-                    ).set_position(('center', 'bottom')).set_start(segment['start']).set_duration(segment['duration'])
+                    ).with_position(('center', 'bottom')).with_start(segment['start']).with_duration(segment['duration'])
                     
                     subtitle_clips.append(txt_clip)
                     
@@ -785,8 +779,6 @@ class VideoCreationService:
                 'bitrate': codec_settings.get('bitrate', '5500k'),
                 'preset': codec_settings.get('preset', 'medium'),
                 'threads': threads,
-                'verbose': False,
-                'logger': None,
                 'temp_audiofile': os.path.join(self.temp_dir, 'temp_audio.m4a'),
                 'remove_temp': True
             }
@@ -835,9 +827,7 @@ class VideoCreationService:
                     codec='libx264',
                     audio_codec='aac',
                     bitrate=codec_settings.get('bitrate', '5500k'),
-                    preset=codec_settings.get('preset', 'medium'),
-                    verbose=False,
-                    logger=None
+                    preset=codec_settings.get('preset', 'medium')
                 )
                 self._log('info', 'Renderização básica concluída com sucesso')
             except Exception as fallback_error:
@@ -864,9 +854,7 @@ class VideoCreationService:
                 preview_path,
                 fps=15,  # FPS menor para preview
                 codec='libx264',
-                bitrate='1000k',
-                verbose=False,
-                logger=None
+                bitrate='1000k'
             )
             
             # Limpar recursos

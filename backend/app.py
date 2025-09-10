@@ -519,7 +519,6 @@ def register_blueprints():
         from routes.image_queue import image_queue_bp
         from routes.prompts_config import prompts_config_bp
         from routes.storyteller import storyteller_bp
-        from routes.test_config import test_config_bp
 
         # Carregar chaves na inicialização
         load_rapidapi_keys()
@@ -543,7 +542,6 @@ def register_blueprints():
         app.register_blueprint(image_queue_bp, url_prefix='/api/image-queue')
         app.register_blueprint(prompts_config_bp, url_prefix='/api')
         app.register_blueprint(storyteller_bp)  # já tem url_prefix='/api/storyteller' definido
-        app.register_blueprint(test_config_bp, url_prefix='/api')
 
         logger.info("✅ Rotas registradas com sucesso!")
     except Exception as e:

@@ -87,14 +87,17 @@ class CheckpointService:
     
     def get_next_step(self, completed_steps: List[str]) -> Optional[str]:
         """Determinar próxima etapa baseada nas etapas concluídas"""
-        # Ordem das etapas da pipeline
+        # Ordem das etapas da pipeline (incluindo todas as etapas possíveis)
         pipeline_steps = [
+            'extraction',
             'titles',
             'premises', 
             'scripts',
+            'script_processing',
             'tts',
             'images',
-            'video'
+            'video',
+            'cleanup'
         ]
         
         for step in pipeline_steps:
@@ -143,13 +146,16 @@ class CheckpointService:
         completed_steps = checkpoint_data.get('completed_steps', [])
         next_step = self.get_next_step(completed_steps)
         
+        # Lista completa de etapas da pipeline
+        all_pipeline_steps = ['extraction', 'titles', 'premises', 'scripts', 'script_processing', 'tts', 'images', 'video', 'cleanup']
+        
         return {
             'pipeline_id': self.pipeline_id,
             'recovery_timestamp': datetime.utcnow().isoformat(),
             'checkpoint_timestamp': checkpoint_data.get('timestamp'),
             'completed_steps': completed_steps,
             'next_step': next_step,
-            'steps_remaining': len(['titles', 'premises', 'scripts', 'tts', 'images', 'video']) - len(completed_steps),
+            'steps_remaining': len(all_pipeline_steps) - len(completed_steps),
             'can_resume': next_step is not None,
             'integrity_valid': self.validate_checkpoint_integrity(checkpoint_data)
         }

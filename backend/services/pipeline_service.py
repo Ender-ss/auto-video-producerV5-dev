@@ -1520,12 +1520,25 @@ class PipelineService:
             # Verificar se existe checkpoint para retomada
             if self.checkpoint_service.has_checkpoint():
                 self._log('info', 'Checkpoint encontrado, retomando pipeline...')
-                checkpoint_data = self.load_from_checkpoint()
+                checkpoint_loaded = self.load_from_checkpoint()
                 
-                if checkpoint_data:
-                    self._log('info', f'Pipeline retomada a partir da etapa: {checkpoint_data["next_step"]}')
-                    # Continuar a partir da próxima etapa
-                    remaining_steps = self._get_remaining_steps(checkpoint_data['next_step'], steps)
+                if checkpoint_loaded:
+                    # Obter dados do checkpoint para determinar próxima etapa
+                    checkpoint_data = self.checkpoint_service.load_checkpoint()
+                    if checkpoint_data:
+                        recovery_report = self.checkpoint_service.create_recovery_report(checkpoint_data)
+                        next_step = recovery_report['next_step']
+                        
+                        if next_step:
+                            self._log('info', f'Pipeline retomada a partir da etapa: {next_step}')
+                            # Continuar a partir da próxima etapa
+                            remaining_steps = self._get_remaining_steps(next_step, steps)
+                        else:
+                            self._log('info', 'Todas as etapas já foram concluídas')
+                            remaining_steps = []
+                    else:
+                        # Se não conseguir obter dados do checkpoint, começar do início
+                        remaining_steps = steps
                 else:
                     # Se não conseguir carregar checkpoint, começar do início
                     remaining_steps = steps
