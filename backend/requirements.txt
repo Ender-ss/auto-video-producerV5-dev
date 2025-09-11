@@ -21,7 +21,7 @@ urllib3==2.2.0
 # YouTube APIs
 google-api-python-client==2.108.0
 isodate==0.6.1
-yt-dlp==2023.12.30
+yt-dlp>=2025.9.5
 
 # Audio/Video Processing
 moviepy==1.0.3
