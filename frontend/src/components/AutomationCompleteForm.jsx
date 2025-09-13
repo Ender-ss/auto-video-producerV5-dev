@@ -144,7 +144,13 @@ INSTRUÇÕES:
               enabled: parsedData.config?.video?.enabled !== undefined ? parsedData.config.video.enabled : true,
               resolution: parsedData.config?.video?.resolution || '1080p',
               fps: parsedData.config?.video?.fps || '30',
-              subtitle: parsedData.config?.video?.subtitle !== undefined ? parsedData.config.video.subtitle : true
+              format: parsedData.config?.video?.format || 'mp4',
+              codec: parsedData.config?.video?.codec || 'libx264',
+              bitrate: parsedData.config?.video?.bitrate || '8000k',
+              preset: parsedData.config?.video?.preset || 'medium',
+              subtitle: parsedData.config?.video?.subtitle !== undefined ? parsedData.config.video.subtitle : true,
+              audio: parsedData.config?.video?.audio !== undefined ? parsedData.config.video.audio : true,
+              threads: parsedData.config?.video?.threads || '0'
             },
             prompts: {
               titles: {
@@ -327,7 +333,13 @@ INSTRUÇÕES:
           enabled: true,
           resolution: '1080p',
           fps: '30',
-          subtitle: true
+          format: 'mp4',
+          codec: 'libx264',
+          bitrate: '8000k',
+          preset: 'medium',
+          subtitle: true,
+          audio: true,
+          threads: '0'
         },
         prompts: {
           titles: {
@@ -2158,6 +2170,75 @@ const MediaSection = ({ formData, onChange }) => {
                 <option value="60">60 FPS</option>
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Formato de Saída
+              </label>
+              <select
+                value={formData.config.video.format}
+                onChange={(e) => onChange('config.video.format', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="mp4">MP4 (H.264)</option>
+                <option value="avi">AVI</option>
+                <option value="mov">MOV</option>
+                <option value="webm">WebM</option>
+                <option value="gif">GIF</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Codec de Vídeo
+              </label>
+              <select
+                value={formData.config.video.codec}
+                onChange={(e) => onChange('config.video.codec', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="libx264">libx264 (H.264) - Padrão</option>
+                <option value="libx265">libx265 (H.265) - Melhor compressão</option>
+                <option value="mpeg4">mpeg4 - Compatibilidade</option>
+                <option value="rawvideo">rawvideo - Qualidade máxima</option>
+                <option value="png">png - Sem perdas</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Bitrate (Qualidade)
+              </label>
+              <select
+                value={formData.config.video.bitrate}
+                onChange={(e) => onChange('config.video.bitrate', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="1000k">Baixo (1000k)</option>
+                <option value="2000k">Médio-Baixo (2000k)</option>
+                <option value="5000k">Médio (5000k)</option>
+                <option value="8000k">Alto (8000k)</option>
+                <option value="12000k">Muito Alto (12000k)</option>
+                <option value="20000k">Ultra (20000k)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Qualidade de Renderização
+              </label>
+              <select
+                value={formData.config.video.preset}
+                onChange={(e) => onChange('config.video.preset', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="ultrafast">Ultra Rápido (Menor qualidade)</option>
+                <option value="superfast">Super Rápido</option>
+                <option value="veryfast">Muito Rápido</option>
+                <option value="faster">Rápido</option>
+                <option value="fast">Normal</option>
+                <option value="medium">Médio (Padrão)</option>
+                <option value="slow">Lento (Melhor qualidade)</option>
+                <option value="slower">Mais Lento</option>
+                <option value="veryslow">Muito Lento (Melhor qualidade)</option>
+              </select>
+            </div>
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -2169,6 +2250,34 @@ const MediaSection = ({ formData, onChange }) => {
               <label htmlFor="video-subtitle" className="text-sm font-medium text-gray-300">
                 Incluir legenda no vídeo
               </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="video-audio"
+                checked={formData.config.video.audio}
+                onChange={(e) => onChange('config.video.audio', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="video-audio" className="text-sm font-medium text-gray-300">
+                Incluir áudio no vídeo
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Threads de Renderização
+              </label>
+              <select
+                value={formData.config.video.threads}
+                onChange={(e) => onChange('config.video.threads', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="1">1 Thread</option>
+                <option value="2">2 Threads</option>
+                <option value="4">4 Threads</option>
+                <option value="8">8 Threads</option>
+                <option value="0">Automático</option>
+              </select>
             </div>
           </div>
         </div>
