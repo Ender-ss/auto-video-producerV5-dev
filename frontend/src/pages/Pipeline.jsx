@@ -931,7 +931,8 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
       {/* Modal de Detalhes do Pipeline */}
       {selectedPipeline && (
         <VideoPreview
-          pipeline={selectedPipeline}
+          video={selectedPipeline}
+          isOpen={!!selectedPipeline}
           onClose={() => setSelectedPipeline(null)}
         />
       )}

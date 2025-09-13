@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Search, Image, Music, Video, FileText, RefreshCw, AlertCircle, HardDrive, Eye, Download, Play, Pause, Calendar, Volume2, Grid, List, Trash2 } from 'lucide-react'
+import { Search, Image, Music, Video, FileText, RefreshCw, AlertCircle, HardDrive, Eye, Download, Play, Pause, Calendar, Volume2, Grid, List, Trash2, Folder, ChevronRight, ChevronDown } from 'lucide-react'
 import axios from 'axios'
 import VideoPreview from '../components/VideoPreview'
 
@@ -34,6 +34,10 @@ const ConteudosGerados = () => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [selectedProject, setSelectedProject] = useState('all')
+  const [projects, setProjects] = useState([])
+  const [expandedProjects, setExpandedProjects] = useState({})
+  const [viewByProject, setViewByProject] = useState(true)
   const audioRef = useRef(null)
 
   const [showVideoPreview, setShowVideoPreview] = useState(false)
@@ -62,6 +66,28 @@ const ConteudosGerados = () => {
         }
         setContent(contentWithUrls)
         setSummary(data.summary)
+        
+        // Extrair projetos únicos dos conteúdos
+        const uniqueProjects = new Set()
+        data.content.images.forEach(item => {
+          if (item.directory) uniqueProjects.add(item.directory)
+        })
+        data.content.audios.forEach(item => {
+          if (item.directory) uniqueProjects.add(item.directory)
+        })
+        data.content.videos.forEach(item => {
+          if (item.directory) uniqueProjects.add(item.directory)
+        })
+        
+        const projectsArray = ['all', ...Array.from(uniqueProjects)]
+        setProjects(projectsArray)
+        
+        // Inicializar projetos expandidos
+        const initialExpanded = {}
+        projectsArray.filter(p => p !== 'all').forEach(project => {
+          initialExpanded[project] = true
+        })
+        setExpandedProjects(initialExpanded)
       } else {
         setError(data.error || 'Erro ao carregar conteúdos')
       }
@@ -101,13 +127,51 @@ const ConteudosGerados = () => {
       allContent = [...allContent, ...content.videos.map(item => ({ ...item, type: 'video' }))]
     }
 
+    // Filtrar por termo de busca
     if (searchTerm) {
       allContent = allContent.filter(item => 
         item.filename.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
+    
+    // Filtrar por projeto
+    if (selectedProject !== 'all') {
+      allContent = allContent.filter(item => 
+        item.directory === selectedProject
+      )
+    }
 
     return allContent
+  }
+
+  const getContentByProject = () => {
+    const filteredContent = getFilteredContent()
+    
+    // Agrupar conteúdo por projeto
+    const contentByProject = {}
+    
+    filteredContent.forEach(item => {
+      const project = item.directory || 'Sem Projeto'
+      
+      if (!contentByProject[project]) {
+        contentByProject[project] = {
+          images: [],
+          audios: [],
+          videos: [],
+          all: []
+        }
+      }
+      
+      // Garantir que o array para o tipo específico exista antes de usar push
+      if (!contentByProject[project][item.type]) {
+        contentByProject[project][item.type] = []
+      }
+      
+      contentByProject[project][item.type].push(item)
+      contentByProject[project].all.push(item)
+    })
+    
+    return contentByProject
   }
 
   const getTypeIcon = (type) => {
@@ -126,6 +190,13 @@ const ConteudosGerados = () => {
       case 'video': return 'border-purple-500 bg-purple-500/10'
       default: return 'border-gray-500 bg-gray-500/10'
     }
+  }
+
+  const toggleProjectExpansion = (project) => {
+    setExpandedProjects(prev => ({
+      ...prev,
+      [project]: !prev[project]
+    }))
   }
 
   const handlePreview = (item) => {
@@ -260,7 +331,8 @@ const ConteudosGerados = () => {
     )
   }
 
-  const filteredContent = getFilteredContent()
+  const contentByProject = getContentByProject()
+  const projectsList = Object.keys(contentByProject)
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -335,6 +407,50 @@ const ConteudosGerados = () => {
               />
             </div>
 
+            {/* Project Filter */}
+            {projects.length > 1 && (
+              <div className="flex items-center space-x-2">
+                <Folder size={16} className="text-gray-400" />
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="all">Todos os Projetos</option>
+                  {projects.filter(p => p !== 'all').map(project => (
+                    <option key={project} value={project}>{project}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-400">Visualização:</span>
+              <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
+                <button
+                  onClick={() => setViewByProject(true)}
+                  className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                    viewByProject
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  Por Projeto
+                </button>
+                <button
+                  onClick={() => setViewByProject(false)}
+                  className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                    !viewByProject
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  Lista
+                </button>
+              </div>
+            </div>
+
             {/* Tabs */}
             <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
               {[
@@ -360,45 +476,142 @@ const ConteudosGerados = () => {
                 )
               })}
             </div>
-
-            {/* View Mode */}
-            <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                <List size={16} />
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Content */}
-        {filteredContent.length === 0 ? (
+        {projectsList.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="mx-auto text-gray-600 mb-4" size={48} />
             <h3 className="text-xl font-semibold text-gray-400 mb-2">Nenhum conteúdo encontrado</h3>
             <p className="text-gray-500">
-              {searchTerm ? 'Tente ajustar sua busca' : 'Execute algumas pipelines para gerar conteúdos'}
+              {searchTerm || selectedProject !== 'all' ? 'Tente ajustar seus filtros' : 'Execute algumas pipelines para gerar conteúdos'}
             </p>
           </div>
+        ) : viewByProject ? (
+          // Visualização por projeto (estrutura de pastas)
+          <div className="space-y-4">
+            {projectsList.map(project => (
+              <div key={project} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                {/* Cabeçalho do projeto */}
+                <div 
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-750 transition-colors"
+                  onClick={() => toggleProjectExpansion(project)}
+                >
+                  <div className="flex items-center space-x-3">
+                    {expandedProjects[project] ? (
+                      <ChevronDown size={20} className="text-gray-400" />
+                    ) : (
+                      <ChevronRight size={20} className="text-gray-400" />
+                    )}
+                    <Folder size={20} className="text-blue-400" />
+                    <h3 className="font-medium text-white">{project}</h3>
+                    <span className="text-sm text-gray-400">
+                      ({contentByProject[project].all.length} arquivos)
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center space-x-1">
+                      <Image size={14} className="text-pink-400" />
+                      <span className="text-gray-400">{contentByProject[project].images.length}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Music size={14} className="text-green-400" />
+                      <span className="text-gray-400">{contentByProject[project].audios.length}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Video size={14} className="text-purple-400" />
+                      <span className="text-gray-400">{contentByProject[project].videos.length}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Conteúdo do projeto (expansível) */}
+                {expandedProjects[project] && (
+                  <div className="border-t border-gray-700 p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {contentByProject[project].all.map((item, index) => (
+                        <motion.div
+                          key={`${item.type}-${item.filename}-${index}`}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={`bg-gray-750 rounded-lg border ${getTypeColor(item.type)} p-4 hover:bg-gray-700 transition-colors`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                {getTypeIcon(item.type)}
+                                <span className="text-xs font-medium text-gray-400 uppercase">{item.type}</span>
+                              </div>
+                              <div className="flex space-x-1">
+                                {item.type === 'audio' && item.url && (
+                                  <button
+                                    onClick={() => handleAudioPlay(item)}
+                                    className={`p-1 hover:bg-gray-700 rounded ${
+                                      currentAudio?.filename === item.filename && isPlaying
+                                        ? 'text-green-400'
+                                        : 'text-gray-400 hover:text-white'
+                                    }`}
+                                    title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
+                                  >
+                                    {currentAudio?.filename === item.filename && isPlaying ? (
+                                      <Pause size={14} />
+                                    ) : (
+                                      <Play size={14} />
+                                    )}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handlePreview(item)}
+                                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                                  title="Visualizar"
+                                >
+                                  <Eye size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDownload(item)}
+                                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                                  title="Download"
+                                >
+                                  <Download size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item)}
+                                  className="p-1 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
+                                  title="Excluir"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                            <h3 className="font-medium text-white mb-2 truncate" title={item.filename}>
+                              {item.filename}
+                            </h3>
+                            <div className="text-xs text-gray-400 space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <HardDrive size={12} />
+                                <span>{formatFileSize(item.size)}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Calendar size={12} />
+                                <span>{formatDate(item.created_at)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : 'space-y-2'}>
-            {filteredContent.map((item, index) => (
+          // Visualização em lista (padrão)
+          <div className="space-y-2">
+            {getFilteredContent().map((item, index) => (
               <motion.div
                 key={`${item.type}-${item.filename}-${index}`}
                 initial={{ opacity: 0, y: 20 }}
@@ -406,131 +619,61 @@ const ConteudosGerados = () => {
                 transition={{ delay: index * 0.05 }}
                 className={`bg-gray-800 rounded-lg border ${getTypeColor(item.type)} p-4 hover:bg-gray-750 transition-colors`}
               >
-                {viewMode === 'grid' ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        {getTypeIcon(item.type)}
-                        <span className="text-xs font-medium text-gray-400 uppercase">{item.type}</span>
-                      </div>
-                      <div className="flex space-x-1">
-                        {item.type === 'audio' && item.url && (
-                          <button
-                            onClick={() => handleAudioPlay(item)}
-                            className={`p-1 hover:bg-gray-700 rounded ${
-                              currentAudio?.filename === item.filename && isPlaying
-                                ? 'text-green-400'
-                                : 'text-gray-400 hover:text-white'
-                            }`}
-                            title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
-                          >
-                            {currentAudio?.filename === item.filename && isPlaying ? (
-                              <Pause size={14} />
-                            ) : (
-                              <Play size={14} />
-                            )}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handlePreview(item)}
-                          className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                          title="Visualizar"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDownload(item)}
-                          className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                          title="Download"
-                        >
-                          <Download size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item)}
-                          className="p-1 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
-                          title="Excluir"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <h3 className="font-medium text-white mb-2 truncate" title={item.filename}>
-                      {item.filename}
-                    </h3>
-                    <div className="text-xs text-gray-400 space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <HardDrive size={12} />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    {getTypeIcon(item.type)}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-white truncate" title={item.filename}>
+                        {item.filename}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-xs text-gray-400">
                         <span>{formatFileSize(item.size)}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar size={12} />
                         <span>{formatDate(item.created_at)}</span>
-                      </div>
-                      {item.directory && (
-                        <div className="flex items-center space-x-2">
-                          <span>📁</span>
-                          <span className="truncate">{item.directory}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      {getTypeIcon(item.type)}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-white truncate" title={item.filename}>
-                          {item.filename}
-                        </h3>
-                        <div className="flex items-center space-x-4 text-xs text-gray-400">
-                          <span>{formatFileSize(item.size)}</span>
-                          <span>{formatDate(item.created_at)}</span>
-                          {item.directory && <span>📁 {item.directory}</span>}
-                        </div>
+                        {item.directory && <span>📁 {item.directory}</span>}
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      {item.type === 'audio' && item.url && (
-                        <button
-                          onClick={() => handleAudioPlay(item)}
-                          className={`p-2 hover:bg-gray-700 rounded ${
-                            currentAudio?.filename === item.filename && isPlaying
-                              ? 'text-green-400'
-                              : 'text-gray-400 hover:text-white'
-                          }`}
-                          title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
-                        >
-                          {currentAudio?.filename === item.filename && isPlaying ? (
-                            <Pause size={16} />
-                          ) : (
-                            <Play size={16} />
-                          )}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handlePreview(item)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                        title="Visualizar"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDownload(item)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                        title="Download"
-                      >
-                        <Download size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
                   </div>
-                )}
+                  <div className="flex space-x-2">
+                    {item.type === 'audio' && item.url && (
+                      <button
+                        onClick={() => handleAudioPlay(item)}
+                        className={`p-2 hover:bg-gray-700 rounded ${
+                          currentAudio?.filename === item.filename && isPlaying
+                            ? 'text-green-400'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
+                      >
+                        {currentAudio?.filename === item.filename && isPlaying ? (
+                          <Pause size={16} />
+                        ) : (
+                          <Play size={16} />
+                        )}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handlePreview(item)}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                      title="Visualizar"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDownload(item)}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                      title="Download"
+                    >
+                      <Download size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="p-2 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
+                      title="Excluir"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -590,7 +733,10 @@ const ConteudosGerados = () => {
           onTimeUpdate={handleAudioTimeUpdate}
           onEnded={handleAudioEnded}
           onLoadedMetadata={handleAudioTimeUpdate}
-          autoPlay
+          onError={(e) => {
+            console.error('Erro ao carregar áudio:', e);
+            alert('Não foi possível reproduzir o áudio. Verifique se o arquivo está disponível.');
+          }}
         />
       )}
 

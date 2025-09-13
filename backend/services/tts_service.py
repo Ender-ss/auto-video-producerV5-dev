@@ -309,15 +309,16 @@ class TTSService:
             return {'success': False, 'error': str(e)}
     
     def _save_audio_file(self, audio_data: bytes, provider: str, segment_index: int) -> Dict[str, Any]:
-        """Salvar arquivo de áudio"""
+        """Salvar arquivo de áudio na pasta do projeto"""
         try:
-            # Criar diretório de output se não existir
-            output_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'audio')
+            # Criar diretório do projeto se não existir
+            project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+            output_dir = os.path.join(project_dir, 'audio')
             os.makedirs(output_dir, exist_ok=True)
             
             # Nome do arquivo
             timestamp = int(time.time() * 1000)
-            filename = f"pipeline_{self.pipeline_id}_audio_{timestamp}_{segment_index}.wav"
+            filename = f"audio_{timestamp}_{segment_index}.wav"
             filepath = os.path.join(output_dir, filename)
             
             # Salvar arquivo
@@ -325,7 +326,7 @@ class TTSService:
                 f.write(audio_data)
             
             # URL para acessar o áudio
-            audio_url = f"/api/audio/view/{filename}"
+            audio_url = f"/api/audio/view/{self.pipeline_id}/{filename}"
             
             return {
                 'file_path': filepath,
@@ -367,13 +368,14 @@ class TTSService:
                     'error': 'Nenhum segmento de áudio válido encontrado'
                 }
             
-            # Criar diretório de output se não existir
-            output_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'audio')
+            # Criar diretório do projeto se não existir
+            project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+            output_dir = os.path.join(project_dir, 'audio')
             os.makedirs(output_dir, exist_ok=True)
             
             # Nome do arquivo final
             timestamp = int(time.time())
-            final_filename = f"pipeline_{self.pipeline_id}_audio_final_{timestamp}.mp3"
+            final_filename = f"audio_final_{timestamp}.wav"
             final_filepath = os.path.join(output_dir, final_filename)
             
             # Usar soundfile para concatenar os arquivos
@@ -456,6 +458,16 @@ class TTSService:
             
             self._log('info', 'Usando pydub para concatenação...')
             
+            # Criar diretório do projeto se não existir
+            project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+            output_dir = os.path.join(project_dir, 'audio')
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Nome do arquivo final
+            timestamp = int(time.time())
+            final_filename = f"audio_final_{timestamp}.mp3"
+            final_filepath = os.path.join(output_dir, final_filename)
+            
             # Carregar todos os segmentos
             audio_segments = []
             total_duration = 0
@@ -480,20 +492,20 @@ class TTSService:
             
             # Exportar como MP3
             final_audio.export(
-                output_path,
+                final_filepath,
                 format="mp3",
                 bitrate="192k",
                 parameters=["-q:a", "0"]
             )
             
-            final_size = os.path.getsize(output_path)
+            final_size = os.path.getsize(final_filepath)
             final_duration = len(final_audio) / 1000.0
             
             return {
                 'success': True,
                 'data': {
-                    'audio_file': output_path,
-                    'filename': os.path.basename(output_path),
+                    'audio_file': final_filepath,
+                    'filename': final_filename,
                     'duration': final_duration,
                     'size': final_size,
                     'segments_count': len(valid_files),
@@ -509,7 +521,7 @@ class TTSService:
         except Exception as e:
             return {
                 'success': False,
-                'error': f'Erro ao concatenar com pydub: {str(e)}'
+                'error': f'Erro na concatenação com pydub: {str(e)}'
             }
     
     def _get_api_key(self, provider: str) -> Optional[str]:

@@ -198,6 +198,64 @@ const AutomationsDev = () => {
   const [showResults, setShowResults] = useState(false)
   const [automationResults, setAutomationResults] = useState(null)
 
+  // Estados para salvamento de predefinições do formulário
+  const [savedPresets, setSavedPresets] = useState([])
+  const [currentPreset, setCurrentPreset] = useState('')
+  const [presetName, setPresetName] = useState('')
+
+  // Carregar predefinições salvas do localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pipeline_presets')
+      if (saved) {
+        setSavedPresets(JSON.parse(saved))
+      }
+    } catch (error) {
+      console.error('Erro ao carregar predefinições:', error)
+    }
+  }, [])
+
+  // Salvar predefinição do formulário
+  const savePreset = () => {
+    if (!presetName.trim()) {
+      alert('Por favor, informe um nome para a predefinição')
+      return
+    }
+
+    const newPreset = {
+      name: presetName,
+      timestamp: new Date().toISOString(),
+      workflowConfig: {...workflowConfig},
+      videoConfig: {...videoConfig}
+    }
+
+    const updatedPresets = [...savedPresets, newPreset]
+    setSavedPresets(updatedPresets)
+    localStorage.setItem('pipeline_presets', JSON.stringify(updatedPresets))
+    setPresetName('')
+    alert('Predefinição salva com sucesso!')
+  }
+
+  // Carregar predefinição
+  const loadPreset = (preset) => {
+    setWorkflowConfig(preset.workflowConfig)
+    setVideoConfig(preset.videoConfig)
+    setCurrentPreset(preset.name)
+  }
+
+  // Excluir predefinição
+  const deletePreset = (index) => {
+    if (window.confirm('Tem certeza que deseja excluir esta predefinição?')) {
+      const updatedPresets = [...savedPresets]
+      updatedPresets.splice(index, 1)
+      setSavedPresets(updatedPresets)
+      localStorage.setItem('pipeline_presets', JSON.stringify(updatedPresets))
+      if (currentPreset === savedPresets[index].name) {
+        setCurrentPreset('')
+      }
+    }
+  }
+
   // Estados para controle de pausa
   const [isPaused, setIsPaused] = useState(false)
 
@@ -3019,6 +3077,91 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                     <span>Roteiro muito longo - Para documentários ou análises profundas</span>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Seção de Predefinições */}
+          <div className="md:col-span-2">
+            <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+              <h4 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
+                <Settings className="text-blue-400" size={18} />
+                Gerenciar Predefinições
+              </h4>
+              
+              {/* Barra de status da predefinição */}
+              {currentPreset && (
+                <div className="flex items-center justify-between bg-blue-800/30 p-2 rounded mb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="text-blue-400" size={16} />
+                    <span className="text-sm text-blue-300">
+                      Usando predefinição: <strong>{currentPreset}</strong>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setCurrentPreset('')}
+                    className="text-xs text-gray-300 hover:text-white"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              )}
+              
+              {/* Salvar nova predefinição */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <input
+                  type="text"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  placeholder="Nome da predefinição (ex: 'Canal Fitness Padrão')"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={savePreset}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap"
+                >
+                  <Save size={16} />
+                  Salvar Predefinição
+                </button>
+              </div>
+              
+              {/* Carregar predefinição existente */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value=""
+                  onChange={(e) => {
+                    const presetIndex = parseInt(e.target.value)
+                    if (!isNaN(presetIndex) && savedPresets[presetIndex]) {
+                      loadPreset(savedPresets[presetIndex])
+                    }
+                  }}
+                >
+                  <option value="">Selecione uma predefinição...</option>
+                  {savedPresets.map((preset, index) => (
+                    <option key={index} value={index}>
+                      {preset.name} (salva em {new Date(preset.timestamp).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Botão para excluir predefinição selecionada */}
+                <div className="flex gap-2">
+                  {savedPresets.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const presetIndex = prompt('Digite o número da predefinição que deseja excluir (1 a ' + savedPresets.length + '):')
+                        if (presetIndex && !isNaN(parseInt(presetIndex))) {
+                          deletePreset(parseInt(presetIndex) - 1)
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap"
+                    >
+                      <Trash2 size={16} />
+                      Excluir Predefinição
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

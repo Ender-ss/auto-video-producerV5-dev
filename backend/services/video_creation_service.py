@@ -59,7 +59,10 @@ class VideoCreationService:
     def __init__(self, pipeline_id: str):
         self.pipeline_id = pipeline_id
         self.temp_dir = os.path.join('temp', f'video_{pipeline_id}')
-        self.output_dir = 'outputs'
+        
+        # Criar diretório do projeto se não existir
+        project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', pipeline_id)
+        self.output_dir = os.path.join(project_dir, 'video')
         
         # Criar diretórios necessários
         os.makedirs(self.temp_dir, exist_ok=True)
@@ -152,7 +155,7 @@ class VideoCreationService:
             codec_settings = self._get_adaptive_codec_settings(quality, resolution, audio_duration)
             
             # Renderizar vídeo final
-            output_filename = f"video_{self.pipeline_id}.mp4"
+            output_filename = f"video_final.mp4"
             output_path = os.path.join(self.output_dir, output_filename)
             
             self._log('info', 'Iniciando renderização do vídeo')
@@ -297,6 +300,12 @@ class VideoCreationService:
             timings = self._calculate_intelligent_timings(images, total_duration, script_text)
             if timings:
                 return timings
+        
+        # Fallback: distribuir tempo com variação baseada no tipo de imagem
+        timings = self._calculate_adaptive_timings(images, total_duration)
+        
+        self._log('info', f'Timing calculado para {num_images} imagens')
+        return timings
     
     def _calculate_intelligent_timings(self, images: List[Dict[str, Any]], 
                                      total_duration: float, script_text: str) -> List[Tuple[float, float]]:
@@ -425,12 +434,6 @@ class VideoCreationService:
                 cleaned_segments = all_segments
         
         return cleaned_segments
-        
-        # Fallback: distribuir tempo com variação baseada no tipo de imagem
-        timings = self._calculate_adaptive_timings(images, total_duration)
-        
-        self._log('info', f'Timing calculado para {num_images} imagens')
-        return timings
     
     def _create_image_clips(self, images: List[Dict[str, Any]], 
                           timings: List[Tuple[float, float]], 
@@ -445,6 +448,27 @@ class VideoCreationService:
                 duration = end_time - start_time
                 
                 self._log('info', f'Processando imagem {i + 1}/{len(images)}: {os.path.basename(img_path)}')
+                
+                # Verificar se o arquivo existe antes de tentar carregar
+                if not os.path.exists(img_path):
+                    self._log('warning', f'Arquivo de imagem não encontrado: {img_path}')
+                    # Tentar caminhos alternativos
+                    alternative_paths = [
+                        os.path.join(os.path.dirname(__file__), '..', 'output', 'images', os.path.basename(img_path)),
+                        os.path.join('output', 'images', os.path.basename(img_path)),
+                        os.path.join('outputs', 'images', os.path.basename(img_path))
+                    ]
+                    
+                    found = False
+                    for alt_path in alternative_paths:
+                        if os.path.exists(alt_path):
+                            img_path = alt_path
+                            found = True
+                            self._log('info', f'Arquivo encontrado em caminho alternativo: {img_path}')
+                            break
+                    
+                    if not found:
+                        raise Exception(f'Arquivo de imagem não encontrado em nenhum caminho: {img_path}')
                 
                 # Criar clipe de imagem
                 try:
@@ -483,7 +507,7 @@ class VideoCreationService:
                     from moviepy import ColorClip as MoviePyColorClip
                     fallback_clip = MoviePyColorClip(
                         size=(width, height), 
-                        color=(50, 50, 50), 
+                        color=(0, 0, 0),  # Mudar para preto em vez de cinza
                         duration=end_time - start_time
                     )
                     image_clips.append(fallback_clip)

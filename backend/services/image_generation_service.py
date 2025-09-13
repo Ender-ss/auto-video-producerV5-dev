@@ -92,12 +92,13 @@ class ImageGenerationService:
                         self._log('warning', f'Falha ao gerar imagem {i+1}/{len(prompts_to_generate)}: {prompt[:50]}...')
                         continue
                     
-                    # Salvar a imagem (mesmo método da aba de automações)
+                    # Salvar a imagem na pasta do projeto
                     timestamp = int(time.time() * 1000)
-                    filename = f"pipeline_{self.pipeline_id}_image_{timestamp}_{i+1}.png"
+                    filename = f"image_{timestamp}_{i+1}.png"
                     
-                    # Criar diretório de output se não existir
-                    output_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'images')
+                    # Criar diretório do projeto se não existir
+                    project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+                    output_dir = os.path.join(project_dir, 'images')
                     os.makedirs(output_dir, exist_ok=True)
                     
                     filepath = os.path.join(output_dir, filename)
@@ -106,7 +107,7 @@ class ImageGenerationService:
                         f.write(image_bytes)
                     
                     # URL para acessar a imagem
-                    image_url = f"/api/images/view/{filename}"
+                    image_url = f"/api/images/view/{self.pipeline_id}/{filename}"
                     
                     generated_images.append({
                         'file_path': filepath,

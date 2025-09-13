@@ -118,6 +118,37 @@ class PipelineService:
             logger.error(f"Erro ao carregar estado do pipeline: {str(e)}")
             raise
     
+    def _create_project_directory(self) -> str:
+        """Criar estrutura de diretórios para o projeto"""
+        try:
+            # Criar diretório do projeto
+            project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+            os.makedirs(project_dir, exist_ok=True)
+            
+            # Criar subdiretórios
+            subdirs = ['texts', 'images', 'audio', 'video']
+            for subdir in subdirs:
+                os.makedirs(os.path.join(project_dir, subdir), exist_ok=True)
+            
+            # Criar arquivo de metadados do projeto
+            metadata = {
+                'pipeline_id': self.pipeline_id,
+                'created_at': datetime.utcnow().isoformat(),
+                'config': self.config,
+                'status': 'created'
+            }
+            
+            metadata_path = os.path.join(project_dir, 'metadata.json')
+            with open(metadata_path, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
+            
+            self._log('info', f'Estrutura de diretórios do projeto criada: {project_dir}')
+            return project_dir
+            
+        except Exception as e:
+            self._log('error', f'Erro ao criar estrutura de diretórios do projeto: {str(e)}')
+            raise
+    
     def _log(self, level: str, message: str, data: Optional[Dict] = None):
         """Adicionar log ao pipeline"""
         try:
@@ -363,11 +394,35 @@ class PipelineService:
             
             self.results['extraction'] = extraction_result
             
+            # Salvar títulos extraídos em arquivo de texto na pasta do projeto
+            timestamp = int(time.time())
+            extraction_filename = f"extraction_{timestamp}.txt"
+            
+            # Criar conteúdo com títulos extraídos
+            extraction_content = "TÍTULOS EXTRAÍDOS\n=================\n\n"
+            extraction_content += f"Canal: {titles_data.get('channel_info', {}).get('name', 'Desconhecido')}\n"
+            extraction_content += f"Método: {result.get('method', method)}\n"
+            extraction_content += f"Data: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            extraction_content += f"TÍTULOS ({len(titles)} títulos)\n\n"
+            
+            for i, title in enumerate(titles, 1):
+                extraction_content += f"{i}. {title.get('title', 'Sem título')}\n"
+                extraction_content += f"   Visualizações: {title.get('views', 0)}\n"
+                extraction_content += f"   Duração: {title.get('duration', 'N/A')}\n"
+                extraction_content += f"   URL: {title.get('url', '#')}\n\n"
+            
+            extraction_filepath = self._save_text_file(extraction_content, extraction_filename)
+            
+            # Adicionar informação do arquivo salvo ao resultado
+            extraction_result['file_path'] = extraction_filepath
+            extraction_result['filename'] = extraction_filename
+            
             self._log('info', f'Extração concluída: {len(titles)} títulos extraídos após filtragem e limitação', {
                 'total_titles': len(titles),
                 'method': result.get('method', method),
                 'channel': titles_data.get('channel_info', {}).get('name', 'Desconhecido'),
-                'min_views': min_views
+                'min_views': min_views,
+                'file_saved': extraction_filename
             })
             
             return extraction_result
@@ -522,10 +577,24 @@ class PipelineService:
             
             self.results['titles'] = titles_result
             
+            # Salvar títulos na pasta do projeto
+            timestamp = int(time.time())
+            titles_filename = f"titles_{timestamp}.txt"
+            titles_content = "TÍTULOS GERADOS\n==================\n\n"
+            for i, title in enumerate(titles_result["generated_titles"], 1):
+                titles_content += f"{i}. {title}\n"
+            
+            titles_filepath = self._save_text_file(titles_content, titles_filename)
+            
+            # Adicionar informação do arquivo salvo ao resultado
+            titles_result['file_path'] = titles_filepath
+            titles_result['filename'] = titles_filename
+            
             self._log('info', f'Geração de títulos concluída: {len(titles_result["generated_titles"])} títulos gerados', {
                 'provider': provider,
                 'style': style,
-                'count': len(titles_result['generated_titles'])
+                'count': len(titles_result['generated_titles']),
+                'file_saved': titles_filename
             })
             
             return titles_result
@@ -785,10 +854,33 @@ class PipelineService:
             
             self.results['premises'] = premises_result
             
+            # Salvar premissas na pasta do projeto
+            timestamp = int(time.time())
+            premises_filename = f"premises_{timestamp}.txt"
+            premises_content = f"TÍTULO SELECIONADO\n==================\n{selected_title}\n\n"
+            premises_content += f"PREMISSA GERADA\n===============\n{premise_text}\n\n"
+            premises_content += f"INFORMAÇÕES\n============\n"
+            premises_content += f"Provedor: {provider}\n"
+            premises_content += f"Estilo: {premises_config.get('style', 'educational')}\n"
+            premises_content += f"Contagem de palavras: {len(premise_text.split())}\n"
+            premises_content += f"Origem do prompt: {prompt_source}\n"
+            
+            if prompt_source == 'agent_specialized':
+                agent_info = self.config.get('agent', {})
+                agent_name = agent_info.get('name', 'Agente Especializado')
+                premises_content += f"Agente: {agent_name}\n"
+            
+            premises_filepath = self._save_text_file(premises_content, premises_filename)
+            
+            # Adicionar informação do arquivo salvo ao resultado
+            premises_result['file_path'] = premises_filepath
+            premises_result['filename'] = premises_filename
+            
             self._log('info', 'Geração de premissas concluída', {
                 'title': selected_title,
                 'word_count': len(premise_text.split()),
-                'provider': provider
+                'provider': provider,
+                'file_saved': premises_filename
             })
             
             return premises_result
@@ -797,9 +889,27 @@ class PipelineService:
             self._log('error', f'Erro na geração de premissas: {str(e)}')
             raise
     
-    # ================================
-    # 🎯 ETAPA 4: GERAÇÃO DE ROTEIROS
-    # ================================
+    def _save_text_file(self, content: str, filename: str) -> str:
+        """Salvar arquivo de texto na pasta do projeto"""
+        try:
+            # Criar diretório do projeto se não existir
+            project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+            texts_dir = os.path.join(project_dir, 'texts')
+            os.makedirs(texts_dir, exist_ok=True)
+            
+            # Caminho completo do arquivo
+            filepath = os.path.join(texts_dir, filename)
+            
+            # Salvar arquivo
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            self._log('info', f'Texto salvo: {filename}')
+            return filepath
+            
+        except Exception as e:
+            self._log('error', f'Erro ao salvar arquivo de texto: {str(e)}')
+            raise
     
     def run_scripts_generation(self) -> Dict[str, Any]:
         """Executar geração de roteiros"""
@@ -943,10 +1053,20 @@ class PipelineService:
             
             self.results['scripts'] = scripts_result
             
+            # Salvar roteiro na pasta do projeto
+            timestamp = int(time.time())
+            script_filename = f"script_{timestamp}.txt"
+            script_filepath = self._save_text_file(scripts_result['script'], script_filename)
+            
+            # Adicionar informação do arquivo salvo ao resultado
+            scripts_result['file_path'] = script_filepath
+            scripts_result['filename'] = script_filename
+            
             self._log('info', 'Geração de roteiros concluída', {
                 'chapters': scripts_result['chapters_generated'],
                 'style': style,
-                'estimated_duration': scripts_result['estimated_duration']
+                'estimated_duration': scripts_result['estimated_duration'],
+                'file_saved': script_filename
             })
             
             return scripts_result
@@ -1038,6 +1158,26 @@ class PipelineService:
             
             self.results['script_processing'] = script_processing_result
             
+            # Salvar roteiro processado na pasta do projeto
+            timestamp = int(time.time())
+            processed_script_filename = f"script_processed_{timestamp}.txt"
+            
+            # Criar conteúdo com informações de processamento
+            processed_content = "ROTEIRO PROCESSADO\n==================\n\n"
+            processed_content += processing_result['processed_script']
+            processed_content += "\n\nINFORMAÇÕES DE PROCESSAMENTO\n===========================\n"
+            processed_content += f"Comprimento original: {processing_result['metrics']['original_length']} caracteres\n"
+            processed_content += f"Comprimento processado: {processing_result['metrics']['processed_length']} caracteres\n"
+            processed_content += f"Taxa de preservação: {processing_result['metrics']['preservation_ratio']:.2f}\n"
+            processed_content += f"Cabeçalhos removidos: {processing_result['metrics']['headers_removed']}\n"
+            processed_content += f"Tempo de processamento: {processing_result['processing_time']:.2f} segundos\n"
+            
+            processed_script_filepath = self._save_text_file(processed_content, processed_script_filename)
+            
+            # Adicionar informação do arquivo salvo ao resultado
+            script_processing_result['file_path'] = processed_script_filepath
+            script_processing_result['filename'] = processed_script_filename
+            
             self._update_progress('script_processing', 100)
             
             self._log('info', 'Processamento de roteiro concluído', {
@@ -1045,7 +1185,8 @@ class PipelineService:
                 'processed_length': len(processing_result['processed_script']),
                 'preservation_ratio': processing_result['metrics']['preservation_ratio'],
                 'headers_removed': processing_result['metrics']['headers_removed'],
-                'processing_time': processing_result['processing_time']
+                'processing_time': processing_result['processing_time'],
+                'file_saved': processed_script_filename
             })
             
             return script_processing_result
@@ -1169,7 +1310,8 @@ class PipelineService:
             self._log('info', 'Geração de TTS concluída', {
                 'provider': provider,
                 'duration': result['duration'],
-                'file_path': result['audio_file_path']
+                'file_path': result['audio_file_path'],
+                'file_saved': audio_filename
             })
             
             return tts_result
@@ -1255,10 +1397,14 @@ class PipelineService:
             
             self.results['images'] = images_result
             
+            # Adicionar informações dos arquivos de imagens ao log
+            image_filenames = [img.get('filename', 'N/A') for img in result['images']]
+            
             self._log('info', 'Geração de imagens concluída', {
                 'total_images': len(result['images']),
                 'provider': provider,
-                'style': style
+                'style': style,
+                'files_saved': image_filenames
             })
             
             return images_result
@@ -1362,10 +1508,14 @@ class PipelineService:
             
             self.results['video'] = video_result
             
+            # Extrair nome do arquivo do caminho completo
+            video_filename = os.path.basename(result['video_path'])
+            
             self._log('info', 'Criação de vídeo concluída', {
                 'video_path': result['video_path'],
                 'duration': result['duration'],
-                'file_size': result['file_size']
+                'file_size': result['file_size'],
+                'file_saved': video_filename
             })
             
             return video_result
@@ -1402,11 +1552,13 @@ class PipelineService:
             
             # Remover arquivos temporários
             cleaned_files = []
+            cleaned_filenames = []
             for file_path in temp_files:
                 try:
                     if os.path.exists(file_path):
                         os.remove(file_path)
                         cleaned_files.append(file_path)
+                        cleaned_filenames.append(os.path.basename(file_path))
                 except Exception as e:
                     self._log('warning', f'Não foi possível remover arquivo temporário {file_path}: {str(e)}')
             
@@ -1420,13 +1572,99 @@ class PipelineService:
             
             self.results['cleanup'] = cleanup_result
             
+            # Salvar informações finais do projeto na pasta do projeto
+            timestamp = int(time.time())
+            summary_filename = f"project_summary_{timestamp}.txt"
+            
+            # Criar conteúdo com resumo do projeto
+            summary_content = "RESUMO DO PROJETO\n=================\n\n"
+            summary_content += f"ID da Pipeline: {self.pipeline_id}\n"
+            summary_content += f"Data de criação: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            
+            # Adicionar informações de cada etapa
+            if 'extraction' in self.results:
+                summary_content += "EXTRAÇÃO DE TÍTULOS\n==================\n"
+                summary_content += f"Canal: {self.results['extraction'].get('channel_info', {}).get('name', 'N/A')}\n"
+                summary_content += f"Títulos extraídos: {self.results['extraction'].get('total_extracted', 0)}\n\n"
+            
+            if 'titles' in self.results:
+                summary_content += "TÍTULOS GERADOS\n===============\n"
+                summary_content += f"Quantidade: {len(self.results['titles'].get('generated_titles', []))}\n"
+                summary_content += f"Arquivo: {self.results['titles'].get('filename', 'N/A')}\n\n"
+            
+            if 'premises' in self.results:
+                summary_content += "PREMISSAS GERADAS\n=================\n"
+                summary_content += f"Palavras: {self.results['premises'].get('word_count', 0)}\n"
+                summary_content += f"Arquivo: {self.results['premises'].get('filename', 'N/A')}\n\n"
+            
+            if 'scripts' in self.results:
+                summary_content += "ROTEIRO GERADO\n==============\n"
+                summary_content += f"Capítulos: {self.results['scripts'].get('chapters_generated', 0)}\n"
+                summary_content += f"Duração estimada: {self.results['scripts'].get('estimated_duration', 'N/A')}\n"
+                summary_content += f"Arquivo: {self.results['scripts'].get('filename', 'N/A')}\n\n"
+            
+            if 'script_processing' in self.results:
+                summary_content += "ROTEIRO PROCESSADO\n==================\n"
+                summary_content += f"Taxa de preservação: {self.results['script_processing'].get('metrics', {}).get('preservation_ratio', 0):.2f}\n"
+                summary_content += f"Arquivo: {self.results['script_processing'].get('filename', 'N/A')}\n\n"
+            
+            if 'tts' in self.results:
+                summary_content += "ÁUDIO GERADO\n============\n"
+                summary_content += f"Duração: {self.results['tts'].get('duration', 0)} segundos\n"
+                summary_content += f"Provedor: {self.results['tts'].get('provider_used', 'N/A')}\n"
+                if 'filename' in self.results['tts']:
+                    summary_content += f"Arquivo: {self.results['tts'].get('filename', 'N/A')}\n\n"
+            
+            if 'images' in self.results:
+                summary_content += "IMAGENS GERADAS\n===============\n"
+                summary_content += f"Quantidade: {len(self.results['images'].get('generated_images', []))}\n"
+                summary_content += f"Provedor: {self.results['images'].get('provider_used', 'N/A')}\n\n"
+            
+            if 'video' in self.results:
+                summary_content += "VÍDEO GERADO\n=============\n"
+                summary_content += f"Resolução: {self.results['video'].get('resolution', 'N/A')}\n"
+                summary_content += f"Duração: {self.results['video'].get('duration', 0)} segundos\n"
+                summary_content += f"Tamanho: {self.results['video'].get('file_size', 0)} bytes\n"
+                if 'filename' in self.results['video']:
+                    summary_content += f"Arquivo: {self.results['video'].get('filename', 'N/A')}\n\n"
+            
+            summary_content += f"LIMPEZA\n=======\n"
+            summary_content += f"Arquivos temporários removidos: {len(cleaned_files)}\n"
+            
+            summary_filepath = self._save_text_file(summary_content, summary_filename)
+            
+            # Adicionar informação do arquivo salvo ao resultado
+            cleanup_result['summary_file_path'] = summary_filepath
+            cleanup_result['summary_filename'] = summary_filename
+            
+            # Atualizar metadados do projeto
+            try:
+                project_dir = os.path.join(os.path.dirname(__file__), '..', 'projects', self.pipeline_id)
+                metadata_path = os.path.join(project_dir, 'metadata.json')
+                
+                if os.path.exists(metadata_path):
+                    with open(metadata_path, 'r', encoding='utf-8') as f:
+                        metadata = json.load(f)
+                    
+                    metadata['status'] = 'completed'
+                    metadata['completed_at'] = datetime.utcnow().isoformat()
+                    metadata['summary_file'] = summary_filename
+                    
+                    with open(metadata_path, 'w', encoding='utf-8') as f:
+                        json.dump(metadata, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                self._log('warning', f'Não foi possível atualizar metadados do projeto: {str(e)}')
+            
             # Remover checkpoint após conclusão bem-sucedida
             if self.checkpoint_service.has_checkpoint():
                 self.checkpoint_service.delete_checkpoint()
                 self._log('info', 'Checkpoint removido após conclusão bem-sucedida')
                 cleanup_result['checkpoint_removed'] = True
             
-            self._log('info', f'Limpeza concluída: {len(cleaned_files)} arquivos removidos')
+            self._log('info', f'Limpeza concluída: {len(cleaned_files)} arquivos removidos', {
+                'summary_file': summary_filename,
+                'cleaned_files': cleaned_filenames
+            })
             
             return cleanup_result
             
@@ -1492,6 +1730,9 @@ class PipelineService:
     def run_with_resume(self, steps: List[str] = None) -> Dict[str, Any]:
         """Executar pipeline com suporte a retomada automática"""
         try:
+            # Criar estrutura de diretórios do projeto
+            self._create_project_directory()
+            
             # Log de debug para verificar as etapas carregadas
             pipeline_steps_state = self.pipeline_state.get('steps', {})
             step_names = list(pipeline_steps_state.keys())

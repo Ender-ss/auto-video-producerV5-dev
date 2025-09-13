@@ -40,6 +40,19 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
   const containerRef = useRef(null)
   const controlsTimeoutRef = useRef(null)
 
+  // Verificar se é um objeto pipeline e extrair as informações do vídeo
+  const isPipeline = video && video.results && video.results.video;
+  const videoData = isPipeline ? {
+    output_path: video.results.video.file_path,
+    url: video.results.video.file_path,
+    title: video.display_name || video.title || `Pipeline #${video.pipeline_id?.slice(-8)}`,
+    duration: video.results.video.duration || 0,
+    created_at: video.results.video.created_at || video.started_at,
+    status: video.status,
+    script: video.results.scripts?.script,
+    config: video.config
+  } : video;
+
   useEffect(() => {
     if (!isOpen) {
       setIsPlaying(false)
@@ -153,10 +166,10 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
   }
 
   const downloadVideo = () => {
-    if (video?.output_path) {
+    if (videoData?.output_path) {
       const link = document.createElement('a')
-      link.href = video.output_path
-      link.download = `${video.title || 'video'}.mp4`
+      link.href = videoData.output_path
+      link.download = `${videoData.title || 'video'}.mp4`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -186,14 +199,14 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
             <div className="flex items-center space-x-4">
               <h3 className="text-xl font-semibold text-white truncate">
-                {video.title || 'Vídeo sem título'}
+                {videoData.title || 'Vídeo sem título'}
               </h3>
               <div className="flex items-center space-x-2">
                 <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
                   Concluído
                 </span>
                 <span className="text-sm text-gray-400">
-                  {formatTime(video.duration)}
+                  {formatTime(videoData.duration)}
                 </span>
               </div>
             </div>
@@ -291,13 +304,17 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
               <div className="h-full flex flex-col">
                 {/* Video Player */}
                 <div className="relative flex-1 bg-black">
-                  {video.output_path ? (
+                  {videoData.output_path ? (
                     <>
                       <video
                         ref={videoRef}
-                        src={video.output_path}
                         className="w-full h-full object-contain"
+                        src={videoData.url || videoData.output_path}
                         onClick={togglePlay}
+                        onError={(e) => {
+                          console.error('Erro ao carregar vídeo:', e);
+                          alert('Não foi possível reproduzir o vídeo. Verifique se o arquivo está disponível.');
+                        }}
                       />
                       
                       {/* Video Controls */}
@@ -413,10 +430,10 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                         <label className="text-sm text-gray-400">Título</label>
                         <div className="flex items-center space-x-2 mt-1">
                           <p className="text-white bg-gray-800 p-2 rounded flex-1">
-                            {video.title || 'N/A'}
+                            {videoData.title || 'N/A'}
                           </p>
                           <button
-                            onClick={() => copyToClipboard(video.title || '')}
+                            onClick={() => copyToClipboard(videoData.title || '')}
                             className="p-2 text-gray-400 hover:text-white transition-colors"
                           >
                             {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -427,14 +444,14 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                       <div>
                         <label className="text-sm text-gray-400">Duração</label>
                         <p className="text-white bg-gray-800 p-2 rounded mt-1">
-                          {formatTime(video.duration)}
+                          {formatTime(videoData.duration)}
                         </p>
                       </div>
                       
                       <div>
                         <label className="text-sm text-gray-400">Criado em</label>
                         <p className="text-white bg-gray-800 p-2 rounded mt-1">
-                          {video.created_at ? new Date(video.created_at).toLocaleString() : 'N/A'}
+                          {videoData.created_at ? new Date(videoData.created_at).toLocaleString() : 'N/A'}
                         </p>
                       </div>
                       
@@ -448,7 +465,7 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                   </div>
 
                   {/* Script */}
-                  {video.script && (
+                  {videoData.script && (
                     <div>
                       <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
                         <FileText size={20} />
@@ -456,19 +473,19 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                       </h4>
                       <div className="bg-gray-800 rounded p-4 max-h-40 overflow-y-auto">
                         <pre className="text-gray-300 text-sm whitespace-pre-wrap">
-                          {video.script}
+                          {videoData.script}
                         </pre>
                       </div>
                     </div>
                   )}
 
                   {/* Configuration */}
-                  {video.config && (
+                  {videoData.config && (
                     <div>
                       <h4 className="text-lg font-semibold text-white mb-4">Configuração</h4>
                       <div className="bg-gray-800 rounded p-4">
                         <pre className="text-gray-300 text-sm">
-                          {JSON.stringify(video.config, null, 2)}
+                          {JSON.stringify(videoData.config, null, 2)}
                         </pre>
                       </div>
                     </div>
@@ -481,7 +498,7 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
               <div className="p-6 overflow-y-auto max-h-96">
                 <div className="space-y-6">
                   {/* Audio */}
-                  {video.audio_path && (
+                  {videoData.audio_path && (
                     <div>
                       <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
                         <Mic size={20} />
@@ -489,7 +506,7 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                       </h4>
                       <div className="bg-gray-800 rounded p-4">
                         <audio controls className="w-full">
-                          <source src={video.audio_path} type="audio/mpeg" />
+                          <source src={videoData.audio_path} type="audio/mpeg" />
                           Seu navegador não suporta o elemento de áudio.
                         </audio>
                       </div>
@@ -497,14 +514,14 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                   )}
 
                   {/* Images */}
-                  {video.images && video.images.length > 0 && (
+                  {videoData.images && videoData.images.length > 0 && (
                     <div>
                       <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
                         <Image size={20} />
-                        <span>Imagens ({video.images.length})</span>
+                        <span>Imagens ({videoData.images.length})</span>
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {video.images.map((image, index) => (
+                        {videoData.images.map((image, index) => (
                           <div key={index} className="bg-gray-800 rounded overflow-hidden">
                             <img
                               src={image.path || image.url}
@@ -527,9 +544,9 @@ const VideoPreview = ({ video, isOpen, onClose, onRegenerate, onEdit, onDelete }
                     <h4 className="text-lg font-semibold text-white mb-4">Arquivos</h4>
                     <div className="space-y-2">
                       {[
-                        { label: 'Vídeo Final', path: video.output_path, icon: Video },
-                        { label: 'Áudio', path: video.audio_path, icon: Mic },
-                        { label: 'Roteiro', path: video.script_path, icon: FileText }
+                        { label: 'Vídeo Final', path: videoData.output_path, icon: Video },
+                        { label: 'Áudio', path: videoData.audio_path, icon: Mic },
+                        { label: 'Roteiro', path: videoData.script_path, icon: FileText }
                       ].filter(file => file.path).map((file, index) => {
                         const Icon = file.icon
                         return (

@@ -1231,7 +1231,10 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                       </div>
                       {pipeline.results.video.file_path && (
                         <div className="mt-3">
-                          <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                          <button 
+                            onClick={() => onViewDetails(pipeline)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                          >
                             Visualizar Vídeo
                           </button>
                         </div>
