@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SavedChannelsManager from './SavedChannelsManager'
 import CustomPromptManager from './CustomPromptManager'
@@ -19,63 +19,71 @@ import {
   BookOpen,
   Save,
   Eye,
-  User
+  User,
+  RotateCcw
 } from 'lucide-react'
 
 const AutomationCompleteForm = ({ onSubmit, onClose }) => {
-  const [formData, setFormData] = useState({
-    channel_url: '',
-    video_count: 5,
-    agent: {
-      type: 'default', // 'default' or 'specialized'
-      specialized_type: 'millionaire_stories'
-    },
-    config: {
-      extraction: {
-        enabled: true,
-        method: 'yt-dlp', // 'yt-dlp' ou 'rapidapi'
-        rapidapi_key: ''
-      },
-      titles: {
-        enabled: true,
-        provider: 'gemini', // 'gemini', 'openai', 'claude'
-        count: 10,
-        style: 'viral',
-        language: 'pt-BR',
-        custom_prompt: false,
-        custom_instructions: ''
-      },
-      premises: {
-        enabled: true,
-        provider: 'gemini',
-        style: 'educational',
-        target_audience: 'general',
-        word_count: 200,
-        custom_prompt: false,
-        custom_instructions: ''
-      },
-      scripts: {
-        enabled: true,
-        system: 'traditional', // 'traditional' ou 'storyteller'
-        provider: 'gemini', // 'gemini', 'openai', 'openrouter'
-        chapters: 5,
-        duration_target: '5-7 minutes',
-        storyteller_agent: 'millionaire_stories',
-        storyteller_chapters: 10,
-        include_intro: true,
-        include_outro: true,
-        custom_prompts: false,
-        custom_inicio: '',
-        custom_meio: '',
-        custom_fim: '',
-        detailed_prompt: false,
-        detailed_prompt_text: '',
-        contextual_chapters: false,
-        show_default_prompts: false,
-        default_prompt_intro: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+  const [formData, setFormData] = useState(() => {
+    // Carregar predefinições salvas do localStorage ou usar valores padrão
+    try {
+      const savedFormData = localStorage.getItem('automationFormData')
+      if (savedFormData) {
+        const parsedData = JSON.parse(savedFormData)
+        // Garantir que todas as propriedades necessárias existam
+        return {
+          channel_url: parsedData.channel_url || '',
+          video_count: parsedData.video_count || 5,
+          agent: {
+            type: parsedData.agent?.type || 'default',
+            specialized_type: parsedData.agent?.specialized_type || 'millionaire_stories'
+          },
+          config: {
+            extraction: {
+              enabled: parsedData.config?.extraction?.enabled !== undefined ? parsedData.config.extraction.enabled : true,
+              method: parsedData.config?.extraction?.method || 'yt-dlp',
+              rapidapi_key: parsedData.config?.extraction?.rapidapi_key || ''
+            },
+            titles: {
+              enabled: parsedData.config?.titles?.enabled !== undefined ? parsedData.config.titles.enabled : true,
+              provider: parsedData.config?.titles?.provider || 'gemini',
+              count: parsedData.config?.titles?.count || 10,
+              style: parsedData.config?.titles?.style || 'viral',
+              language: parsedData.config?.titles?.language || 'pt-BR',
+              custom_prompt: parsedData.config?.titles?.custom_prompt || false,
+              custom_instructions: parsedData.config?.titles?.custom_instructions || ''
+            },
+            premises: {
+              enabled: parsedData.config?.premises?.enabled !== undefined ? parsedData.config.premises.enabled : true,
+              provider: parsedData.config?.premises?.provider || 'gemini',
+              style: parsedData.config?.premises?.style || 'educational',
+              target_audience: parsedData.config?.premises?.target_audience || 'general',
+              word_count: parsedData.config?.premises?.word_count || 200,
+              custom_prompt: parsedData.config?.premises?.custom_prompt || false,
+              custom_instructions: parsedData.config?.premises?.custom_instructions || ''
+            },
+            scripts: {
+              enabled: parsedData.config?.scripts?.enabled !== undefined ? parsedData.config.scripts.enabled : true,
+              system: parsedData.config?.scripts?.system || 'traditional',
+              provider: parsedData.config?.scripts?.provider || 'gemini',
+              chapters: parsedData.config?.scripts?.chapters || 5,
+              duration_target: parsedData.config?.scripts?.duration_target || '5-7 minutes',
+              storyteller_agent: parsedData.config?.scripts?.storyteller_agent || 'millionaire_stories',
+              storyteller_chapters: parsedData.config?.scripts?.storyteller_chapters || 10,
+              include_intro: parsedData.config?.scripts?.include_intro !== undefined ? parsedData.config.scripts.include_intro : true,
+              include_outro: parsedData.config?.scripts?.include_outro !== undefined ? parsedData.config.scripts.include_outro : true,
+              custom_prompts: parsedData.config?.scripts?.custom_prompts || false,
+              custom_inicio: parsedData.config?.scripts?.custom_inicio || '',
+              custom_meio: parsedData.config?.scripts?.custom_meio || '',
+              custom_fim: parsedData.config?.scripts?.custom_fim || '',
+              detailed_prompt: parsedData.config?.scripts?.detailed_prompt || false,
+              detailed_prompt_text: parsedData.config?.scripts?.detailed_prompt_text || '',
+              contextual_chapters: parsedData.config?.scripts?.contextual_chapters || false,
+              show_default_prompts: parsedData.config?.scripts?.show_default_prompts || false,
+              default_prompt_intro: parsedData.config?.scripts?.default_prompt_intro || `Você é um roteirista profissional especializado em conteúdo para YouTube.
 
-TÍTULO: \{titulo\}
-PREMISSA: \{premissa\}
+TÍTULO: \\{titulo\\}
+PREMISSA: \\{premissa\\}
 
 INSTRUÇÕES:
 - Escreva o primeiro capítulo (introdução) deste roteiro
@@ -83,28 +91,28 @@ INSTRUÇÕES:
 - Estabeleça os personagens principais, cenário e conflito inicial
 - Use uma linguagem envolvente adequada para vídeos do YouTube
 - Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`,
-        default_prompt_middle: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+              default_prompt_middle: parsedData.config?.scripts?.default_prompt_middle || `Você é um roteirista profissional especializado em conteúdo para YouTube.
 
-TÍTULO: \{titulo\}
-PREMISSA: \{premissa\}
+TÍTULO: \\{titulo\\}
+PREMISSA: \\{premissa\\}
 
 CONTEXTO DO CAPÍTULO ANTERIOR:
-\{resumos[i-2]\}
+\\{previousContent\\}
 
 INSTRUÇÕES:
-- Escreva o capítulo \{i\} deste roteiro, continuando a história
+- Escreva o capítulo \\{i\\} deste roteiro, continuando a história
 - O capítulo deve ter aproximadamente 500 palavras
 - Mantenha coerência com o contexto fornecido
 - Desenvolva a narrativa de forma orgânica
 - Use uma linguagem envolvente adequada para vídeos do YouTube
 - Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`,
-        default_prompt_conclusion: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+              default_prompt_conclusion: parsedData.config?.scripts?.default_prompt_conclusion || `Você é um roteirista profissional especializado em conteúdo para YouTube.
 
-TÍTULO: \{titulo\}
-PREMISSA: \{premissa\}
+TÍTULO: \\{titulo\\}
+PREMISSA: \\{premissa\\}
 
 CONTEXTO DO CAPÍTULO ANTERIOR:
-\{resumos[-1]\}
+\\{previousContent\\}
 
 INSTRUÇÕES:
 - Escreva o capítulo final (conclusão) deste roteiro
@@ -113,50 +121,50 @@ INSTRUÇÕES:
 - Proporcione um fechamento satisfatório para os personagens
 - Use uma linguagem envolvente adequada para vídeos do YouTube
 - Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`
-      },
-      tts: {
-        enabled: true,
-        provider: 'kokoro', // 'kokoro', 'elevenlabs', 'google'
-        voice: 'af_bella',
-        language: 'en',
-        speed: 1.0,
-        pitch: 1.0,
-        kokoro_url: 'http://localhost:8880'
-      },
-      images: {
-        enabled: true,
-        provider: 'pollinations',
-        style: 'realistic',
-        quality: 'high',
-        total_images: 10,
-        custom_prompt: false,
-        custom_instructions: ''
-      },
-      video: {
-        enabled: true,
-        resolution: '1920x1080',
-        fps: 30,
-        format: 'mp4',
-        include_subtitles: true,
-        transition_duration: 0.5
-      },
-      prompts: {
-        titles: {
-          viral: 'Crie títulos virais e envolventes para o vídeo sobre: \{topic\}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.',
-          educational: 'Crie títulos educacionais e informativos para o vídeo sobre: \{topic\}. Os títulos devem ser claros, diretos e indicar o valor educacional.',
-          professional: 'Crie títulos profissionais e sérios para o vídeo sobre: \{topic\}. Os títulos devem transmitir autoridade e credibilidade.'
-        },
-        premises: {
-          narrative: 'Crie uma premissa narrativa envolvente para um vídeo sobre: \{title\}. A premissa deve contar uma história cativante em aproximadamente \{word_count\} palavras.',
-          educational: 'Crie uma premissa educacional estruturada para um vídeo sobre: \{title\}. A premissa deve apresentar os pontos de aprendizado em aproximadamente \{word_count\} palavras.',
-          informative: 'Crie uma premissa informativa e objetiva para um vídeo sobre: \{title\}. A premissa deve apresentar fatos e informações relevantes em aproximadamente \{word_count\} palavras.'
-        },
-        scripts: {
-          inicio: `# Prompt — Início
+            },
+            tts: {
+              enabled: parsedData.config?.tts?.enabled !== undefined ? parsedData.config.tts.enabled : true,
+              provider: parsedData.config?.tts?.provider || 'kokoro',
+              voice: parsedData.config?.tts?.voice || 'af_bella',
+              language: parsedData.config?.tts?.language || 'en',
+              speed: parsedData.config?.tts?.speed || 1.0,
+              pitch: parsedData.config?.tts?.pitch || 1.0,
+              kokoro_url: parsedData.config?.tts?.kokoro_url || 'http://localhost:8880'
+            },
+            images: {
+              enabled: parsedData.config?.images?.enabled !== undefined ? parsedData.config.images.enabled : true,
+              provider: parsedData.config?.images?.provider || 'pollinations',
+              style: parsedData.config?.images?.style || 'realistic',
+              quality: parsedData.config?.images?.quality || 'high',
+              total_images: parsedData.config?.images?.total_images || 10,
+              custom_prompt: parsedData.config?.images?.custom_prompt || false,
+              custom_instructions: parsedData.config?.images?.custom_instructions || ''
+            },
+            video: {
+              enabled: parsedData.config?.video?.enabled !== undefined ? parsedData.config.video.enabled : true,
+              resolution: parsedData.config?.video?.resolution || '1920x1080',
+              fps: parsedData.config?.video?.fps || 30,
+              format: parsedData.config?.video?.format || 'mp4',
+              include_subtitles: parsedData.config?.video?.include_subtitles !== undefined ? parsedData.config.video.include_subtitles : true,
+              transition_duration: parsedData.config?.video?.transition_duration || 0.5
+            },
+            prompts: {
+              titles: {
+                viral: parsedData.config?.prompts?.titles?.viral || 'Crie títulos virais e envolventes para o vídeo sobre: \\{topic\\}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.',
+                educational: parsedData.config?.prompts?.titles?.educational || 'Crie títulos educacionais e informativos para o vídeo sobre: \\{topic\\}. Os títulos devem ser claros, diretos e indicar o valor educacional.',
+                professional: parsedData.config?.prompts?.titles?.professional || 'Crie títulos profissionais e sérios para o vídeo sobre: \\{topic\\}. Os títulos devem transmitir autoridade e credibilidade.'
+              },
+              premises: {
+                narrative: parsedData.config?.prompts?.premises?.narrative || 'Crie uma premissa narrativa envolvente para um vídeo sobre: \\{title\\}. A premissa deve contar uma história cativante em aproximadamente \\{word_count\\} palavras.',
+                educational: parsedData.config?.prompts?.premises?.educational || 'Crie uma premissa educacional estruturada para um vídeo sobre: \\{title\\}. A premissa deve apresentar os pontos de aprendizado em aproximadamente \\{word_count\\} palavras.',
+                informative: parsedData.config?.prompts?.premises?.informative || 'Crie uma premissa informativa e objetiva para um vídeo sobre: \\{title\\}. A premissa deve apresentar fatos e informações relevantes em aproximadamente \\{word_count\\} palavras.'
+              },
+              scripts: {
+                inicio: parsedData.config?.prompts?.scripts?.inicio || `# Prompt — Início
 
-Escreva uma narrativa de \{genre\} intitulada "\{title\}".
+Escreva uma narrativa de \\{genre\\} intitulada "\\{title\\}".
 
-Premissa: \{premise\}
+Premissa: \\{premise\\}
 
 Este é o INÍCIO da história. Deve estabelecer:
 - Personagens principais e suas motivações
@@ -165,12 +173,12 @@ Este é o INÍCIO da história. Deve estabelecer:
 - Tom inicial da narrativa
 
 **IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.`,
-          meio: `# Prompt — Meio
+                meio: parsedData.config?.prompts?.scripts?.meio || `# Prompt — Meio
 
-Continue a narrativa de \{genre\} intitulada "\{title\}".
+Continue a narrativa de \\{genre\\} intitulada "\\{title\\}".
 
 CONTEXTO ANTERIOR:
-"\{previousContent\}"...
+"\\{previousContent\\}"...
 
 Esta é a continuação do MEIO da história. Deve:
 - Continuar a narrativa de forma orgânica e coerente
@@ -179,12 +187,12 @@ Esta é a continuação do MEIO da história. Deve:
 - Adicionar novos elementos de tensão
 
 **IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.`,
-          fim: `# Prompt — Fim
+                fim: parsedData.config?.prompts?.scripts?.fim || `# Prompt — Fim
 
-Continue a narrativa de \{genre\} intitulada "\{title\}".
+Continue a narrativa de \\{genre\\} intitulada "\\{title\\}".
 
 CONTEXTO ANTERIOR:
-"\{previousContent\}"...
+"\\{previousContent\\}"...
 
 Este é o FIM da história. Deve:
 - Resolver o conflito principal estabelecido no início
@@ -193,11 +201,197 @@ Este é o FIM da história. Deve:
 - Fechar a história de forma impactante
 
 **IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório.`
+              },
+              images: {
+                cinematic: parsedData.config?.prompts?.images?.cinematic || 'Crie uma descrição cinematográfica para uma imagem que represente: \\{scene_description\\}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.',
+                minimalist: parsedData.config?.prompts?.images?.minimalist || 'Crie uma descrição minimalista para uma imagem que represente: \\{scene_description\\}. A imagem deve ser limpa, simples e com foco no elemento principal.',
+                artistic: parsedData.config?.prompts?.images?.artistic || 'Crie uma descrição artística para uma imagem que represente: \\{scene_description\\}. A imagem deve ser criativa, expressiva e visualmente impactante.'
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao carregar predefinições do localStorage:', e)
+    }
+    
+    // Valores padrão caso não haja dados salvos ou ocorra um erro
+    return {
+      channel_url: '',
+      video_count: 5,
+      agent: {
+        type: 'default',
+        specialized_type: 'millionaire_stories'
+      },
+      config: {
+        extraction: {
+          enabled: true,
+          method: 'yt-dlp',
+          rapidapi_key: ''
+        },
+        titles: {
+          enabled: true,
+          provider: 'gemini',
+          count: 10,
+          style: 'viral',
+          language: 'pt-BR',
+          custom_prompt: false,
+          custom_instructions: ''
+        },
+        premises: {
+          enabled: true,
+          provider: 'gemini',
+          style: 'educational',
+          target_audience: 'general',
+          word_count: 200,
+          custom_prompt: false,
+          custom_instructions: ''
+        },
+        scripts: {
+          enabled: true,
+          system: 'traditional',
+          provider: 'gemini',
+          chapters: 5,
+          duration_target: '5-7 minutes',
+          storyteller_agent: 'millionaire_stories',
+          storyteller_chapters: 10,
+          include_intro: true,
+          include_outro: true,
+          custom_prompts: false,
+          custom_inicio: '',
+          custom_meio: '',
+          custom_fim: '',
+          detailed_prompt: false,
+          detailed_prompt_text: '',
+          contextual_chapters: false,
+          show_default_prompts: false,
+          default_prompt_intro: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+
+TÍTULO: \\{titulo\\}
+PREMISSA: \\{premissa\\}
+
+INSTRUÇÕES:
+- Escreva o primeiro capítulo (introdução) deste roteiro
+- O capítulo deve ter aproximadamente 500 palavras
+- Estabeleça os personagens principais, cenário e conflito inicial
+- Use uma linguagem envolvente adequada para vídeos do YouTube
+- Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`,
+          default_prompt_middle: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+
+TÍTULO: \\{titulo\\}
+PREMISSA: \\{premissa\\}
+
+CONTEXTO DO CAPÍTULO ANTERIOR:
+\\{previousContent\\}
+
+INSTRUÇÕES:
+- Escreva o capítulo \\{i\\} deste roteiro, continuando a história
+- O capítulo deve ter aproximadamente 500 palavras
+- Mantenha coerência com o contexto fornecido
+- Desenvolva a narrativa de forma orgânica
+- Use uma linguagem envolvente adequada para vídeos do YouTube
+- Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`,
+          default_prompt_conclusion: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+
+TÍTULO: \\{titulo\\}
+PREMISSA: \\{premissa\\}
+
+CONTEXTO DO CAPÍTULO ANTERIOR:
+\\{previousContent\\}
+
+INSTRUÇÕES:
+- Escreva o capítulo final (conclusão) deste roteiro
+- O capítulo deve ter aproximadamente 500 palavras
+- Amarre todas as pontas soltas da história
+- Proporcione um fechamento satisfatório para os personagens
+- Use uma linguagem envolvente adequada para vídeos do YouTube
+- Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`
+        },
+        tts: {
+          enabled: true,
+          provider: 'kokoro',
+          voice: 'af_bella',
+          language: 'en',
+          speed: 1.0,
+          pitch: 1.0,
+          kokoro_url: 'http://localhost:8880'
         },
         images: {
-          cinematic: 'Crie uma descrição cinematográfica para uma imagem que represente: \{scene_description\}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.',
-          minimalist: 'Crie uma descrição minimalista para uma imagem que represente: \{scene_description\}. A imagem deve ser limpa, simples e com foco no elemento principal.',
-          artistic: 'Crie uma descrição artística para uma imagem que represente: \{scene_description\}. A imagem deve ser criativa, expressiva e visualmente impactante.'
+          enabled: true,
+          provider: 'pollinations',
+          style: 'realistic',
+          quality: 'high',
+          total_images: 10,
+          custom_prompt: false,
+          custom_instructions: ''
+        },
+        video: {
+          enabled: true,
+          resolution: '1920x1080',
+          fps: 30,
+          format: 'mp4',
+          include_subtitles: true,
+          transition_duration: 0.5
+        },
+        prompts: {
+          titles: {
+            viral: 'Crie títulos virais e envolventes para o vídeo sobre: \\{topic\\}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.',
+            educational: 'Crie títulos educacionais e informativos para o vídeo sobre: \\{topic\\}. Os títulos devem ser claros, diretos e indicar o valor educacional.',
+            professional: 'Crie títulos profissionais e sérios para o vídeo sobre: \\{topic\\}. Os títulos devem transmitir autoridade e credibilidade.'
+          },
+          premises: {
+            narrative: 'Crie uma premissa narrativa envolvente para um vídeo sobre: \\{title\\}. A premissa deve contar uma história cativante em aproximadamente \\{word_count\\} palavras.',
+            educational: 'Crie uma premissa educacional estruturada para um vídeo sobre: \\{title\\}. A premissa deve apresentar os pontos de aprendizado em aproximadamente \\{word_count\\} palavras.',
+            informative: 'Crie uma premissa informativa e objetiva para um vídeo sobre: \\{title\\}. A premissa deve apresentar fatos e informações relevantes em aproximadamente \\{word_count\\} palavras.'
+          },
+          scripts: {
+            inicio: `# Prompt — Início
+
+Escreva uma narrativa de \\{genre\\} intitulada "\\{title\\}".
+
+Premissa: \\{premise\\}
+
+Este é o INÍCIO da história. Deve estabelecer:
+- Personagens principais e suas motivações
+- Cenário e atmosfera da história
+- Conflito principal que moverá a narrativa
+- Tom inicial da narrativa
+
+**IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.`,
+            meio: `# Prompt — Meio
+
+Continue a narrativa de \\{genre\\} intitulada "\\{title\\}".
+
+CONTEXTO ANTERIOR:
+"\\{previousContent\\}"...
+
+Esta é a continuação do MEIO da história. Deve:
+- Continuar a narrativa de forma orgânica e coerente
+- Desenvolver os personagens e suas relações
+- Intensificar o conflito principal
+- Adicionar novos elementos de tensão
+
+**IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.`,
+            fim: `# Prompt — Fim
+
+Continue a narrativa de \\{genre\\} intitulada "\\{title\\}".
+
+CONTEXTO ANTERIOR:
+"\\{previousContent\\}"...
+
+Este é o FIM da história. Deve:
+- Resolver o conflito principal estabelecido no início
+- Proporcionar conclusão satisfatória para todos os personagens principais
+- Entregar o clímax esperado da história
+- Fechar a história de forma impactante
+
+**IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório.`
+          },
+          images: {
+            cinematic: 'Crie uma descrição cinematográfica para uma imagem que represente: \\{scene_description\\}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.',
+            minimalist: 'Crie uma descrição minimalista para uma imagem que represente: \\{scene_description\\}. A imagem deve ser limpa, simples e com foco no elemento principal.',
+            artistic: 'Crie uma descrição artística para uma imagem que represente: \\{scene_description\\}. A imagem deve ser criativa, expressiva e visualmente impactante.'
+          }
         }
       }
     }
@@ -283,7 +477,7 @@ TÍTULO: {titulo}
 PREMISSA: {premissa}
 
 CONTEXTO ANTERIOR:
-{resumos[i-2]}
+{previousContent}
 
 DESENVOLVIMENTO - Histórias de Milionários:
 Esta é a continuação do MEIO da história. Deve desenvolver:
@@ -316,7 +510,7 @@ TÍTULO: {titulo}
 PREMISSA: {premissa}
 
 CONTEXTO ANTERIOR:
-{resumos[-1]}
+{previousContent}
 
 CONCLUSÃO - Histórias de Milionários:
 Este é o FIM da história. Deve proporcionar:
@@ -457,7 +651,7 @@ TÍTULO: {titulo}
 PREMISSA: {premissa}
 
 CONTEXTO ANTERIOR:
-{resumos[i-2]}
+{previousContent}
 
 DESENVOLVIMENTO - Histórias de Milionários:
 Esta é a continuação do MEIO da história. Deve desenvolver:
@@ -490,7 +684,7 @@ TÍTULO: {titulo}
 PREMISSA: {premissa}
 
 CONTEXTO ANTERIOR:
-{resumos[-1]}
+{previousContent}
 
 CONCLUSÃO - Histórias de Milionários:
 Este é o FIM da história. Deve proporcionar:
@@ -558,6 +752,14 @@ Foque em:
       
       current[keys[keys.length - 1]] = value
       console.log('🔧 New formData:', newData)
+      
+      // Salvar no localStorage
+      try {
+        localStorage.setItem('automationFormData', JSON.stringify(newData))
+      } catch (e) {
+        console.error('Erro ao salvar predefinições no localStorage:', e)
+      }
+      
       return newData
     })
   }
@@ -606,6 +808,83 @@ Foque em:
     setShowPromptManager(false)
   }
 
+  const handleResetForm = () => {
+    // Remover as predefinições do localStorage
+    localStorage.removeItem('automationFormData')
+    
+    // Resetar o formulário para os valores padrão
+    setFormData({
+      channel_url: '',
+      video_count: 5,
+      agent: {
+        model: 'gpt-4o',
+        temperature: 0.7,
+        max_tokens: 4000
+      },
+      config: {
+        extraction: {
+          enabled: true,
+          method: 'yt-dlp',
+          rapidapi_key: ''
+        },
+        titles: {
+          enabled: true,
+          count: 5,
+          custom_instructions: '',
+          prompts: {
+            viral: 'Crie 5 títulos virais e impactantes sobre: {topic}',
+            educational: 'Crie 5 títulos educacionais e informativos sobre: {topic}',
+            professional: 'Crie 5 títulos profissionais e sérios sobre: {topic}'
+          }
+        },
+        premises: {
+          enabled: true,
+          style: 'narrative',
+          word_count: 150,
+          custom_instructions: '',
+          prompts: {
+            narrative: 'Crie uma premissa narrativa envolvente com base no título: {title}',
+            educational: 'Crie uma premissa educacional estruturada com base no título: {title}',
+            informative: 'Crie uma premissa informativa e objetiva com base no título: {title}'
+          }
+        },
+        scripts: {
+          enabled: true,
+          duration: 60,
+          custom_instructions: '',
+          prompts: {
+            storytelling: 'Crie um roteiro narrativo envolvente com base na premissa: {premise}',
+            educational: 'Crie um roteiro educacional estruturado com base na premissa: {premise}',
+            entertainment: 'Crie um roteiro de entretenimento cativante com base na premissa: {premise}'
+          }
+        },
+        tts: {
+          enabled: true,
+          voice: 'pt-BR-Fabio-Neural',
+          speed: 1.0,
+          pitch: 1.0
+        },
+        images: {
+          enabled: true,
+          style: 'cinematic',
+          count: 5,
+          custom_instructions: '',
+          prompts: {
+            cinematic: 'Crie uma descrição cinematográfica para a cena: {scene_description}',
+            minimalist: 'Crie uma descrição minimalista para a cena: {scene_description}',
+            artistic: 'Crie uma descrição artística para a cena: {scene_description}'
+          }
+        },
+        video: {
+          enabled: true,
+          format: 'mp4',
+          resolution: '1080p',
+          fps: 30
+        }
+      }
+    })
+  }
+
   const sections = [
     { id: 'basic', label: 'Básico', icon: Youtube },
     { id: 'agents', label: 'Agentes', icon: Bot },
@@ -636,12 +915,22 @@ Foque em:
               <Sparkles size={24} className="text-purple-400" />
               <h2 className="text-2xl font-bold text-white">Nova Automação Completa</h2>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleResetForm}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+                title="Redefinir formulário para valores padrão"
+              >
+                <RotateCcw size={16} />
+                <span>Redefinir</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
           <p className="text-gray-300 mt-2">
             Configure todos os parâmetros para a automação completa do pipeline
@@ -1194,8 +1483,8 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
                     <div className="text-sm">
                       <p className="text-blue-200 font-medium mb-1">Variáveis Disponíveis</p>
                       <p className="text-blue-300">
-                        Use variáveis como <code>{'{titulo}'}</code>, <code>{'{premissa}'}</code>, <code>{'{resumos[i-2]}'}</code> para conteúdo dinâmico.
-                        Para roteiros, use <code>{'{resumos[-1]}'}</code> no final.
+                        Use variáveis como <code>{'{titulo}'}</code>, <code>{'{premissa}'}</code>, <code>{'{previousContent}'}</code> para conteúdo dinâmico.
+Para roteiros, use <code>{'{previousContent}'}</code> no final.
                       </p>
                     </div>
                   </div>
@@ -2156,7 +2445,7 @@ const MediaSection = ({ formData, onChange }) => {
                   </div>
                   <div className="text-xs text-amber-400 bg-amber-900/20 p-2 rounded flex items-start space-x-2">
                     <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-                    <span>Variáveis disponíveis: {'{titulo}'}, {'{premissa}'}, {'{resumos[i-2]}'} (capítulos do meio), {'{resumos[-1]}'} (conclusão), {'{i}'} (número do capítulo)</span>
+                    <span>Variáveis disponíveis: {'{titulo}'}, {'{premissa}'}, {'{previousContent}'} (capítulos do meio), {'{previousContent}'} (conclusão), {'{i}'} (número do capítulo)</span>
                   </div>
                 </div>
               )}

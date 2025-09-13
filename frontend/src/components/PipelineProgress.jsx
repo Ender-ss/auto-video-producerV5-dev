@@ -771,7 +771,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   <h6 className="text-gray-400 font-medium mb-2">Logs Detalhados</h6>
                   {pipeline.logs && pipeline.logs.length > 0 ? (
                     <div className="space-y-1">
-                      {pipeline.logs.slice(-10).map((log, logIndex) => (
+                      {pipeline.logs.map((log, logIndex) => (
                         <div key={`${log.timestamp}-${logIndex}`} className="text-xs">
                           <span className="text-gray-500">
                             [{new Date(log.timestamp).toLocaleTimeString()}]
