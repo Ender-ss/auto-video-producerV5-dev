@@ -807,11 +807,11 @@ class VideoCreationService:
             
             # Detectar número de cores disponíveis
             cpu_count = multiprocessing.cpu_count()
-            threads = min(codec_settings.get('threads', 4), cpu_count)
+            threads = min(int(codec_settings.get('threads', 4)), cpu_count)
             
             # Configurações otimizadas de renderização
             render_params = {
-                'fps': fps,
+                'fps': int(fps),
                 'codec': 'libx264',
                 'audio_codec': 'aac',
                 'bitrate': codec_settings.get('bitrate', '5500k'),
@@ -862,7 +862,7 @@ class VideoCreationService:
             try:
                 video_clip.write_videofile(
                     output_path,
-                    fps=fps,
+                    fps=int(fps),
                     codec='libx264',
                     audio_codec='aac',
                     bitrate=codec_settings.get('bitrate', '5500k'),

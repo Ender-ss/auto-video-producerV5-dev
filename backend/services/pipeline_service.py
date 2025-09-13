@@ -1466,10 +1466,10 @@ class PipelineService:
             
             video_config = self.config.get('video', {})
             resolution = video_config.get('resolution', '1920x1080')
-            fps = video_config.get('fps', 30)
+            fps = int(video_config.get('fps', 30))
             quality = video_config.get('quality', 'high')
             transitions = video_config.get('transitions', True)
-            subtitles = video_config.get('subtitles', True)
+            subtitles = video_config.get('subtitle', True)
             
             self._update_progress('video', 25)
             

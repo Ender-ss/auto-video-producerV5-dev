@@ -274,7 +274,7 @@ def create_video():
         # Configurações opcionais
         config = data.get('config', {})
         resolution = config.get('resolution', '1920x1080')
-        fps = config.get('fps', 30)
+        fps = int(config.get('fps', 30))
         transition_duration = config.get('transition_duration', 0.5)
         
         # Validar se arquivos existem
