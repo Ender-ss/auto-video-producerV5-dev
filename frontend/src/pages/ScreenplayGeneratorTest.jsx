@@ -93,7 +93,7 @@ Escreva como uma narrativa envolvente, sem marcações técnicas, com descriçõ
   // Carregar chaves de API das configurações
   const loadApiKeys = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/settings/api-keys')
+      const response = await fetch('/api/settings/api-keys')
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.keys) {
@@ -163,7 +163,7 @@ Escreva como uma narrativa envolvente, sem marcações técnicas, com descriçõ
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/automations/generate-titles', {
+      const response = await fetch('/api/automations/generate-titles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,7 +266,7 @@ Escreva como uma narrativa envolvente, sem marcações técnicas, com descriçõ
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/premise/generate', {
+      const response = await fetch('/api/premise/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ Escreva como uma narrativa envolvente, sem marcações técnicas, com descriçõ
       temperature: 0.8,
     })
 
-    const wordCount = generatedContent.split(/\s+/).length
+    const wordCount = ((generatedContent || '').split(/\s+/) || []).length
 
     return {
       id: chapterIndex,

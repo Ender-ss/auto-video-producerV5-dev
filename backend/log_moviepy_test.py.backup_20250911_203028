@@ -1,0 +1,61 @@
+import sys
+import os
+
+# Redirecionando a saída para um arquivo de log
+log_file = "moviepy_test_log.txt"
+sys.stdout = open(log_file, 'w')
+sys.stderr = open(log_file, 'a')
+
+print("INÍCIO DO TESTE DO MOVIEPY")
+print(f"Data e hora: {os.popen('date /t').read().strip()} {os.popen('time /t').read().strip()}")
+print("="*50)
+
+try:
+    # Testando instalação do MoviePy
+    import moviepy
+    print("✅ MoviePy está instalado!")
+    print(f"✅ Versão do MoviePy: {moviepy.__version__}")
+    
+    # Testando classes e métodos
+    from moviepy.editor import VideoFileClip, AudioFileClip
+    print("✅ Classes VideoFileClip e AudioFileClip importadas com sucesso.")
+    
+    # Verificando se o método with_audio existe (versão nova) ou set_audio (versão antiga)
+    has_with_audio = hasattr(VideoFileClip, 'with_audio')
+    has_set_audio = hasattr(VideoFileClip, 'set_audio')
+    print(f"✅ VideoFileClip tem with_audio: {has_with_audio}")
+    print(f"✅ VideoFileClip tem set_audio: {has_set_audio}")
+    
+    # Verificando imports do serviço de criação de vídeo
+    print("\n✅ Verificando imports do video_creation_service.py:")
+    video_service_path = "services/video_creation_service.py"
+    if os.path.exists(video_service_path):
+        with open(video_service_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            has_with_audio_service = "with_audio" in content
+            has_set_audio_service = "set_audio" in content
+            print(f"✅ Arquivo video_creation_service.py encontrado.")
+            print(f"✅ Contém with_audio: {has_with_audio_service}")
+            print(f"✅ Contém set_audio: {has_set_audio_service}")
+    else:
+        print("❌ Arquivo video_creation_service.py não encontrado.")
+    
+    print("\n✅ TESTE CONCLUÍDO COM SUCESSO!")
+    print("="*50)
+    
+except Exception as e:
+    print(f"❌ ERRO DURANTE O TESTE: {str(e)}")
+    import traceback
+    print("\nTRACEBACK:\n")
+    traceback.print_exc(file=sys.stdout)
+    print("="*50)
+
+# Fechando os arquivos de log
+sys.stdout.close()
+sys.stderr.close()
+
+# Restaurando a saída padrão
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+
+print(f"Teste concluído. Resultados salvos em {log_file}")

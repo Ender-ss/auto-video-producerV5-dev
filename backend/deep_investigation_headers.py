@@ -136,7 +136,7 @@ def test_pipeline_integration():
     """Testa integração com pipeline completa"""
     print("\n=== TESTE DE INTEGRAÇÃO COM PIPELINE ===")
     
-    api_url = "http://localhost:5000/api/storyteller/generate-script"
+    api_url = "/api/storyteller/generate-script"
     
     pipeline_test = {
         'title': 'Teste Pipeline Integração',

@@ -13,7 +13,7 @@ def check_audio_pipeline():
     try:
         # 1. Verificar pipelines ativas
         print('📊 Verificando pipelines ativas...')
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         
         if response.status_code != 200:
             print(f'❌ Erro ao buscar pipelines: {response.status_code}')
@@ -44,7 +44,7 @@ def check_audio_pipeline():
             print(f'   📈 Progresso: {progress}%')
             
             # 3. Verificar detalhes da pipeline
-            detail_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+            detail_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
             
             if detail_response.status_code == 200:
                 detail_data = detail_response.json()
@@ -100,7 +100,7 @@ def check_audio_pipeline():
                     print('      ❌ TTS DESABILITADO na configuração!')
                     
                 # Verificar logs recentes
-                logs_response = requests.get(f'http://localhost:5000/api/pipeline/{pipeline_id}/logs?limit=10')
+                logs_response = requests.get(f'/api/pipeline/{pipeline_id}/logs?limit=10')
                 if logs_response.status_code == 200:
                     logs_data = logs_response.json()
                     logs = logs_data.get('logs', [])

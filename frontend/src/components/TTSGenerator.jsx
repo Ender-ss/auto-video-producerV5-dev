@@ -65,7 +65,7 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
   // Função para segmentar texto
   const segmentText = (text, maxChars = 4000) => {
     const segments = []
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim())
+    const sentences = (text || '').split(/[.!?]+/).filter(s => s.trim())
 
     let currentSegment = ''
 
@@ -83,7 +83,7 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
           currentSegment = trimmedSentence
         } else {
           // Frase muito longa, dividir por palavras
-          const words = trimmedSentence.split(' ')
+          const words = (trimmedSentence || '').split(' ')
           let wordSegment = ''
 
           for (const word of words) {

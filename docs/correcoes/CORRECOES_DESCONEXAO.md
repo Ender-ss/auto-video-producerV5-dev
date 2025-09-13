@@ -114,7 +114,7 @@ REDIS_URL=redis://localhost:6379  # Opcional
 #### 3. Testar via API
 ```bash
 # Testar endpoint:
-curl -X POST http://localhost:5000/api/storyteller/generate \
+curl -X POST /api/storyteller/generate \
   -H "Content-Type: application/json" \
   -d '{
     "agent_type": "millionaire_stories",

@@ -78,7 +78,7 @@ const ImageQueue = () => {
     
     setLoading(true);
     try {
-      const prompts = newQueue.prompts.split('\n').filter(p => p.trim());
+      const prompts = ((newQueue.prompts || '').split(/\r?\n/) || []).filter(p => p.trim());
       
       const response = await fetch('/api/image-queue/queue', {
         method: 'POST',

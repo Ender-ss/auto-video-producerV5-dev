@@ -19,7 +19,7 @@ def investigate_extraction_config():
     
     # Verificar configuração padrão
     try:
-        response = requests.get('http://localhost:5000/api/health')
+        response = requests.get('/api/health')
         if response.status_code == 200:
             print("✅ Backend está rodando")
         else:
@@ -31,7 +31,7 @@ def investigate_extraction_config():
     
     # Buscar última pipeline para ver configuração
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/list')
+        response = requests.get('/api/pipeline/list')
         if response.status_code == 200:
             pipelines = response.json().get('data', [])
             if pipelines:

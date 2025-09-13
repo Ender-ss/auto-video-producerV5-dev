@@ -41,7 +41,7 @@ const PromptsConfig = () => {
   const loadPromptsConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/prompts/config');
+      const response = await fetch('/api/prompts/config');
       const data = await response.json();
       
       if (data.success) {
@@ -61,7 +61,7 @@ const PromptsConfig = () => {
   const savePromptsConfig = async () => {
     try {
       setSaving(true);
-      const response = await fetch('http://localhost:5000/api/prompts/config', {
+      const response = await fetch('/api/prompts/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const PromptsConfig = () => {
 
     try {
       setSaving(true);
-      const response = await fetch('http://localhost:5000/api/prompts/config/reset', {
+      const response = await fetch('/api/prompts/config/reset', {
         method: 'POST',
       });
       
@@ -155,7 +155,7 @@ const PromptsConfig = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/prompts/config/validate', {
+      const response = await fetch('/api/prompts/config/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,7 +310,7 @@ const PromptsConfig = () => {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `prompts_config_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `prompts_config_${(new Date().toISOString() || '').split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
     toast.success('Configuração exportada com sucesso');
@@ -750,8 +750,8 @@ const PromptsConfig = () => {
                      <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
                        <div className="flex space-x-4">
                          <span>Caracteres: {(currentSection?.prompt || '').length}/5000</span>
-                         <span>Palavras: {(currentSection?.prompt || '').split(/\s+/).filter(word => word.length > 0).length}</span>
-                         <span>Linhas: {(currentSection?.prompt || '').split('\n').length}</span>
+                         <span>Palavras: {((currentSection?.prompt || '').split(/\s+/) || []).filter(word => word.length > 0).length}</span>
+                         <span>Linhas: {((currentSection?.prompt || '').split('\n') || []).length}</span>
                          {validationResults[activeSection]?.usedVariables && (
                            <span>Variáveis: {validationResults[activeSection].usedVariables.length}</span>
                          )}

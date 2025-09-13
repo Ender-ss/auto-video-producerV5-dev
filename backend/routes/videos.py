@@ -8,7 +8,7 @@ from datetime import datetime
 import os
 import json
 try:
-    from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, concatenate_videoclips
+    from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, concatenate_videoclips
     MOVIEPY_AVAILABLE = True
 except ImportError:
     print("⚠️ MoviePy não disponível - algumas funcionalidades de vídeo podem não funcionar")
@@ -16,7 +16,14 @@ except ImportError:
 from PIL import Image
 import tempfile
 import shutil
-from services.video_creation_service import VideoCreationService
+try:
+    from ..services.video_creation_service import VideoCreationService
+except ImportError:
+    try:
+        from services.video_creation_service import VideoCreationService
+    except ImportError:
+        print("⚠️ Serviço de criação de vídeo não disponível")
+        VideoCreationService = None
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -345,7 +352,7 @@ def create_video():
 def _get_video_duration(video_path):
     """Obter duração do vídeo em segundos"""
     try:
-        from moviepy.editor import VideoFileClip
+        from moviepy import VideoFileClip
         with VideoFileClip(video_path) as clip:
             return clip.duration
     except Exception:

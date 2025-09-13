@@ -21,7 +21,7 @@ const LongScriptTest = () => {
   // Carregar chaves de API das configurações
   const loadApiKeys = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/settings/api-keys')
+      const response = await fetch('/api/settings/api-keys')
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.keys) {
@@ -85,7 +85,7 @@ const LongScriptTest = () => {
       setDebugInfo(prev => prev + `Enviando requisição para /api/premise/generate-long-script\n`)
       setDebugInfo(prev => prev + `Parâmetros: title=${config.title}, chapters=${config.chapters}, provider=${config.provider}\n`)
       
-      const response = await fetch('http://localhost:5000/api/premise/generate-long-script', {
+      const response = await fetch('/api/premise/generate-long-script', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ const LongScriptTest = () => {
         id: index,
         title: `Capítulo ${index + 1}`,
         content: chapter.content || chapter,
-        wordCount: (chapter.content || chapter).split(/\s+/).length
+        wordCount: (((chapter.content || chapter) || '').split(/\s+/) || []).length
       })),
       total_words: script.word_count || 0,
       timestamp: new Date().toISOString(),
@@ -363,7 +363,7 @@ const LongScriptTest = () => {
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold">Capítulo {index + 1}</h4>
                           <div className="text-sm text-gray-400">
-                            {(chapter.content || chapter).split(/\s+/).length} palavras
+                            {(((chapter.content || chapter) || '').split(/\s+/) || []).length} palavras
                           </div>
                         </div>
                         <div className="text-gray-300 whitespace-pre-wrap">
@@ -384,7 +384,7 @@ const LongScriptTest = () => {
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold">Resumo do Capítulo {index + 1}</h4>
                           <div className="text-sm text-gray-400">
-                            {summary.split(/\s+/).length} palavras
+                            {((summary || '').split(/\s+/) || []).length} palavras
                           </div>
                         </div>
                         <div className="text-gray-300 whitespace-pre-wrap">

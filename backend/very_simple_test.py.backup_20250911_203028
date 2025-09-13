@@ -1,0 +1,37 @@
+# Teste muito simples do MoviePy
+f = open('moviepy_test_result.txt', 'w')
+
+try:
+    # Tentando importar MoviePy
+    import moviepy
+    f.write("✅ MoviePy está instalado!\n")
+    try:
+        f.write(f"✅ Versão: {moviepy.__version__}\n")
+    except:
+        f.write("✅ MoviePy instalado, mas versão não pode ser obtida\n")
+    
+    # Tentando importar VideoFileClip
+    from moviepy.editor import VideoFileClip
+    f.write("✅ VideoFileClip importado com sucesso\n")
+    
+    # Verificando métodos
+    has_with_audio = hasattr(VideoFileClip, 'with_audio')
+    has_set_audio = hasattr(VideoFileClip, 'set_audio')
+    f.write(f"✅ with_audio existe: {has_with_audio}\n")
+    f.write(f"✅ set_audio existe: {has_set_audio}\n")
+    
+    # Verificando video_creation_service.py
+    import os
+    if os.path.exists('services/video_creation_service.py'):
+        with open('services/video_creation_service.py', 'r', encoding='utf-8') as svc:
+            content = svc.read()
+            f.write(f"✅ set_audio no serviço: {'set_audio' in content}\n")
+            f.write(f"✅ with_audio no serviço: {'with_audio' in content}\n")
+    else:
+        f.write("❌ video_creation_service.py não encontrado\n")
+    
+except Exception as e:
+    f.write(f"❌ Erro: {str(e)}\n")
+
+f.close()
+print("Resultado do teste salvo em moviepy_test_result.txt")

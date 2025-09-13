@@ -16,7 +16,7 @@ def verify_agent_application():
     
     # Buscar a pipeline mais recente com agente
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         
         if response.status_code == 200:
             result = response.json()
@@ -26,7 +26,7 @@ def verify_agent_application():
             agent_pipeline = None
             for pipeline in pipelines:
                 pipeline_id = pipeline.get('pipeline_id')
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()

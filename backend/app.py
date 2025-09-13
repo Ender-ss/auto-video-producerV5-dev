@@ -470,36 +470,6 @@ def system_status():
             'error': str(e)
         }), 500
 
-# ================================
-# 🚀 INICIALIZAÇÃO
-# ================================
-
-def init_database():
-    """Inicializar banco de dados"""
-    with app.app_context():
-        # Criar tabelas se não existirem
-        db.create_all()
-        
-        # Criar configurações padrão de APIs se não existirem
-        default_apis = [
-            'openai', 'gemini', 'claude', 'elevenlabs', 
-            'rapidapi', 'together', 'openrouter'
-        ]
-        
-        for api_name in default_apis:
-            existing_api = APIConfig.query.filter_by(api_name=api_name).first()
-            if not existing_api:
-                api_config = APIConfig(api_name=api_name)
-                db.session.add(api_config)
-        
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            logger.warning(f"Erro ao criar configurações padrão: {e}")
-            
-        logger.info("✅ Banco de dados inicializado com sucesso!")
-
 # Importar e registrar rotas
 def register_blueprints():
     """Registrar blueprints das rotas"""
@@ -544,26 +514,60 @@ def register_blueprints():
         app.register_blueprint(storyteller_bp)  # já tem url_prefix='/api/storyteller' definido
 
         logger.info("✅ Rotas registradas com sucesso!")
+        return True
     except Exception as e:
         logger.error(f"❌ Erro ao registrar rotas: {e}")
+        return False
+
+# ================================
+# 🚀 INICIALIZAÇÃO
+# ================================
+
+def init_database():
+    """Inicializar banco de dados"""
+    with app.app_context():
+        # Criar tabelas se não existirem
+        db.create_all()
+        
+        # Criar configurações padrão de APIs se não existirem
+        default_apis = [
+            'openai', 'gemini', 'claude', 'elevenlabs', 
+            'rapidapi', 'together', 'openrouter'
+        ]
+        
+        for api_name in default_apis:
+            existing_api = APIConfig.query.filter_by(api_name=api_name).first()
+            if not existing_api:
+                api_config = APIConfig(api_name=api_name)
+                db.session.add(api_config)
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Erro ao criar configurações padrão: {e}")
+            
+        logger.info("✅ Banco de dados inicializado com sucesso!")
+
+# Inicializar banco de dados
+init_database()
 
 # Registrar blueprints apenas se executado diretamente
 if __name__ == '__main__':
-    init_database()
     register_blueprints()
     
     # Adicionar logs iniciais ao sistema em tempo real
     try:
         from routes.system import add_real_time_log
         add_real_time_log("🎬 Auto Video Producer Backend iniciado!", "success", "system")
-        add_real_time_log("📡 API disponível em: http://localhost:5000", "info", "system")
+        add_real_time_log("📡 API disponível em: /api", "info", "system")
         add_real_time_log("🌐 Frontend disponível em: http://localhost:5173", "info", "system")
         add_real_time_log("🔧 Sistema de logs em tempo real ativo", "info", "system")
     except ImportError:
         pass
 
     logger.info("🎬 Auto Video Producer Backend iniciado!")
-    logger.info("📡 API disponível em: http://localhost:5000")
+    logger.info("📡 API disponível em: /api")
     logger.info("🌐 Frontend disponível em: http://localhost:5173")
     
     app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)

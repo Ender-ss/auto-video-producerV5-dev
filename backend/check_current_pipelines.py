@@ -11,7 +11,7 @@ def check_pipelines():
     
     try:
         # Verificar pipelines ativas
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         
         if response.status_code == 200:
             data = response.json()
@@ -38,7 +38,7 @@ def check_pipelines():
                 print('\n🎤 Verificando TTS...')
                 
                 # Obter status detalhado
-                detail_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                detail_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if detail_response.status_code == 200:
                     detail_data = detail_response.json()

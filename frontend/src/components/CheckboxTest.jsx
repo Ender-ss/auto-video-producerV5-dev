@@ -27,7 +27,7 @@ const CheckboxTest = () => {
     
     setFormData(prevData => {
       const newData = { ...prevData }
-      const keys = path.split('.')
+      const keys = (path || '').split('.')
       let current = newData
       
       for (let i = 0; i < keys.length - 1; i++) {
@@ -48,7 +48,7 @@ const CheckboxTest = () => {
     try {
       console.log('🧪 Enviando configuração para teste:', formData)
       
-      const response = await fetch('http://localhost:5000/api/test-config', {
+      const response = await fetch('/api/test-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -31,7 +31,7 @@ const ImageGeneration = () => {
         const fetchApiKey = async () => {
             try {
                 const apiEndpoint = provider === 'gemini' ? 'gemini_1' : 'together';
-                const response = await fetch(`http://localhost:5000/api/settings/api-keys/${apiEndpoint}`);
+                const response = await fetch(`/api/settings/api-keys/${apiEndpoint}`);
                 const data = await response.json();
                 if (data.success) {
                     setApiKey(data.api_key);
@@ -136,7 +136,7 @@ const ImageGeneration = () => {
             setError(null);
             
             // Buscar chaves de API para o agente IA
-            const keysResponse = await fetch('http://localhost:5000/api/settings/api-keys');
+            const keysResponse = await fetch('/api/settings/api-keys');
             const keysData = await keysResponse.json();
             
             if (!keysData.success) {
@@ -152,7 +152,7 @@ const ImageGeneration = () => {
             
             const fullPrompt = `${aiAgentPrompt}\n\n${content}`;
             
-            const response = await fetch('http://localhost:5000/api/premise/generate-agent-script', {
+            const response = await fetch('/api/premise/generate-agent-script', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ const ImageGeneration = () => {
         setImages([]);
         
         try {
-            const response = await fetch('http://localhost:5000/api/images/generate', {
+            const response = await fetch('/api/images/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ const ImageGeneration = () => {
 
         try {
             setIsLoading(true);
-            const response = await fetch('http://localhost:5000/api/images/generate', {
+            const response = await fetch('/api/images/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -316,7 +316,7 @@ const ImageGeneration = () => {
 
     const downloadImage = async (imageUrl, index) => {
         try {
-            const response = await fetch(`http://localhost:5000${imageUrl}`);
+            const response = await fetch(imageUrl);
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -713,7 +713,7 @@ const ImageGeneration = () => {
                         {images.map((url, index) => (
                             <div key={index} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg group relative">
                                 <img 
-                                    src={`http://localhost:5000${url}`} 
+                                    src={url} 
                                     alt={`Imagem gerada ${index + 1}`} 
                                     className="w-full h-auto object-cover" 
                                 />

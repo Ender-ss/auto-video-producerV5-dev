@@ -13,7 +13,7 @@ def test_api_chapter_removal():
     """Testa a remoção de cabeçalhos via API HTTP"""
     
     # URL da API (assumindo que está rodando localmente)
-    api_url = "http://localhost:5000/api/storyteller/generate-script"
+    api_url = "/api/storyteller/generate-script"
     
     # Dados de teste
     test_data = {
@@ -100,7 +100,7 @@ Tamanho do script: {len(script_content)} caracteres
             
     except requests.exceptions.ConnectionError:
         print("❌ ERRO: Não foi possível conectar à API.")
-        print("Certifique-se de que o servidor está rodando em http://localhost:5000")
+        print("Certifique-se de que o servidor está rodando")
         return False
     except Exception as e:
         print(f"❌ Erro inesperado: {str(e)}")

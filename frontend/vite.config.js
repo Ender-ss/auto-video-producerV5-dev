@@ -8,6 +8,9 @@ export default defineConfig({
     port: 5173,
     host: true,
     open: true,
+    hmr: {
+      overlay: false
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

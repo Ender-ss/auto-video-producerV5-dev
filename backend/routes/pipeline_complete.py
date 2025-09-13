@@ -1135,3 +1135,6 @@ def process_complete_pipeline(pipeline_id: str):
         pipeline_state['errors'].append(f'Erro crítico: {str(e)}')
         
         add_pipeline_log(pipeline_id, 'error', f'Erro crítico no pipeline: {str(e)}')
+
+# Exportar blueprint
+__all__ = ['pipeline_complete_bp']

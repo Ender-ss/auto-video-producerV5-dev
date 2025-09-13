@@ -241,7 +241,7 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
 
       // Carregar chaves de API do backend
       console.log('🔑 Carregando chaves de API...')
-      const keysResponse = await fetch('http://localhost:5000/api/settings/api-keys')
+      const keysResponse = await fetch('/api/settings/api-keys')
       const keysData = await keysResponse.json()
 
       console.log('📊 Resposta das chaves:', keysData)
@@ -255,7 +255,7 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
       console.log('✅ Chaves carregadas:', Object.keys(apiKeys))
 
       // Usar o endpoint específico do agente para roteiros extensos
-      let endpoint = 'http://localhost:5000/api/premise/generate-agent-script'
+      let endpoint = '/api/premise/generate-agent-script'
       let requestBody = {
         title: selectedAgentTitle,
         premise: selectedAgentPremise,
@@ -274,13 +274,13 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
       console.log('📦 Request body keys:', Object.keys(requestBody))
 
       // Verificar se o backend está acessível
-      const healthCheck = await fetch('http://localhost:5000/api/system/status', {
+      const healthCheck = await fetch('/api/system/status', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       }).catch(() => null)
 
       if (!healthCheck) {
-        throw new Error('Backend não está acessível. Verifique se o servidor está rodando em http://localhost:5000')
+        throw new Error('Backend não está acessível. Verifique se o servidor está rodando')
       }
 
       const response = await fetch(endpoint, {
@@ -339,7 +339,7 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
           model: agentOpenRouterModel,
           timestamp: new Date().toISOString(),
           characterCount: data.script?.character_count || generatedContent.length,
-          wordCount: data.script?.word_count || generatedContent.split(' ').length,
+          wordCount: data.script?.word_count || ((generatedContent || '').split(' ') || []).length,
           estimatedDuration: data.script?.estimated_duration_minutes || 0,
           promptLength: data.prompt_length || 0,
           parts: data.script?.parts || [],
@@ -383,7 +383,7 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
       let errorMessage = error.message
 
       if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Não foi possível conectar ao servidor. Verifique se o backend está rodando em http://localhost:5000'
+        errorMessage = 'Não foi possível conectar ao servidor. Verifique se o backend está rodando'
       } else if (error.message.includes('NetworkError')) {
         errorMessage = 'Erro de rede. Verifique sua conexão e se o backend está acessível.'
       } else if (error.message.includes('CORS')) {
@@ -428,7 +428,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   const testBackendConnection = async () => {
     try {
       console.log('🔍 Testando conexão com backend...')
-      const response = await fetch('http://localhost:5000/api/system/status', {
+      const response = await fetch('/api/system/status', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })

@@ -514,7 +514,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                 <div>
                   <span className="text-gray-400">Canal:</span>
                   <p className="text-white truncate">
-                    {pipeline.results?.extraction?.channel_info?.name || pipeline.channel_url?.split('/').pop() || 'N/A'}
+                    {pipeline.results?.extraction?.channel_info?.name || (pipeline.channel_url ? ((pipeline.channel_url || '').split('/').pop() || 'N/A') : 'N/A') || 'N/A'}
                   </p>
                 </div>
                 <div>

@@ -171,7 +171,7 @@ const AutomationsMain = () => {
         }
 
         // Se não tiver no localStorage, carregar do backend
-        const response = await fetch('http://localhost:5000/api/settings/api-keys')
+        const response = await fetch('/api/settings/api-keys')
         if (response.ok) {
           const data = await response.json()
           if (data.success && data.keys) {
@@ -348,7 +348,7 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
     setApiStatus(prev => ({ ...prev, rapidapi: 'testing' }))
 
     try {
-      const response = await fetch('http://localhost:5000/api/automations/test-rapidapi', {
+      const response = await fetch('/api/automations/test-rapidapi', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -522,7 +522,7 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos
 
-      const response = await fetch('http://localhost:5000/api/automations/extract-youtube', {
+      const response = await fetch('/api/automations/extract-youtube', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -626,8 +626,8 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
 
       // Escolher endpoint baseado no tipo de geração
       const endpoint = useCustomPrompt
-        ? 'http://localhost:5000/api/automations/generate-titles-custom'
-        : 'http://localhost:5000/api/automations/generate-titles'
+        ? '/api/automations/generate-titles-custom'
+        : '/api/automations/generate-titles'
 
       // Preparar payload baseado no tipo
       const payload = useCustomPrompt
@@ -726,7 +726,7 @@ Para cada título, forneça:
       const prompt = premisePrompt || defaultPrompt
       const finalPrompt = `${prompt}\n\n${selectedTitles.map((title, i) => `${i + 1}. ${title}`).join('\n')}`
 
-      const response = await fetch('http://localhost:5000/api/premise/generate', {
+      const response = await fetch('/api/premise/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -781,7 +781,7 @@ Para cada título, forneça:
     setScriptProgress({ current: 0, total: numberOfChapters, stage: 'Iniciando...' })
 
     try {
-      const response = await fetch('http://localhost:5000/api/scripts/generate', {
+      const response = await fetch('/api/scripts/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -945,7 +945,7 @@ Para cada título, forneça:
       fullPrompt += `**PREMISSA:** ${selectedAgentPremise}`
 
       // Escolher endpoint baseado no provider
-      let endpoint = 'http://localhost:5000/api/premise/generate'
+      let endpoint = '/api/premise/generate'
       let requestBody = {
         titles: [selectedAgentTitle],
         prompt: fullPrompt
@@ -953,7 +953,7 @@ Para cada título, forneça:
 
       // Se for OpenAI ou OpenRouter, usar endpoint de títulos customizados
       if (agentAiProvider === 'openai' || agentAiProvider === 'openrouter') {
-        endpoint = 'http://localhost:5000/api/automations/generate-titles-custom'
+        endpoint = '/api/automations/generate-titles-custom'
         requestBody = {
           titles: [selectedAgentTitle],
           prompt: fullPrompt,
@@ -1047,7 +1047,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   // Função para buscar logs em tempo real
   const fetchWorkflowLogs = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/workflow/logs?since=${lastLogTimestamp}`)
+      const response = await fetch(`/api/workflow/logs?since=${lastLogTimestamp}`)
       const data = await response.json()
 
       if (data.success && data.logs.length > 0) {
@@ -1088,7 +1088,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
     // Limpar logs no backend
     try {
-      await fetch('http://localhost:5000/api/workflow/logs/clear', { method: 'POST' })
+      await fetch('/api/workflow/logs/clear', { method: 'POST' })
     } catch (error) {
       console.error('Erro ao limpar logs:', error)
     }
@@ -1116,7 +1116,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       }, 2000) // Atualiza a cada 2 segundos
 
       // Chamar endpoint de teste
-      const response = await fetch('http://localhost:5000/api/workflow/test', {
+      const response = await fetch('/api/workflow/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1224,7 +1224,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       }, 3000) // Atualiza a cada 3 segundos
 
       // Chamar endpoint de automação completa
-      const response = await fetch('http://localhost:5000/api/workflow/complete', {
+      const response = await fetch('/api/workflow/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1301,7 +1301,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   // Funções de controle de workflow
   const pauseWorkflow = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/workflow/pause', {
+      const response = await fetch('/api/workflow/pause', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1318,7 +1318,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
   const resumeWorkflow = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/workflow/resume', {
+      const response = await fetch('/api/workflow/resume', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1335,7 +1335,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
   const cancelWorkflow = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/workflow/cancel', {
+      const response = await fetch('/api/workflow/cancel', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2799,7 +2799,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
             <div className="bg-gray-700 rounded-lg p-4">
               <h5 className="font-medium text-white mb-1">Palavras Estimadas</h5>
               <p className="text-sm text-gray-300">
-                {generatedScripts.chapters?.reduce((acc, ch) => acc + (ch.content?.split(' ').length || 0), 0) || 0}
+                {generatedScripts.chapters?.reduce((acc, ch) => acc + (((ch.content || '').split(' ') || []).length || 0), 0) || 0}
               </p>
             </div>
           </div>
@@ -2826,7 +2826,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                   </p>
                 </div>
                 <div className="mt-2 text-xs text-gray-500">
-                  {chapter.content?.split(' ').length || 0} palavras
+                  {((chapter.content || '').split(' ') || []).length || 0} palavras
                 </div>
               </div>
             ))}
@@ -3432,12 +3432,12 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   // Função para segmentar texto
   const segmentText = (text, maxChars = 4000) => {
     const segments = []
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim())
+    const sentences = ((text || '').split(/[.!?]+/) || []).filter(s => s.trim())
 
     let currentSegment = ''
 
     for (const sentence of sentences) {
-      const trimmedSentence = sentence.trim()
+      const trimmedSentence = (sentence || '').trim()
       if (!trimmedSentence) continue
 
       const potentialSegment = currentSegment + (currentSegment ? '. ' : '') + trimmedSentence
@@ -3450,7 +3450,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
           currentSegment = trimmedSentence
         } else {
           // Frase muito longa, dividir por palavras
-          const words = trimmedSentence.split(' ')
+          const words = ((trimmedSentence || '').split(' ') || [])
           let wordSegment = ''
 
           for (const word of words) {

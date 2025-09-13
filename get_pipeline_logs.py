@@ -19,12 +19,12 @@ def get_pipeline_logs():
         
         # 1. Buscar logs da pipeline específica
         print(f"📋 Buscando logs da pipeline: {pipeline_id}")
-        response = requests.get(f'http://localhost:5000/api/pipeline/logs/{pipeline_id}')
+        response = requests.get(f'/api/pipeline/logs/{pipeline_id}')
         
         if response.status_code != 200:
             print(f"❌ ERRO: Falha ao buscar logs: {response.status_code}")
             # Tentar buscar através do status
-            status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+            status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
             if status_response.status_code == 200:
                 status_result = status_response.json()
                 if status_result.get('success') and status_result.get('data'):
@@ -58,7 +58,7 @@ def get_pipeline_logs():
             
             # Tentar buscar logs do sistema
             print("\n🔍 Buscando logs do sistema...")
-            system_response = requests.get('http://localhost:5000/api/system/logs')
+            system_response = requests.get('/api/system/logs')
             if system_response.status_code == 200:
                 system_result = system_response.json()
                 if system_result.get('success'):

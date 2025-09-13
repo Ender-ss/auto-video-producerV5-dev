@@ -12,7 +12,7 @@ def check_pipeline_logs():
     
     try:
         # Buscar logs
-        response = requests.get(f'http://localhost:5000/api/pipeline/{pipeline_id}/logs?limit=30')
+        response = requests.get(f'/api/pipeline/{pipeline_id}/logs?limit=30')
         
         if response.status_code != 200:
             print(f'❌ Erro ao buscar logs: {response.status_code}')

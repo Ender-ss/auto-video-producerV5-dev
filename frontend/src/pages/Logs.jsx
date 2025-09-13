@@ -53,7 +53,7 @@ const Logs = () => {
   const fetchLogs = async () => {
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:5000/api/system/logs')
+      const response = await fetch('/api/system/logs')
       const data = await response.json()
 
       if (data.success) {
@@ -74,7 +74,7 @@ const Logs = () => {
 
   const fetchNewLogs = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/system/logs?since=${lastTimestamp}`)
+      const response = await fetch(`/api/system/logs?since=${lastTimestamp}`)
       const data = await response.json()
 
       if (data.success && data.data.logs.length > 0) {
@@ -118,7 +118,7 @@ const Logs = () => {
     if (!confirm('Tem certeza que deseja limpar todos os logs?')) return
     
     try {
-      const response = await fetch('http://localhost:5000/api/system/logs', {
+      const response = await fetch('/api/system/logs', {
         method: 'DELETE'
       })
       
@@ -140,7 +140,7 @@ const Logs = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `logs-${new Date().toISOString().split('T')[0]}.txt`
+    a.download = `logs-${(new Date().toISOString() || '').split('T')[0]}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }

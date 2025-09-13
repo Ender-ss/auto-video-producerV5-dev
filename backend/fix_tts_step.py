@@ -13,7 +13,7 @@ def fix_tts_step():
     try:
         # 1. Verificar status atual
         print('📊 Status atual da pipeline:')
-        response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         
         if response.status_code != 200:
             print(f'❌ Erro ao buscar status: {response.status_code}')
@@ -47,7 +47,7 @@ def fix_tts_step():
         
         if current_status == 'processing':
             print('⏸️ Pausando pipeline para correção...')
-            pause_response = requests.post(f'http://localhost:5000/api/pipeline/pause/{pipeline_id}')
+            pause_response = requests.post(f'/api/pipeline/pause/{pipeline_id}')
             
             if pause_response.status_code == 200:
                 print('✅ Pipeline pausada com sucesso')
@@ -57,7 +57,7 @@ def fix_tts_step():
         
         # 4. Tentar retomar a pipeline (isso pode reexecutar etapas pendentes)
         print('\n🚀 Retomando pipeline...')
-        resume_response = requests.post(f'http://localhost:5000/api/pipeline/resume/{pipeline_id}')
+        resume_response = requests.post(f'/api/pipeline/resume/{pipeline_id}')
         
         if resume_response.status_code == 200:
             print('✅ Pipeline retomada com sucesso')
@@ -72,7 +72,7 @@ def fix_tts_step():
         import time
         time.sleep(3)
         
-        final_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        final_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         if final_response.status_code == 200:
             final_data = final_response.json()
             final_pipeline = final_data.get('data', {})

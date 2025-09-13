@@ -19,7 +19,7 @@ def analyze_pipeline_details():
         
         # 1. Buscar status detalhado
         print(f"📊 Buscando detalhes da pipeline: {pipeline_id}")
-        response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         
         if response.status_code != 200:
             print(f"❌ ERRO: Falha ao buscar status: {response.status_code}")
@@ -87,7 +87,7 @@ def analyze_pipeline_details():
         print("-" * 30)
         
         try:
-            logs_response = requests.get(f'http://localhost:5000/api/pipeline/logs/{pipeline_id}')
+            logs_response = requests.get(f'/api/pipeline/logs/{pipeline_id}')
             if logs_response.status_code == 200:
                 logs_result = logs_response.json()
                 if logs_result.get('success') and logs_result.get('logs'):

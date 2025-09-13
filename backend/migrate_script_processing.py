@@ -40,8 +40,16 @@ def migrate_database():
         cursor.execute("PRAGMA table_info(pipeline)")
         columns = [column[1] for column in cursor.fetchall()]
         
+        print(f"Colunas encontradas: {columns}")
+        
         if 'script_processing_results' in columns:
             print("✅ Coluna 'script_processing_results' já existe!")
+            # Vamos verificar novamente para ter certeza
+            cursor.execute("PRAGMA table_info(pipeline)")
+            columns_detailed = cursor.fetchall()
+            print("Detalhes das colunas:")
+            for col in columns_detailed:
+                print(f"  {col[1]} ({col[2]})")
             return True
         
         print("\n🔧 Adicionando nova coluna 'script_processing_results'...")

@@ -67,14 +67,14 @@ def test_extraction_functionality():
     print("\n🔍 TESTANDO: Funcionalidade de Extração")
     
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         if response.status_code == 200:
             result = response.json()
             pipelines = result.get('pipelines', [])
             
             for pipeline in pipelines[-3:]:  # Verificar últimas 3 pipelines
                 pipeline_id = pipeline.get('pipeline_id')
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()
@@ -103,14 +103,14 @@ def test_titles_functionality():
     print("\n📝 TESTANDO: Funcionalidade de Geração de Títulos")
     
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         if response.status_code == 200:
             result = response.json()
             pipelines = result.get('pipelines', [])
             
             for pipeline in pipelines[-3:]:  # Verificar últimas 3 pipelines
                 pipeline_id = pipeline.get('pipeline_id')
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()
@@ -139,14 +139,14 @@ def test_premises_functionality():
     print("\n💡 TESTANDO: Funcionalidade de Geração de Premissas")
     
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         if response.status_code == 200:
             result = response.json()
             pipelines = result.get('pipelines', [])
             
             for pipeline in pipelines[-3:]:  # Verificar últimas 3 pipelines
                 pipeline_id = pipeline.get('pipeline_id')
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()
@@ -178,14 +178,14 @@ def test_complete_sequence():
     print("\n🔄 TESTANDO: Sequência Completa (Extração → Títulos → Premissas → Roteiros)")
     
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         if response.status_code == 200:
             result = response.json()
             pipelines = result.get('pipelines', [])
             
             for pipeline in pipelines[-2:]:  # Verificar últimas 2 pipelines
                 pipeline_id = pipeline.get('pipeline_id')
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()
@@ -222,7 +222,7 @@ def test_form_configuration_respect():
     print("\n📋 TESTANDO: Respeito às Configurações do Formulário")
     
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         if response.status_code == 200:
             result = response.json()
             pipelines = result.get('pipelines', [])
@@ -232,7 +232,7 @@ def test_form_configuration_respect():
             
             for pipeline in pipelines[-3:]:  # Verificar últimas 3 pipelines
                 pipeline_id = pipeline.get('pipeline_id')
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()

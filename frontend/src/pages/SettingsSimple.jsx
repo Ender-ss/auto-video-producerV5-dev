@@ -46,7 +46,7 @@ const SettingsSimple = () => {
 
   const loadApiKeys = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/settings/api-keys')
+      const response = await fetch('/api/settings/api-keys')
       if (response.ok) {
         const data = await response.json()
         console.log('🔍 DEBUG: Dados recebidos do backend:', data)
@@ -83,7 +83,7 @@ const SettingsSimple = () => {
     try {
       console.log('🔍 DEBUG: Salvando chaves:', apiKeys)
 
-      const response = await fetch('http://localhost:5000/api/settings/api-keys', {
+      const response = await fetch('/api/settings/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

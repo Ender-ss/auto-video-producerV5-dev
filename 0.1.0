@@ -1,0 +1,25 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting proglog
+  Downloading proglog-0.1.12-py3-none-any.whl.metadata (794 bytes)
+Collecting tqdm (from proglog)
+  Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+Collecting colorama (from tqdm->proglog)
+  Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+Downloading proglog-0.1.12-py3-none-any.whl (6.3 kB)
+Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Installing collected packages: colorama, tqdm, proglog
+  Attempting uninstall: colorama
+    Found existing installation: colorama 0.4.6
+    Uninstalling colorama-0.4.6:
+      Successfully uninstalled colorama-0.4.6
+  Attempting uninstall: tqdm
+    Found existing installation: tqdm 4.67.1
+    Uninstalling tqdm-4.67.1:
+      Successfully uninstalled tqdm-4.67.1
+  Attempting uninstall: proglog
+    Found existing installation: proglog 0.1.12
+    Uninstalling proglog-0.1.12:
+      Successfully uninstalled proglog-0.1.12
+
+Successfully installed colorama-0.4.6 proglog-0.1.12 tqdm-4.67.1

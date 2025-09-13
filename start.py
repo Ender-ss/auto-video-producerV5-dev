@@ -109,7 +109,7 @@ def start_backend():
         
         if process.poll() is None:
             print("[OK] Servidor backend iniciado com sucesso!")
-            print("[INFO] Backend disponível em: http://localhost:5000")
+            print("[INFO] Backend disponível em: /api")
             return process
         else:
             print("[ERROR] Erro ao iniciar servidor backend!")
@@ -192,7 +192,7 @@ def show_next_steps():
     
     SUPORTE:
     - Verifique os logs em caso de erro
-    - Backend: http://localhost:5000
+    - Backend: /api
     - Frontend: http://localhost:5173
     
     IMPORTANTE:

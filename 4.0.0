@@ -1,0 +1,10 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting decorator
+  Downloading decorator-5.2.1-py3-none-any.whl.metadata (3.9 kB)
+Downloading decorator-5.2.1-py3-none-any.whl (9.2 kB)
+Installing collected packages: decorator
+  Attempting uninstall: decorator
+    Found existing installation: decorator 5.2.1
+    Uninstalling decorator-5.2.1:
+      Successfully uninstalled decorator-5.2.1
+Successfully installed decorator-5.2.1

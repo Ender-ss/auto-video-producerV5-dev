@@ -148,7 +148,7 @@ def execute_pipeline_test(test_name, config):
     
     try:
         print(f"📤 Criando pipeline {test_name}...")
-        response = requests.post('http://localhost:5000/api/pipeline/complete', json=config)
+        response = requests.post('/api/pipeline/complete', json=config)
         
         if response.status_code != 200:
             print(f"❌ Erro ao criar pipeline: {response.status_code}")
@@ -166,7 +166,7 @@ def execute_pipeline_test(test_name, config):
         # Aguardar conclusão
         for i in range(15):  # 75 segundos máximo
             time.sleep(5)
-            status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+            status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
             
             if status_response.status_code == 200:
                 status_result = status_response.json()
@@ -198,7 +198,7 @@ def analyze_pipeline_results(pipeline_id, test_name, original_config):
         print(f"\n📊 ANÁLISE DETALHADA - {test_name}")
         print("-" * 40)
         
-        response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         if response.status_code != 200:
             print("❌ Erro ao buscar resultados")
             return False
@@ -378,7 +378,7 @@ def verify_previous_pipeline():
     print("🔍 Verificando pipelines anteriores...")
     
     try:
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         
         if response.status_code != 200:
             print("❌ Erro ao buscar pipelines ativas")
@@ -397,7 +397,7 @@ def verify_previous_pipeline():
         
         print(f"🔍 Verificando pipeline anterior: {pipeline_id}")
         
-        status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         
         if status_response.status_code != 200:
             print("❌ Erro ao buscar status da pipeline anterior")

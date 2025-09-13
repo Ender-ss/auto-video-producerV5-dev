@@ -1,0 +1,76 @@
+import sys
+import os
+
+print("Verificando instalação do MoviePy...")
+
+try:
+    # Tentar importar o MoviePy
+    import moviepy
+    print(f"MoviePy importado com sucesso! Versão: {moviepy.__version__}")
+    
+    # Tentar importar VideoFileClip
+    from moviepy import VideoFileClip
+    print("VideoFileClip importado com sucesso!")
+    
+    # Verificar se o método with_audio existe
+    has_with_audio = hasattr(VideoFileClip, 'with_audio')
+    print(f"Método 'with_audio' está disponível: {'Sim' if has_with_audio else 'Não'}")
+    
+    # Verificar se o método set_audio existe
+    has_set_audio = hasattr(VideoFileClip, 'set_audio')
+    print(f"Método 'set_audio' está disponível: {'Sim' if has_set_audio else 'Não'}")
+    
+    # Verificar se o ffmpeg está acessível
+    try:
+        # Tentar importar o módulo de ffmpeg do moviepy
+        from moviepy.config import get_setting
+        ffmpeg_path = get_setting('FFMPEG_BINARY')
+        print(f"Caminho do ffmpeg configurado no MoviePy: {ffmpeg_path}")
+        
+        # Tentar executar o ffmpeg para verificar se está funcionando
+        import subprocess
+        subprocess.run([ffmpeg_path, '-version'], capture_output=True, check=True)
+        print("FFmpeg está funcionando corretamente!")
+    except Exception as e:
+        print(f"Aviso: Não foi possível verificar o ffmpeg ou ele não está configurado corretamente: {str(e)}")
+        print("Instruções para instalar o ffmpeg:")
+        print("1. Baixe o ffmpeg do site oficial: https://ffmpeg.org/download.html")
+        print("2. Extraia o arquivo zip para uma pasta no seu disco rígido")
+        print("3. Adicione a pasta 'bin' do ffmpeg ao PATH do sistema")
+        print("4. Reinicie o computador para que as alterações no PATH tenham efeito")
+        
+    # Verificar se a correção no video_creation_service.py já foi aplicada
+    try:
+        video_service_path = os.path.join(os.path.dirname(__file__), 'services', 'video_creation_service.py')
+        if os.path.exists(video_service_path):
+            with open(video_service_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                if 'with_audio' in content and 'set_audio' not in content:
+                    print("Correção na pipeline (substituição de set_audio por with_audio) já está aplicada!")
+                else:
+                    print("Aviso: A correção na pipeline ainda não está concluída. Verifique o arquivo video_creation_service.py.")
+        else:
+            print("Aviso: Não foi possível encontrar o arquivo video_creation_service.py.")
+    except Exception as e:
+        print(f"Aviso: Não foi possível verificar a correção na pipeline: {str(e)}")
+        
+    print("\nVerificação concluída com sucesso!")
+    print("Para reiniciar a pipeline, execute o comando:")
+    print("python app.py")
+    print("no diretório backend.")
+    
+    # Salvar resultado da verificação em um arquivo
+    with open('moviepy_verification_result.txt', 'w', encoding='utf-8') as f:
+        f.write(f"MoviePy versão: {moviepy.__version__}\n")
+        f.write(f"Método 'with_audio' disponível: {'Sim' if has_with_audio else 'Não'}\n")
+        f.write(f"Método 'set_audio' disponível: {'Sim' if has_set_audio else 'Não'}\n")
+        if 'ffmpeg_path' in locals():
+            f.write(f"Caminho do ffmpeg: {ffmpeg_path}\n")
+        f.write("Verificação concluída em: " + str(os.date) + "\n")
+    
+except ImportError as e:
+    print(f"Erro: Não foi possível importar o MoviePy. Erro: {str(e)}")
+    print("Tente reinstalar o MoviePy usando:")
+    print("C:\\Users\\Enderson\\Documents\\APP 2\\auto-video-producerV5-dev\\Scripts\\pip.exe install moviepy --upgrade")
+except Exception as e:
+    print(f"Ocorreu um erro durante a verificação: {str(e)}")

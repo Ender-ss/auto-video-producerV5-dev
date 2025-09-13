@@ -131,7 +131,7 @@ const Settings = () => {
     setApiStatus(prev => ({ ...prev, [apiName]: 'testing' }))
 
     try {
-      const response = await fetch('http://localhost:5000/api/settings/test-api', {
+      const response = await fetch('/api/settings/test-api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ const Settings = () => {
   const fetchRapidApiStatus = async () => {
     setIsLoadingRapidApiStatus(true)
     try {
-      const response = await fetch('http://localhost:5000/api/automations/rapidapi-status')
+      const response = await fetch('/api/automations/rapidapi-status')
       const data = await response.json()
       console.log('🔍 RapidAPI Status Response:', data)
       setRapidApiStatus(data)
@@ -179,7 +179,7 @@ const Settings = () => {
   const fetchGeminiQuotaStatus = async () => {
     setIsLoadingGeminiStatus(true)
     try {
-      const response = await fetch('http://localhost:5000/api/settings/gemini-quota-status')
+      const response = await fetch('/api/settings/gemini-quota-status')
       const data = await response.json()
       console.log('🔍 Gemini Quota Status Response:', data)
       setGeminiQuotaStatus(data)
@@ -194,7 +194,7 @@ const Settings = () => {
   // Função para testar rotação RapidAPI
   const testRapidApiRotation = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/automations/test-rapidapi', {
+      const response = await fetch('/api/automations/test-rapidapi', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -218,7 +218,7 @@ const Settings = () => {
   // Função para resetar throttling RapidAPI
   const resetRapidApiThrottle = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/automations/rapidapi-throttle/reset', {
+      const response = await fetch('/api/automations/rapidapi-throttle/reset', {
         method: 'POST'
       })
       const data = await response.json()
@@ -239,7 +239,7 @@ const Settings = () => {
       localStorage.setItem('api_keys', JSON.stringify(apiKeys))
       
       // Salvar no backend
-      const response = await fetch('http://localhost:5000/api/settings/api-keys', {
+      const response = await fetch('/api/settings/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

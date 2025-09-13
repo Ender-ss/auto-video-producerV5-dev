@@ -14,7 +14,7 @@
 - **Frontend**: Reiniciado o servidor de desenvolvimento para garantir funcionamento correto na porta 5173.
 
 ### 3. Verificação de Funcionamento
-- **Backend**: Confirmado que o servidor Flask está respondendo em http://localhost:5000.
+- **Backend**: Confirmado que o servidor Flask está respondendo em /api.
 - **Frontend**: Confirmado que o servidor Vite está respondendo em http://localhost:5173.
 
 ## Aviso Conhecido
@@ -25,9 +25,9 @@
 1. Verificação do Python: `Get-ChildItem -Path "C:\Program Files" -Name "Python*" -Directory`
 2. Inicialização do Backend: `& "C:\Program Files\Python313\python.exe" app.py`
 3. Inicialização do Frontend: `cd ..; cd frontend; npm run dev`
-4. Verificação dos servidores: `Invoke-WebRequest -Uri http://localhost:5000 -UseBasicParsing`
+4. Verificação dos servidores: `Invoke-WebRequest -Uri /api -UseBasicParsing`
 
 ## Status Atual
-- ✅ Backend Flask operacional em http://localhost:5000
+- ✅ Backend Flask operacional em /api
 - ✅ Frontend Vite operacional em http://localhost:5173
 - ⚠️ MoviePy não disponível (sem impacto no funcionamento básico)

@@ -1,0 +1,51 @@
+import sys
+import os
+
+# Adicionando o diretório backend ao path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Tentando importar MoviePy
+try:
+    from moviepy.editor import VideoFileClip, AudioFileClip
+    print("✅ MoviePy importado com sucesso!")
+    print("✅ Classe VideoFileClip carregada.")
+    print("✅ Classe AudioFileClip carregada.")
+    
+    # Testando a criação de um vídeo simples
+    try:
+        # Criar um arquivo de áudio de teste (mudo)
+        from moviepy.editor import AudioClip
+        import numpy as np
+        
+        # Criar um áudio mudo de 2 segundos
+        def make_frame(t):
+            return np.array([0])  # Áudio mudo
+        
+        audio_clip = AudioClip(make_frame, duration=2)
+        audio_clip.write_audiofile("test_audio.wav", fps=44100)
+        print("✅ Áudio de teste criado com sucesso.")
+        
+        # Criar um vídeo de teste (preto)
+        from moviepy.editor import ColorClip
+        video_clip = ColorClip(size=(640, 480), color=(0, 0, 0), duration=2)
+        print("✅ Vídeo de teste criado com sucesso.")
+        
+        # Testar a função with_audio (corrigida)
+        video_with_audio = video_clip.with_audio(AudioFileClip("test_audio.wav"))
+        print("✅ A função with_audio está funcionando corretamente!")
+        
+        # Salvar o resultado
+        video_with_audio.write_videofile("test_video.mp4", fps=24)
+        print("✅ Vídeo com áudio salvo com sucesso!")
+        print("✅ Todos os testes concluídos com êxito!")
+        
+    except Exception as e:
+        print(f"❌ Erro ao testar funcionalidades do MoviePy: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+except ImportError as e:
+    print(f"❌ Não foi possível importar o MoviePy: {str(e)}")
+    print("Execute 'pip install moviepy' para instalar a biblioteca.")
+    import traceback
+    traceback.print_exc()

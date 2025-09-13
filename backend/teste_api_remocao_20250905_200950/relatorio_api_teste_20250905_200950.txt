@@ -1,6 +1,6 @@
 === RELATÓRIO DO TESTE DA API ===
 Timestamp: 20250905_200950
-URL Testada: http://localhost:5000/api/storyteller/generate-script
+URL Testada: /api/storyteller/generate-script
 Parâmetro remove_chapter_headers: True
 
 === ANÁLISE DE CABEÇALHOS ===

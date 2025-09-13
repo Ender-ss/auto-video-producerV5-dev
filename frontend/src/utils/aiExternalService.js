@@ -156,7 +156,7 @@ class AIService {
     }
 
     const chunks = []
-    const sentences = prompt.split(/[.!?]+/)
+    const sentences = (prompt || '').split(/[.!?]+/)
     let currentChunk = ''
     
     for (const sentence of sentences) {

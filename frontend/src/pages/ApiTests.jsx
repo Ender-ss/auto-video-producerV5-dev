@@ -320,7 +320,7 @@ const ApiTests = () => {
         }
       } else {
         // Teste padrão para outras APIs
-        response = await fetch('http://localhost:5000/api/tests/run-api-test', {
+        response = await fetch('/api/tests/run-api-test', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -381,7 +381,7 @@ const ApiTests = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `api-test-results-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `api-test-results-${(new Date().toISOString() || '').split('T')[0]}.json`
     a.click()
     URL.revokeObjectURL(url)
   }

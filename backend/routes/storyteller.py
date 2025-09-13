@@ -1,14 +1,34 @@
 from flask import Blueprint, request, jsonify
-from services.storyteller_service import storyteller_service
-from services.storyteller_service_advanced import advanced_storyteller_service
 import logging
 
 logger = logging.getLogger(__name__)
 storyteller_bp = Blueprint('storyteller', __name__, url_prefix='/api/storyteller')
 
+# Tentar importar os serviços de storyteller, com tratamento de erro para tiktoken
+try:
+    from services.storyteller_service import storyteller_service
+    from services.storyteller_service_advanced import advanced_storyteller_service
+    STORYTELLER_AVAILABLE = True
+    logger.info("✅ Serviços de storyteller importados com sucesso!")
+except ImportError as e:
+    if 'tiktoken' in str(e):
+        logger.warning("⚠️ Módulo tiktoken não disponível, serviços de storyteller serão desabilitados")
+    else:
+        logger.error(f"❌ Erro ao importar serviços de storyteller: {e}")
+    storyteller_service = None
+    advanced_storyteller_service = None
+    STORYTELLER_AVAILABLE = False
+
 @storyteller_bp.route('/generate-plan', methods=['POST'])
 def generate_story_plan():
     """Gera plano de divisão inteligente com recursos avançados"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         data = request.json
         total_chars = data.get('total_chars', 20000)
@@ -47,6 +67,13 @@ def generate_story_plan():
 @storyteller_bp.route('/split-content', methods=['POST'])
 def split_content():
     """Divide conteúdo em capítulos inteligentes com recursos avançados"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         data = request.json
         content = data.get('content', '')
@@ -118,6 +145,13 @@ def split_content():
 @storyteller_bp.route('/validate-chapter', methods=['POST'])
 def validate_chapter():
     """Valida um capítulo individual"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         data = request.json
         chapter_content = data.get('chapter_content', '')
@@ -158,6 +192,13 @@ def validate_chapter():
 @storyteller_bp.route('/cache/context/<story_id>/<int:chapter_num>', methods=['GET'])
 def get_cached_context(story_id, chapter_num):
     """Recupera contexto cacheado de um capítulo"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         context = storyteller_service.memory_bridge.get_context(story_id, chapter_num)
         
@@ -186,6 +227,13 @@ def get_cached_context(story_id, chapter_num):
 @storyteller_bp.route('/cache/breakpoints/<story_id>', methods=['GET'])
 def get_cached_breakpoints(story_id):
     """Recupera breakpoints cacheados de uma história"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         breakpoints = storyteller_service.memory_bridge.get_breakpoints(story_id)
         
@@ -214,6 +262,13 @@ def get_cached_breakpoints(story_id):
 @storyteller_bp.route('/agents', methods=['GET'])
 def get_agents():
     """Retorna lista de agentes disponíveis"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         agents = []
         for key, config in storyteller_service.agent_configs.items():
@@ -243,6 +298,13 @@ def get_agents():
 @storyteller_bp.route('/generate-script', methods=['POST'])
 def generate_storyteller_script():
     """Gera roteiro completo usando Storyteller Unlimited para integração com pipeline"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         data = request.json
         
@@ -308,6 +370,13 @@ def generate_storyteller_script():
 @storyteller_bp.route('/advanced-stats/<story_id>', methods=['GET'])
 def get_advanced_stats(story_id):
     """Retorna estatísticas avançadas sobre uma história"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         stats = advanced_storyteller_service.get_advanced_stats(story_id)
         
@@ -329,6 +398,13 @@ def get_advanced_stats(story_id):
 @storyteller_bp.route('/cache-status', methods=['GET'])
 def get_cache_status():
     """Retorna status do cache Redis e estatísticas gerais"""
+    if not STORYTELLER_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Serviços de storyteller não disponíveis (módulo tiktoken não instalado)',
+            'message': 'Instale o módulo tiktoken para usar esta funcionalidade'
+        }), 503
+    
     try:
         cache_stats = advanced_storyteller_service.memory_bridge.cache_service.get_cache_stats()
         

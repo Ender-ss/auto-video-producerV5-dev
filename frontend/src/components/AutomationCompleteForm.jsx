@@ -548,7 +548,7 @@ Foque em:
     console.log('🔧 handleInputChange called:', { path, value })
     setFormData(prev => {
       const newData = { ...prev }
-      const keys = path.split('.')
+      const keys = (path || '').split('.')
       let current = newData
       
       for (let i = 0; i < keys.length - 1; i++) {
@@ -704,10 +704,88 @@ Foque em:
                 <PromptsSection formData={formData} onChange={handleInputChange} />
               )}
               {activeSection === 'advanced' && (
-                <AdvancedSection formData={formData} onChange={handleInputChange} />
-              )}
-            </form>
-          </div>
+              <AdvancedSection formData={formData} onChange={handleInputChange} />
+            )}
+            
+            {/* Visualização Preditiva dos Prompts */}
+            <div className="mt-8 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+              <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                <Eye size={20} className="text-blue-400" />
+                <span>🎯 Prompts que serão utilizados nesta pipeline</span>
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Títulos */}
+                <div>
+                  <h4 className="text-lg font-medium text-white flex items-center space-x-2 mb-2">
+                    <FileText size={16} className="text-blue-400" />
+                    <span>Títulos:</span>
+                  </h4>
+                  <div className="ml-6">
+                    {formData.config.titles.custom_prompt ? (
+                      <div className="flex items-center space-x-2 text-blue-300">
+                        <User size={14} />
+                        <span>Prompt Personalizado</span>
+                      </div>
+                    ) : formData.agent.type === 'specialized' ? (
+                      <div className="flex items-center space-x-2 text-purple-300">
+                        <Bot size={14} />
+                        <span>Agente Especializado: {formData.agent.specialized_type} - {formData.config.titles.style}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-gray-300">
+                        <Settings size={14} />
+                        <span>Sistema Padrão - {formData.config.titles.style}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Premissas */}
+                <div>
+                  <h4 className="text-lg font-medium text-white flex items-center space-x-2 mb-2">
+                    <FileText size={16} className="text-green-400" />
+                    <span>Premissas:</span>
+                  </h4>
+                  <div className="ml-6">
+                    {formData.config.premises.custom_prompt ? (
+                      <div className="flex items-center space-x-2 text-blue-300">
+                        <User size={14} />
+                        <span>Prompt Personalizado</span>
+                      </div>
+                    ) : formData.agent.type === 'specialized' ? (
+                      <>
+                        <div className="flex items-center space-x-2 text-purple-300">
+                          <Bot size={14} />
+                          <span>Agente Especializado: {formData.agent.specialized_type}</span>
+                        </div>
+                        <div className="text-blue-200 text-sm mt-1 flex items-center space-x-1">
+                          <Info size={12} />
+                          <span>Premissa a ser usada: {formData.config.premises.style === 'narrative' ? 'Narrativas' : 'Educacionais'}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-gray-300">
+                        <Settings size={14} />
+                        <span>Sistema Padrão - {formData.config.premises.style}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Observação sobre Prioridade */}
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded p-3">
+                  <div className="flex items-start space-x-2">
+                    <Info size={16} className="text-blue-400 mt-0.5" />
+                    <p className="text-blue-200 text-sm">
+                      <strong>Prioridade:</strong> Prompt Personalizado &gt; Agente Especializado &gt; Sistema Padrão
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
         </div>
 
         {/* Footer */}

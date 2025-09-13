@@ -46,7 +46,7 @@ config = {
 
 ```bash
 # Endpoint disponível
-POST http://localhost:5000/api/storyteller/generate-script
+POST /api/storyteller/generate-script
 
 # Body da requisição
 {
@@ -163,7 +163,7 @@ Os exemplos gerados estão disponíveis em:
 
 3. **Erro no endpoint**
    - Certifique-se que o servidor está rodando: `python app.py`
-   - Verifique a porta: `http://localhost:5000`
+   - Verifique a porta: `/api`
 
 ## 🎬 Próximos Passos
 

@@ -17,7 +17,7 @@ def execute_pipeline_test():
         print("\n" + "="*50)
         
         # Executa requisição para gerar roteiro com Storyteller
-        url = 'http://localhost:5000/api/storyteller/generate-script'
+        url = '/api/storyteller/generate-script'
         print(f"Enviando requisição para: {url}")
         
         response = requests.post(url, json=config, timeout=30)

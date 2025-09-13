@@ -10,7 +10,7 @@ import json
 def debug_api_response():
     """Debug da resposta da API"""
     
-    api_url = "http://localhost:5000/api/storyteller/generate-script"
+    api_url = "/api/storyteller/generate-script"
     
     test_data = {
         "title": "Debug Test",

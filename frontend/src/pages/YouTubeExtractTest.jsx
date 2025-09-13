@@ -18,7 +18,7 @@ const YouTubeExtractTest = () => {
 
       // Teste 1: Verificar se o backend está rodando
       console.log('🔗 Testando conexão com backend...')
-      const healthResponse = await fetch('http://localhost:5000/api/health')
+      const healthResponse = await fetch('/api/health')
       if (!healthResponse.ok) {
         throw new Error('Backend não está respondendo')
       }
@@ -38,7 +38,7 @@ const YouTubeExtractTest = () => {
 
       console.log('📤 Payload enviado:', JSON.stringify(payload, null, 2))
 
-      const extractResponse = await fetch('http://localhost:5000/api/automations/extract-youtube', {
+      const extractResponse = await fetch('/api/automations/extract-youtube', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

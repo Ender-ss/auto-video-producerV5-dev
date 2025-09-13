@@ -19,7 +19,7 @@ def analyze_final_results():
         
         # 1. Buscar status final da pipeline
         print(f"📊 Buscando resultados finais da pipeline: {pipeline_id}")
-        response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         
         if response.status_code != 200:
             print(f"❌ ERRO: Falha ao buscar status: {response.status_code}")

@@ -18,7 +18,7 @@ def verify_latest_pipeline():
     try:
         # 1. Buscar pipelines ativas/recentes
         print("📋 Buscando pipelines recentes...")
-        response = requests.get('http://localhost:5000/api/pipeline/active')
+        response = requests.get('/api/pipeline/active')
         
         if response.status_code != 200:
             print(f"❌ ERRO: Falha ao buscar pipelines: {response.status_code}")
@@ -46,7 +46,7 @@ def verify_latest_pipeline():
                 print(f"🎯 Analisando pipeline: {pipeline_id}")
                 
                 # Buscar detalhes completos da pipeline
-                status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                 
                 if status_response.status_code == 200:
                     status_result = status_response.json()

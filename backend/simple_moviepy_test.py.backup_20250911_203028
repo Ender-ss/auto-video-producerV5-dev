@@ -1,0 +1,28 @@
+# Teste simplificado do MoviePy
+import sys
+print("Iniciando teste do MoviePy...")
+
+try:
+    # Testando importação básica
+    import moviepy
+    print("✅ MoviePy está instalado!")
+    
+    # Testando classes essenciais
+    from moviepy.editor import VideoFileClip, AudioFileClip
+    print("✅ Classes essenciais importadas com sucesso.")
+    
+    # Testando se o método with_audio existe
+    has_with_audio = hasattr(VideoFileClip, 'with_audio')
+    print(f"✅ A função with_audio {'existe' if has_with_audio else 'NÃO existe'} no VideoFileClip.")
+    
+    # Verificando versão do MoviePy
+    print(f"✅ Versão do MoviePy: {moviepy.__version__}")
+    
+except Exception as e:
+    print(f"❌ Erro durante o teste: {str(e)}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
+print("✅ Teste concluído com sucesso!")
+sys.exit(0)

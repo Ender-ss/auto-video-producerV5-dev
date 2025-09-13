@@ -14,7 +14,7 @@ import {
   Eye
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = '/api';
 
 const StorytellerControl = ({ onStoryComplete }) => {
   const [agents, setAgents] = useState([]);

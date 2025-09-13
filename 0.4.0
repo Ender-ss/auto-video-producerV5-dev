@@ -1,0 +1,11 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting imageio-ffmpeg
+  Downloading imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl.metadata (1.5 kB)
+Downloading imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl (31.2 MB)
+   ---------------------------------------- 31.2/31.2 MB 34.8 MB/s  0:00:00
+Installing collected packages: imageio-ffmpeg
+  Attempting uninstall: imageio-ffmpeg
+    Found existing installation: imageio-ffmpeg 0.6.0
+    Uninstalling imageio-ffmpeg-0.6.0:
+      Successfully uninstalled imageio-ffmpeg-0.6.0
+Successfully installed imageio-ffmpeg-0.6.0

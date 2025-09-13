@@ -8,7 +8,7 @@ import json
 
 def analyze_current_pipeline():
     pipeline_id = '495e103f-c094-410f-9212-2d2fddceca9b'
-    response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+    response = requests.get(f'/api/pipeline/status/{pipeline_id}')
 
     if response.status_code == 200:
         result = response.json()

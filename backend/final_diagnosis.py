@@ -132,7 +132,7 @@ def diagnose_tts_issue():
                 }
                 
                 response = requests.post(
-                    'http://localhost:5000/api/pipeline/complete',
+                    '/api/pipeline/complete',
                     json=test_config,
                     headers={'Content-Type': 'application/json'}
                 )
@@ -147,7 +147,7 @@ def diagnose_tts_issue():
                     for i in range(10):
                         time.sleep(2)
                         
-                        status_response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+                        status_response = requests.get(f'/api/pipeline/status/{pipeline_id}')
                         if status_response.status_code == 200:
                             status_data = status_response.json()
                             pipeline_data = status_data.get('data', {})

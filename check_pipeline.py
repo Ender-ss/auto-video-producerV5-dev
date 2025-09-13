@@ -5,7 +5,7 @@ import json
 
 def check_pipeline_status(pipeline_id):
     try:
-        response = requests.get(f'http://localhost:5000/api/pipeline/status/{pipeline_id}')
+        response = requests.get(f'/api/pipeline/status/{pipeline_id}')
         result = response.json()
         
         if result.get('success'):

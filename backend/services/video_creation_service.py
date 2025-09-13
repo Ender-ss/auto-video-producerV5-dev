@@ -18,14 +18,21 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Imports do MoviePy com fallback
 MOVIEPY_AVAILABLE = False
 try:
-    from moviepy.editor import (
+    from moviepy import (
         VideoFileClip, ImageClip, AudioFileClip, CompositeVideoClip,
         TextClip, concatenate_videoclips, ColorClip
     )
-    from moviepy.video.fx.resize import resize
-    from moviepy.video.fx.fadein import fadein
-    from moviepy.video.fx.fadeout import fadeout
-    from moviepy.audio.fx.volumex import volumex
+    from moviepy.video.fx import Resize
+    from moviepy.video.fx import FadeIn
+    from moviepy.video.fx import FadeOut
+    from moviepy.audio.fx import MultiplyVolume
+    
+    # Criar aliases para compatibilidade com código existente
+    resize = Resize
+    fadein = FadeIn
+    fadeout = FadeOut
+    volumex = MultiplyVolume
+    
     MOVIEPY_AVAILABLE = True
     
     # Fix para PIL.Image.ANTIALIAS depreciado
@@ -129,7 +136,7 @@ class VideoCreationService:
             # Adicionar áudio
             self._log('info', 'Adicionando áudio ao vídeo')
             audio_clip = AudioFileClip(audio_path)
-            video_clip = video_clip.set_audio(audio_clip)
+            video_clip = video_clip.with_audio(audio_clip)
             
             # Ajustar duração do vídeo para corresponder ao áudio
             if video_clip.duration != audio_duration:
@@ -441,7 +448,7 @@ class VideoCreationService:
                 
                 # Criar clipe de imagem
                 try:
-                    from moviepy.editor import ImageClip as MoviePyImageClip
+                    from moviepy import ImageClip as MoviePyImageClip
                     img_clip = MoviePyImageClip(img_path, duration=duration)
                 except ImportError:
                     raise Exception('ImageClip não disponível - MoviePy não está instalado corretamente')
@@ -459,7 +466,7 @@ class VideoCreationService:
                 # Adicionar fundo preto se necessário
                 if img_clip.w < width or img_clip.h < height:
                     try:
-                        from moviepy.editor import ColorClip as MoviePyColorClip, CompositeVideoClip as MoviePyCompositeVideoClip
+                        from moviepy import ColorClip as MoviePyColorClip, CompositeVideoClip as MoviePyCompositeVideoClip
                         background = MoviePyColorClip(size=(width, height), color=(0, 0, 0), duration=duration)
                         img_clip = MoviePyCompositeVideoClip([background, img_clip.set_position('center')])
                     except ImportError:
@@ -473,7 +480,7 @@ class VideoCreationService:
                 self._log('warning', f'Erro ao criar clipe {i+1}: {str(e)}')
                 # Criar clipe de cor sólida como fallback
                 try:
-                    from moviepy.editor import ColorClip as MoviePyColorClip
+                    from moviepy import ColorClip as MoviePyColorClip
                     fallback_clip = MoviePyColorClip(
                         size=(width, height), 
                         color=(50, 50, 50), 
@@ -498,13 +505,13 @@ class VideoCreationService:
         for i, clip in enumerate(clips):
             if i == 0:
                 # Primeiro clipe: apenas fade in
-                clip = fadein(clip, transition_duration)
+                clip = clip.with_effects([fadein(transition_duration)])
             elif i == len(clips) - 1:
                 # Último clipe: apenas fade out
-                clip = fadeout(clip, transition_duration)
+                clip = clip.with_effects([fadeout(transition_duration)])
             else:
                 # Clipes do meio: fade in e fade out
-                clip = fadeout(fadein(clip, transition_duration), transition_duration)
+                clip = clip.with_effects([fadein(transition_duration), fadeout(transition_duration)])
             
             transitioned_clips.append(clip)
         
@@ -527,13 +534,14 @@ class VideoCreationService:
                 try:
                     # Criar clipe de texto
                     txt_clip = TextClip(
-                        segment['text'],
-                        fontsize=24,
+                        text=segment['text'],
+                        font_size=24,
                         color='white',
                         stroke_color='black',
                         stroke_width=2,
-                        font='Arial-Bold'
-                    ).set_position(('center', 'bottom')).set_start(segment['start']).set_duration(segment['duration'])
+                        font='C:/Windows/Fonts/arial.ttf'
+                    )
+                    txt_clip = txt_clip.with_position(('center', 'bottom')).with_start(segment['start']).with_duration(segment['duration'])
                     
                     subtitle_clips.append(txt_clip)
                     
@@ -785,7 +793,6 @@ class VideoCreationService:
                 'bitrate': codec_settings.get('bitrate', '5500k'),
                 'preset': codec_settings.get('preset', 'medium'),
                 'threads': threads,
-                'verbose': False,
                 'logger': None,
                 'temp_audiofile': os.path.join(self.temp_dir, 'temp_audio.m4a'),
                 'remove_temp': True
@@ -836,7 +843,6 @@ class VideoCreationService:
                     audio_codec='aac',
                     bitrate=codec_settings.get('bitrate', '5500k'),
                     preset=codec_settings.get('preset', 'medium'),
-                    verbose=False,
                     logger=None
                 )
                 self._log('info', 'Renderização básica concluída com sucesso')
@@ -865,7 +871,6 @@ class VideoCreationService:
                 fps=15,  # FPS menor para preview
                 codec='libx264',
                 bitrate='1000k',
-                verbose=False,
                 logger=None
             )
             
