@@ -142,11 +142,9 @@ INSTRUÇÕES:
             },
             video: {
               enabled: parsedData.config?.video?.enabled !== undefined ? parsedData.config.video.enabled : true,
-              resolution: parsedData.config?.video?.resolution || '1920x1080',
-              fps: parsedData.config?.video?.fps || 30,
-              format: parsedData.config?.video?.format || 'mp4',
-              include_subtitles: parsedData.config?.video?.include_subtitles !== undefined ? parsedData.config.video.include_subtitles : true,
-              transition_duration: parsedData.config?.video?.transition_duration || 0.5
+              resolution: parsedData.config?.video?.resolution || '1080p',
+              fps: parsedData.config?.video?.fps || '30',
+              subtitle: parsedData.config?.video?.subtitle !== undefined ? parsedData.config.video.subtitle : true
             },
             prompts: {
               titles: {
@@ -327,11 +325,9 @@ INSTRUÇÕES:
         },
         video: {
           enabled: true,
-          resolution: '1920x1080',
-          fps: 30,
-          format: 'mp4',
-          include_subtitles: true,
-          transition_duration: 0.5
+          resolution: '1080p',
+          fps: '30',
+          subtitle: true
         },
         prompts: {
           titles: {
@@ -2126,329 +2122,53 @@ const MediaSection = ({ formData, onChange }) => {
           </div>
         </div>
 
-        {/* Premissas */}
+        {/* Configurações de Vídeo */}
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
-            <FileText size={18} className="text-green-400" />
-            <span>Geração de Premissas</span>
+            <Video size={18} className="text-purple-400" />
+            <span>Configurações de Vídeo</span>
           </h4>
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Provedor de IA
+                Resolução
               </label>
               <select
-                value={formData.config.premises.provider}
-                onChange={(e) => onChange('config.premises.provider', e.target.value)}
+                value={formData.config.video.resolution}
+                onChange={(e) => onChange('config.video.resolution', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="gemini">Google Gemini</option>
-                <option value="openai">OpenAI GPT</option>
-                <option value="claude">Anthropic Claude</option>
+                <option value="720p">720p (HD)</option>
+                <option value="1080p">1080p (Full HD)</option>
+                <option value="1440p">1440p (2K)</option>
+                <option value="2160p">2160p (4K)</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Estilo
+                FPS (Quadros por Segundo)
               </label>
               <select
-                value={formData.config.premises.style}
-                onChange={(e) => onChange('config.premises.style', e.target.value)}
+                value={formData.config.video.fps}
+                onChange={(e) => onChange('config.video.fps', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="educational">Educacional</option>
-                <option value="narrative">Narrativo</option>
-                <option value="entertaining">Entretenimento</option>
-                <option value="informative">Informativo</option>
-                <option value="persuasive">Persuasivo</option>
+                <option value="24">24 FPS</option>
+                <option value="30">30 FPS</option>
+                <option value="60">60 FPS</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Público-alvo
-              </label>
-              <select
-                value={formData.config.premises.target_audience}
-                onChange={(e) => onChange('config.premises.target_audience', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="general">Geral</option>
-                <option value="young_adults">Jovens Adultos</option>
-                <option value="professionals">Profissionais</option>
-                <option value="students">Estudantes</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Palavras-alvo
-              </label>
+            <div className="flex items-center space-x-2">
               <input
-                type="number"
-                value={formData.config.premises.word_count}
-                onChange={(e) => onChange('config.premises.word_count', parseInt(e.target.value))}
-                min="50"
-                max="500"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                type="checkbox"
+                id="video-subtitle"
+                checked={formData.config.video.subtitle}
+                onChange={(e) => onChange('config.video.subtitle', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
               />
-            </div>
-            <div className="col-span-2">
-              <div className="flex items-center space-x-2 mb-2">
-                <input
-                  type="checkbox"
-                  id="premises-custom-prompt"
-                  checked={formData.config.premises.custom_prompt}
-                  onChange={(e) => onChange('config.premises.custom_prompt', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="premises-custom-prompt" className="text-sm font-medium text-gray-300">
-                  Usar prompt personalizado
-                </label>
-              </div>
-              {formData.config.premises.custom_prompt && (
-                <textarea
-                  value={formData.config.premises.custom_instructions}
-                  onChange={(e) => onChange('config.premises.custom_instructions', e.target.value)}
-                  placeholder="Digite suas instruções personalizadas para geração de premissas..."
-                  rows={3}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Roteiros */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
-            <FileText size={18} className="text-blue-400" />
-            <span>Geração de Roteiros</span>
-          </h4>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Provedor de IA
+              <label htmlFor="video-subtitle" className="text-sm font-medium text-gray-300">
+                Incluir legenda no vídeo
               </label>
-              <select
-                value={formData.config.scripts.provider}
-                onChange={(e) => onChange('config.scripts.provider', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="gemini">Google Gemini</option>
-                <option value="openai">OpenAI GPT</option>
-                <option value="openrouter">OpenRouter</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Número de Capítulos
-              </label>
-              <input
-                type="number"
-                min="3"
-                value={formData.config.scripts.chapters}
-                onChange={(e) => onChange('config.scripts.chapters', parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Sem limite máximo de capítulos
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Duração Alvo
-              </label>
-              <select
-                value={formData.config.scripts.duration_target}
-                onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm mb-2"
-              >
-                <option value="5-7 minutes">5-7 minutos</option>
-                <option value="10-15 minutes">10-15 minutos</option>
-                <option value="20-30 minutes">20-30 minutos</option>
-                <option value="1-2 hours">1-2 horas</option>
-              </select>
-              <input
-                type="text"
-                value={formData.config.scripts.duration_target}
-                onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
-                placeholder="Ou digite uma duração personalizada"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.config.scripts.include_intro}
-                  onChange={(e) => onChange('config.scripts.include_intro', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600"
-                />
-                <span className="text-sm text-gray-300">Incluir Intro</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.config.scripts.include_outro}
-                  onChange={(e) => onChange('config.scripts.include_outro', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600"
-                />
-                <span className="text-sm text-gray-300">Incluir Outro</span>
-              </label>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2 mb-2">
-                <input
-                  type="checkbox"
-                  id="scripts-custom-prompts"
-                  checked={formData.config.scripts.custom_prompts}
-                  onChange={(e) => onChange('config.scripts.custom_prompts', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="scripts-custom-prompts" className="text-sm font-medium text-gray-300">
-                  Usar prompts personalizados
-                </label>
-              </div>
-              <div className="flex items-center space-x-2 mb-2">
-                <input
-                  type="checkbox"
-                  id="scripts-detailed-prompt"
-                  checked={formData.config.scripts.detailed_prompt}
-                  onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
-                  Usar prompt detalhado para roteiros longos
-                </label>
-              </div>
-              <div className="flex items-center space-x-2 mb-2">
-                <input
-                  type="checkbox"
-                  id="scripts-contextual-chapters"
-                  checked={formData.config.scripts.contextual_chapters}
-                  onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
-                  Gerar roteiro longo com resumos contextuais entre capítulos
-                </label>
-              </div>
-              <div className="flex items-center space-x-2 mb-2">
-                <input
-                  type="checkbox"
-                  id="scripts-show-default-prompts"
-                  checked={formData.config.scripts.show_default_prompts}
-                  onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
-                  Mostrar e editar prompts padrão do sistema
-                </label>
-              </div>
-              {formData.config.scripts.detailed_prompt && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt Detalhado para Roteiro Longo
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.detailed_prompt_text}
-                      onChange={(e) => onChange('config.scripts.detailed_prompt_text', e.target.value)}
-                      placeholder="Instruções detalhadas para a geração do roteiro longo, incluindo estilo, tom, elementos narrativos, estrutura desejada, etc..."
-                      rows={5}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-              {formData.config.scripts.custom_prompts && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt para Início (1º capítulo)
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.custom_inicio}
-                      onChange={(e) => onChange('config.scripts.custom_inicio', e.target.value)}
-                      placeholder="Prompt personalizado para o primeiro capítulo (início da história)..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt para Meio (desenvolvimento)
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.custom_meio}
-                      onChange={(e) => onChange('config.scripts.custom_meio', e.target.value)}
-                      placeholder="Prompt personalizado para capítulos do meio (desenvolvimento da história)..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt para Fim (último capítulo)
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.custom_fim}
-                      onChange={(e) => onChange('config.scripts.custom_fim', e.target.value)}
-                      placeholder="Prompt personalizado para o último capítulo (conclusão da história)..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-              {formData.config.scripts.show_default_prompts && (
-                <div className="space-y-4 border-t border-gray-600 pt-4">
-                  <div className="flex items-center space-x-2">
-                    <Info size={16} className="text-blue-400" />
-                    <h5 className="text-sm font-medium text-gray-300">Prompts Padrão do Sistema</h5>
-                  </div>
-                  <div className="text-xs text-gray-400 bg-gray-700 p-2 rounded">
-                    Estes são os prompts padrão que o sistema usa para gerar roteiros longos contextuais. Você pode visualizar e editá-los aqui.
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt Padrão - Introdução (1º capítulo)
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.default_prompt_intro}
-                      onChange={(e) => onChange('config.scripts.default_prompt_intro', e.target.value)}
-                      rows={8}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt Padrão - Desenvolvimento (capítulos do meio)
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.default_prompt_middle}
-                      onChange={(e) => onChange('config.scripts.default_prompt_middle', e.target.value)}
-                      rows={8}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Prompt Padrão - Conclusão (último capítulo)
-                    </label>
-                    <textarea
-                      value={formData.config.scripts.default_prompt_conclusion}
-                      onChange={(e) => onChange('config.scripts.default_prompt_conclusion', e.target.value)}
-                      rows={8}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none font-mono"
-                    />
-                  </div>
-                  <div className="text-xs text-amber-400 bg-amber-900/20 p-2 rounded flex items-start space-x-2">
-                    <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-                    <span>Variáveis disponíveis: {'{titulo}'}, {'{premissa}'}, {'{previousContent}'} (capítulos do meio), {'{previousContent}'} (conclusão), {'{i}'} (número do capítulo)</span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
