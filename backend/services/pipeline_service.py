@@ -1482,9 +1482,23 @@ class PipelineService:
             tts_segments = self.results['tts'].get('segments', [])
             
             # Criar vídeo com sincronização inteligente
+            # Garantir que os dados das imagens estejam no formato correto
+            images_data = []
+            for img in self.results['images']['generated_images']:
+                if 'file_path' in img:
+                    images_data.append(img)
+                elif 'path' in img:
+                    # Converter para o formato esperado
+                    images_data.append({
+                        'file_path': img['path'],
+                        'filename': img.get('filename', os.path.basename(img['path']))
+                    })
+            
+            self._log('info', f'Preparando {len(images_data)} imagens para criação do vídeo')
+            
             result = video_service.create_video(
                 audio_path=self.results['tts']['audio_file_path'],
-                images=self.results['images']['generated_images'],
+                images=images_data,
                 script_text=self.results['scripts']['script'],
                 resolution=resolution,
                 fps=fps,
