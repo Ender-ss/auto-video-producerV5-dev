@@ -374,16 +374,10 @@ class VideoCreationService:
         if num_images == 1:
             return [(0.0, total_duration)]
         
-        # Analisar script para determinar timing inteligente
-        if script_text:
-            timings = self._calculate_intelligent_timings(images, total_duration, script_text)
-            if timings:
-                return timings
+        # Usar timing uniforme como padrão para distribuir as imagens por todo o vídeo
+        timings = self._calculate_uniform_timings(images, total_duration)
         
-        # Fallback: distribuir tempo com variação baseada no tipo de imagem
-        timings = self._calculate_adaptive_timings(images, total_duration)
-        
-        self._log('info', f'Timing calculado para {num_images} imagens')
+        self._log('info', f'Timing calculado para {num_images} imagens - usando distribuição uniforme')
         return timings
     
     def _calculate_intelligent_timings(self, images: List[Dict[str, Any]], 
@@ -471,10 +465,20 @@ class VideoCreationService:
         timings = []
         current_time = 0.0
         
+        # Calcular duração mínima baseada no número de imagens e duração total
+        # Garantir que todas as imagens sejam distribuídas uniformemente
+        min_duration_per_image = total_duration / num_images * 0.8  # 80% da duração uniforme como mínimo
+        
         for i, weight in enumerate(image_weights):
+            # Calcular duração proporcional ao peso
             duration = (weight / total_weight) * total_duration
-            # Garantir duração mínima de 1.5s e máxima de 8s
-            duration = max(1.5, min(duration, 8.0))
+            
+            # Garantir duração mínima baseada na distribuição uniforme
+            # e duração máxima mais flexível para melhor distribuição
+            min_duration = max(min_duration_per_image, 2.0)  # Mínimo de 2 segundos ou a duração uniforme
+            max_duration = total_duration / num_images * 2.0  # Máximo de 2x a duração uniforme
+            
+            duration = max(min_duration, min(duration, max_duration))
             
             start_time = current_time
             end_time = current_time + duration
@@ -486,7 +490,40 @@ class VideoCreationService:
             last_start, _ = timings[-1]
             timings[-1] = (last_start, total_duration)
         
-        self._log('info', f'Timing adaptativo calculado')
+        self._log('info', f'Timing adaptativo calculado - duração média por imagem: {total_duration/num_images:.2f}s')
+        return timings
+    
+    def _calculate_uniform_timings(self, images: List[Dict[str, Any]], 
+                                 total_duration: float) -> List[Tuple[float, float]]:
+        """Calcular timing uniforme para distribuir as imagens por todo o vídeo"""
+        num_images = len(images)
+        
+        if num_images == 0:
+            return []
+        
+        # Se temos apenas uma imagem, ela ocupa toda a duração
+        if num_images == 1:
+            return [(0.0, total_duration)]
+        
+        # Calcular duração uniforme para cada imagem
+        uniform_duration = total_duration / num_images
+        
+        timings = []
+        current_time = 0.0
+        
+        for i in range(num_images):
+            start_time = current_time
+            end_time = current_time + uniform_duration
+            timings.append((start_time, end_time))
+            current_time = end_time
+        
+        # Ajustar último timing para corresponder exatamente à duração total
+        # (compensar possíveis arredondamentos)
+        if timings:
+            last_start, _ = timings[-1]
+            timings[-1] = (last_start, total_duration)
+        
+        self._log('info', f'Timing uniforme calculado - {num_images} imagens com {uniform_duration:.2f}s cada')
         return timings
     
     def _analyze_script_segments(self, script_text: str) -> List[str]:
