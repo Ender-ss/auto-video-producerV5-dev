@@ -190,24 +190,28 @@ class VideoCreationService:
             if abs(video_clip.duration - audio_clip.duration) > 0.1:  # Diferença maior que 0.1s
                 self._log('info', f'Ajustando duração do vídeo: {video_clip.duration:.2f}s -> {audio_clip.duration:.2f}s')
                 
-                # Se o vídeo é mais curto, estender o último clipe
+                # Se o vídeo é mais curto, redistribuir uniformemente o tempo extra entre todos os clipes
                 if video_clip.duration < audio_clip.duration:
                     # Calcular quanto tempo precisamos adicionar
                     extra_time = audio_clip.duration - video_clip.duration
                     
-                    # Estender o último clipe
-                    if image_clips:
-                        last_clip_duration = image_clips[-1].duration + extra_time
-                        image_clips[-1] = image_clips[-1].with_duration(last_clip_duration)
-                        
-                        # Recriar o vídeo com os clipes ajustados
-                        try:
-                            video_clip = concatenate_videoclips(image_clips, method='chain')
-                        except Exception as e:
-                            self._log('warning', f'Erro ao concatenar com método chain após ajuste: {str(e)}')
-                            video_clip = concatenate_videoclips(image_clips, method='compose')
-                        
-                        self._log('info', f'Duração do vídeo ajustada para: {video_clip.duration:.2f}s')
+                    # Redistribuir uniformemente entre todos os clipes
+                    extra_time_per_clip = extra_time / len(image_clips)
+                    
+                    # Ajustar cada clipe
+                    for i, clip in enumerate(image_clips):
+                        new_duration = clip.duration + extra_time_per_clip
+                        image_clips[i] = clip.with_duration(new_duration)
+                        self._log('info', f'Clipe {i+1} ajustado: {clip.duration:.2f}s -> {new_duration:.2f}s')
+                    
+                    # Recriar o vídeo com os clipes ajustados
+                    try:
+                        video_clip = concatenate_videoclips(image_clips, method='chain')
+                    except Exception as e:
+                        self._log('warning', f'Erro ao concatenar com método chain após ajuste: {str(e)}')
+                        video_clip = concatenate_videoclips(image_clips, method='compose')
+                    
+                    self._log('info', f'Duração do vídeo ajustada para: {video_clip.duration:.2f}s')
                 else:
                     # Se o vídeo é mais longo, cortar para corresponder ao áudio
                     video_clip = video_clip.subclipped(0, audio_clip.duration)
