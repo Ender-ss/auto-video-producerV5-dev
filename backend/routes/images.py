@@ -8,6 +8,7 @@ import os
 import requests
 import base64
 import time
+import datetime
 from utils.error_messages import auto_format_error, format_error_response
 from routes.prompts_config import load_prompts_config
 
@@ -315,6 +316,226 @@ def serve_image(filename):
         error_response = auto_format_error(str(e), 'Visualização de Imagem')
         return jsonify(error_response), 404
 
+@images_bp.route('/download/<filename>')
+def download_image(filename):
+    """
+    Faz o download de uma imagem gerada a partir do diretório de output.
+    """
+    try:
+        from flask import send_from_directory
+        return send_from_directory(OUTPUT_DIR, filename, as_attachment=True)
+    except Exception as e:
+        error_response = auto_format_error(str(e), 'Download de Imagem')
+        return jsonify(error_response), 404
+
+@images_bp.route('/download/text/<filename>')
+def download_text_file(filename):
+    """
+    Faz o download de um arquivo de texto gerado a partir do diretório de output.
+    """
+    try:
+        from flask import send_from_directory
+        text_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'text')
+        return send_from_directory(text_dir, filename, as_attachment=True)
+    except Exception as e:
+        error_response = auto_format_error(str(e), 'Download de Texto')
+        return jsonify(error_response), 404
+
+@images_bp.route('/list-pipelines', methods=['GET'])
+def list_pipelines_content():
+    """
+    Lista todos os pipelines com seus conteúdos gerados organizados por tipo
+    """
+    try:
+        import glob
+        from datetime import datetime
+        from app import Pipeline
+        
+        # Diretórios de conteúdo
+        base_dir = os.path.join(os.path.dirname(__file__), '..')
+        images_dir = os.path.join(base_dir, 'output', 'images')
+        audio_dir = os.path.join(base_dir, 'output', 'audio')
+        videos_dir = os.path.join(base_dir, 'output', 'videos')
+        outputs_dir = os.path.join(base_dir, 'outputs')
+        temp_dir = os.path.join(base_dir, 'temp')
+        
+        # Obter todas as pipelines
+        pipelines = Pipeline.query.order_by(Pipeline.started_at.desc()).all()
+        
+        # Listar todos os arquivos para associar às pipelines
+        all_files = {
+            'images': [],
+            'audios': [],
+            'videos': []
+        }
+        
+        # Listar imagens
+        if os.path.exists(images_dir):
+            for ext in ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp']:
+                for filepath in glob.glob(os.path.join(images_dir, ext)):
+                    filename = os.path.basename(filepath)
+                    file_stats = os.stat(filepath)
+                    all_files['images'].append({
+                        'filename': filename,
+                        'path': filepath,
+                        'url': f'/api/images/view/{filename}',
+                        'size': file_stats.st_size,
+                        'created_at': datetime.datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                'modified_at': datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                    })
+        
+        # Listar áudios (verificar múltiplos diretórios)
+        audio_dirs = [audio_dir, temp_dir]
+        audio_files_seen = set()  # Para evitar duplicatas
+        
+        for audio_search_dir in audio_dirs:
+            if os.path.exists(audio_search_dir):
+                for ext in ['*.wav', '*.mp3', '*.m4a', '*.ogg', '*.flac']:
+                    for filepath in glob.glob(os.path.join(audio_search_dir, ext)):
+                        filename = os.path.basename(filepath)
+                        
+                        # Evitar duplicatas baseadas no nome do arquivo
+                        if filename not in audio_files_seen:
+                            audio_files_seen.add(filename)
+                            file_stats = os.stat(filepath)
+                            all_files['audios'].append({
+                                'filename': filename,
+                                'path': filepath,
+                                'directory': os.path.basename(audio_search_dir),
+                                'size': file_stats.st_size,
+                                'created_at': datetime.datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                'modified_at': datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
+                                'url': f'/api/automations/audio/{filename}'
+                            })
+        
+        # Listar vídeos (verificar múltiplos diretórios)
+        video_dirs = [videos_dir, outputs_dir]
+        for video_search_dir in video_dirs:
+            if os.path.exists(video_search_dir):
+                for ext in ['*.mp4', '*.avi', '*.mov', '*.mkv', '*.webm']:
+                    for filepath in glob.glob(os.path.join(video_search_dir, ext)):
+                        filename = os.path.basename(filepath)
+                        file_stats = os.stat(filepath)
+                        all_files['videos'].append({
+                            'filename': filename,
+                            'path': filepath,
+                            'directory': os.path.basename(video_search_dir),
+                            'size': file_stats.st_size,
+                            'created_at': datetime.datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                'modified_at': datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
+                            'url': f'/api/automations/video/{filename}'
+                        })
+        
+        # Organizar pipelines com seus conteúdos
+        pipelines_content = []
+        
+        for pipeline in pipelines:
+            pipeline_dict = pipeline.to_dict()
+            pipeline_id = pipeline_dict['pipeline_id']
+            display_name = pipeline_dict['display_name']
+            
+            # Formatar o nome da pipeline como solicitado: "Pipeline #2025-09-13-015"
+            pipeline_name = f"Pipeline #{display_name}"
+            
+            # Inicializar conteúdo da pipeline
+            pipeline_content = {
+                'id': pipeline_id,
+                'name': pipeline_name,
+                'display_name': display_name,
+                'status': pipeline_dict['status'],
+                'created_at': pipeline_dict['started_at'],
+                'content': {
+                    'text': [],
+                    'audio': [],
+                    'image': [],
+                    'video': []
+                }
+            }
+            
+            # Adicionar conteúdo de texto (script)
+            if pipeline_dict.get('script_content'):
+                pipeline_content['content']['text'].append({
+                    'type': 'text',
+                    'content': pipeline_dict['script_content'],
+                    'created_at': pipeline_dict['started_at']
+                })
+            
+            # Associar arquivos à pipeline baseado no nome do arquivo
+            # Verificar se o nome do arquivo contém o ID da pipeline ou o display_name
+            for image in all_files['images']:
+                if pipeline_id in image['filename'] or display_name in image['filename']:
+                    image_copy = image.copy()
+                    image_copy['type'] = 'image'
+                    pipeline_content['content']['image'].append(image_copy)
+            
+            for audio in all_files['audios']:
+                if pipeline_id in audio['filename'] or display_name in audio['filename']:
+                    audio_copy = audio.copy()
+                    audio_copy['type'] = 'audio'
+                    pipeline_content['content']['audio'].append(audio_copy)
+            
+            for video in all_files['videos']:
+                if pipeline_id in video['filename'] or display_name in video['filename']:
+                    video_copy = video.copy()
+                    video_copy['type'] = 'video'
+                    pipeline_content['content']['video'].append(video_copy)
+            
+            # Adicionar arquivos específicos da pipeline se existirem nos campos do modelo
+            if pipeline_dict.get('audio_file_path'):
+                audio_filename = os.path.basename(pipeline_dict['audio_file_path'])
+                pipeline_content['content']['audio'].append({
+                    'filename': audio_filename,
+                    'path': pipeline_dict['audio_file_path'],
+                    'url': f'/api/automations/audio/{audio_filename}',
+                    'type': 'audio',
+                    'created_at': pipeline_dict['started_at']
+                })
+            
+            if pipeline_dict.get('video_file_path'):
+                video_filename = os.path.basename(pipeline_dict['video_file_path'])
+                pipeline_content['content']['video'].append({
+                    'filename': video_filename,
+                    'path': pipeline_dict['video_file_path'],
+                    'url': f'/api/automations/video/{video_filename}',
+                    'type': 'video',
+                    'created_at': pipeline_dict['started_at']
+                })
+            
+            pipelines_content.append(pipeline_content)
+        
+        # Calcular totais
+        total_pipelines = len(pipelines_content)
+        total_files = sum(
+            len(p['content']['text']) + 
+            len(p['content']['audio']) + 
+            len(p['content']['image']) + 
+            len(p['content']['video']) 
+            for p in pipelines_content
+        )
+        
+        # Calcular totais por tipo de mídia
+        total_text = sum(len(p['content']['text']) for p in pipelines_content)
+        total_audio = sum(len(p['content']['audio']) for p in pipelines_content)
+        total_image = sum(len(p['content']['image']) for p in pipelines_content)
+        total_video = sum(len(p['content']['video']) for p in pipelines_content)
+        
+        return jsonify({
+            'success': True,
+            'pipelines': pipelines_content,
+            'summary': {
+                'total_pipelines': total_pipelines,
+                'total_files': total_files,
+                'total_text': total_text,
+                'total_audio': total_audio,
+                'total_image': total_image,
+                'total_video': total_video
+            }
+        })
+        
+    except Exception as e:
+        error_response = auto_format_error(str(e), 'Listagem de Pipelines')
+        return jsonify(error_response), 500
+
 @images_bp.route('/list-generated', methods=['GET'])
 def list_generated_content():
     """
@@ -350,8 +571,8 @@ def list_generated_content():
                         'path': filepath,
                         'url': f'/api/images/view/{filename}',
                         'size': file_stats.st_size,
-                        'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                        'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                        'created_at': datetime.datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                'modified_at': datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()
                     })
         
         # Listar áudios (verificar múltiplos diretórios)
@@ -373,8 +594,8 @@ def list_generated_content():
                                 'path': filepath,
                                 'directory': os.path.basename(audio_search_dir),
                                 'size': file_stats.st_size,
-                                'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                                'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                                'created_at': datetime.datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                'modified_at': datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()
                             })
         
         # Listar vídeos (verificar múltiplos diretórios)
@@ -390,8 +611,8 @@ def list_generated_content():
                             'path': filepath,
                             'directory': os.path.basename(video_search_dir),
                             'size': file_stats.st_size,
-                            'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                            'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                            'created_at': datetime.datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                'modified_at': datetime.datetime.fromtimestamp(file_stats.st_mtime).isoformat()
                         })
         
         # Ordenar por data de criação (mais recentes primeiro)
@@ -817,3 +1038,397 @@ def generate_placeholder_image(width, height, prompt):
         print(f"❌ Erro ao gerar placeholder: {str(e)}")
         # Retornar uma imagem mínima se tudo falhar
         return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x04\x00\x00\x00\x04\x00\x08\x02\x00\x00\x00\x91\x5c\xef\x1f\x00\x00\x00\x0cIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xdd\x8d\xb4\x1c\x00\x00\x00\x00IEND\xaeB`\x82'
+
+# Endpoints para servir arquivos de áudio e vídeo
+
+@images_bp.route('/audio/<filename>', methods=['GET'])
+def serve_audio(filename):
+    """Serve arquivos de áudio do diretório output/audio"""
+    try:
+        audio_dir = os.path.join(OUTPUT_DIR, 'audio')
+        if not os.path.exists(audio_dir):
+            return jsonify({'error': 'Diretório de áudio não encontrado'}), 404
+        
+        return send_from_directory(audio_dir, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'Arquivo de áudio não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir áudio: {str(e)}'}), 500
+
+@images_bp.route('/video/<filename>', methods=['GET'])
+def serve_video(filename):
+    """Serve arquivos de vídeo do diretório output/videos"""
+    try:
+        video_dir = os.path.join(OUTPUT_DIR, 'videos')
+        if not os.path.exists(video_dir):
+            return jsonify({'error': 'Diretório de vídeo não encontrado'}), 404
+        
+        return send_from_directory(video_dir, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'Arquivo de vídeo não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir vídeo: {str(e)}'}), 500
+
+@images_bp.route('/text/<filename>', methods=['GET'])
+def serve_text(filename):
+    """Serve arquivos de texto do diretório output"""
+    try:
+        text_dir = OUTPUT_DIR
+        if not os.path.exists(text_dir):
+            return jsonify({'error': 'Diretório de texto não encontrado'}), 404
+        
+        # Verificar se é um arquivo de texto
+        if not filename.endswith('.txt'):
+            return jsonify({'error': 'Formato de arquivo inválido'}), 400
+        
+        file_path = os.path.join(text_dir, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Arquivo de texto não encontrado'}), 404
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        return jsonify({
+            'filename': filename,
+            'content': content
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir texto: {str(e)}'}), 500
+
+@images_bp.route('/list-all-content', methods=['GET'])
+def list_all_content():
+    """Lista todos os conteúdos gerados (texto, imagem, áudio, vídeo)"""
+    try:
+        contents = {
+            'text': [],
+            'images': [],
+            'audio': [],
+            'videos': [],
+            'projects': []
+        }
+        
+        # Diretórios a serem verificados
+        directories = {
+            'text': OUTPUT_DIR,
+            'images': os.path.join(OUTPUT_DIR, 'images'),
+            'audio': os.path.join(OUTPUT_DIR, 'audio'),
+            'videos': os.path.join(OUTPUT_DIR, 'videos')
+        }
+        
+        for content_type, directory in directories.items():
+            if os.path.exists(directory):
+                files = []
+                for filename in os.listdir(directory):
+                    file_path = os.path.join(directory, filename)
+                    if os.path.isfile(file_path):
+                        stat = os.stat(file_path)
+                        
+                        # Determinar URL baseado no tipo
+                        if content_type == 'text':
+                            url = f"/api/images/text/{filename}"
+                        elif content_type == 'images':
+                            url = f"/api/images/view/{filename}"
+                        elif content_type == 'audio':
+                            url = f"/api/images/audio/{filename}"
+                        elif content_type == 'videos':
+                            url = f"/api/images/video/{filename}"
+                        
+                        files.append({
+                            'filename': filename,
+                            'url': url,
+                            'size': stat.st_size,
+                            'created': datetime.datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                            'modified': datetime.datetime.fromtimestamp(stat.st_mtime).isoformat()
+                        })
+                
+                # Ordenar por data de criação (mais recente primeiro)
+                files.sort(key=lambda x: x['created'], reverse=True)
+                contents[content_type] = files
+        
+        # Adicionar conteúdo do diretório outputs (vídeos finais)
+        outputs_dir = os.path.join(os.path.dirname(OUTPUT_DIR), 'outputs')
+        if os.path.exists(outputs_dir):
+            video_files = []
+            for filename in os.listdir(outputs_dir):
+                file_path = os.path.join(outputs_dir, filename)
+                if os.path.isfile(file_path) and filename.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+                    stat = os.stat(file_path)
+                    video_files.append({
+                        'filename': filename,
+                        'url': f"/api/images/video/{filename}",
+                        'size': stat.st_size,
+                        'created': datetime.datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                        'modified': datetime.datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        'source': 'final_output'
+                    })
+            
+            video_files.sort(key=lambda x: x['created'], reverse=True)
+            contents['videos'].extend(video_files)
+        
+        # Adicionar conteúdo da pasta projects (organizado por pipeline)
+        projects_dir = os.path.join(os.path.dirname(OUTPUT_DIR), 'projects')
+        if os.path.exists(projects_dir):
+            projects = []
+            for project_id in os.listdir(projects_dir):
+                project_path = os.path.join(projects_dir, project_id)
+                if os.path.isdir(project_path):
+                    project_data = {
+                        'project_id': project_id,
+                        'contents': {
+                            'text': [],
+                            'images': [],
+                            'audio': [],
+                            'videos': []
+                        }
+                    }
+                    
+                    # Verificar cada subdiretório do projeto
+                    subdirs = {
+                        'text': os.path.join(project_path, 'texts'),
+                        'images': os.path.join(project_path, 'images'),
+                        'audio': os.path.join(project_path, 'audio'),
+                        'videos': os.path.join(project_path, 'video')
+                    }
+                    
+                    for content_type, subdir in subdirs.items():
+                        if os.path.exists(subdir):
+                            files = []
+                            for filename in os.listdir(subdir):
+                                file_path = os.path.join(subdir, filename)
+                                if os.path.isfile(file_path):
+                                    stat = os.stat(file_path)
+                                    
+                                    # Determinar URL baseado no tipo e projeto
+                                    if content_type == 'text':
+                                        url = f"/api/images/project/{project_id}/text/{filename}"
+                                    elif content_type == 'images':
+                                        url = f"/api/images/project/{project_id}/image/{filename}"
+                                    elif content_type == 'audio':
+                                        url = f"/api/images/project/{project_id}/audio/{filename}"
+                                    elif content_type == 'videos':
+                                        url = f"/api/images/project/{project_id}/video/{filename}"
+                                    
+                                    files.append({
+                                        'filename': filename,
+                                        'url': url,
+                                        'size': stat.st_size,
+                                        'created': datetime.datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                                    'modified': datetime.datetime.fromtimestamp(stat.st_mtime).isoformat()
+                                    })
+                            
+                            # Ordenar por data de criação
+                            files.sort(key=lambda x: x['created'], reverse=True)
+                            project_data['contents'][content_type] = files
+                    
+                    projects.append(project_data)
+            
+            # Ordenar projetos pelo ID (assumindo que o ID contém timestamp)
+            projects.sort(key=lambda x: x['project_id'], reverse=True)
+            contents['projects'] = projects
+        
+        return jsonify({
+            'success': True,
+            'contents': contents,
+            'summary': {
+                'total_text': len(contents['text']),
+                'total_images': len(contents['images']),
+                'total_audio': len(contents['audio']),
+                'total_videos': len(contents['videos']),
+                'total_projects': len(contents['projects'])
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro ao listar conteúdos: {str(e)}'
+        }), 500
+
+# Endpoints para servir arquivos de projetos
+
+@images_bp.route('/project/<project_id>/image/<filename>', methods=['GET'])
+def serve_project_image(project_id, filename):
+    """Serve arquivos de imagem de um projeto específico"""
+    try:
+        project_image_dir = os.path.join(os.path.dirname(OUTPUT_DIR), 'projects', project_id, 'images')
+        if not os.path.exists(project_image_dir):
+            return jsonify({'error': 'Diretório de imagens do projeto não encontrado'}), 404
+        
+        return send_from_directory(project_image_dir, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'Arquivo de imagem do projeto não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir imagem do projeto: {str(e)}'}), 500
+
+@images_bp.route('/project/<project_id>/audio/<filename>', methods=['GET'])
+def serve_project_audio(project_id, filename):
+    """Serve arquivos de áudio de um projeto específico"""
+    try:
+        project_audio_dir = os.path.join(os.path.dirname(OUTPUT_DIR), 'projects', project_id, 'audio')
+        if not os.path.exists(project_audio_dir):
+            return jsonify({'error': 'Diretório de áudio do projeto não encontrado'}), 404
+        
+        return send_from_directory(project_audio_dir, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'Arquivo de áudio do projeto não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir áudio do projeto: {str(e)}'}), 500
+
+@images_bp.route('/project/<project_id>/video/<filename>', methods=['GET'])
+def serve_project_video(project_id, filename):
+    """Serve arquivos de vídeo de um projeto específico"""
+    try:
+        project_video_dir = os.path.join(os.path.dirname(OUTPUT_DIR), 'projects', project_id, 'video')
+        if not os.path.exists(project_video_dir):
+            return jsonify({'error': 'Diretório de vídeo do projeto não encontrado'}), 404
+        
+        return send_from_directory(project_video_dir, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'Arquivo de vídeo do projeto não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir vídeo do projeto: {str(e)}'}), 500
+
+@images_bp.route('/project/<project_id>/text/<filename>', methods=['GET'])
+def serve_project_text(project_id, filename):
+    """Serve arquivos de texto de um projeto específico"""
+    try:
+        project_text_dir = os.path.join(os.path.dirname(OUTPUT_DIR), 'projects', project_id, 'texts')
+        if not os.path.exists(project_text_dir):
+            return jsonify({'error': 'Diretório de textos do projeto não encontrado'}), 404
+        
+        # Verificar se é um arquivo de texto
+        if not filename.endswith('.txt'):
+            return jsonify({'error': 'Formato de arquivo inválido'}), 400
+        
+        file_path = os.path.join(project_text_dir, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Arquivo de texto do projeto não encontrado'}), 404
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        return jsonify({
+            'filename': filename,
+            'project_id': project_id,
+            'content': content
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir texto do projeto: {str(e)}'}), 500
+
+@images_bp.route('/delete/<file_type>/<filename>', methods=['DELETE'])
+def delete_file(file_type, filename):
+    """
+    Exclui um arquivo baseado no tipo (text, image, audio, video)
+    """
+    try:
+        # Determinar o diretório baseado no tipo de arquivo
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        
+        if file_type == 'text':
+            file_dir = OUTPUT_DIR  # Os arquivos de texto estão no mesmo diretório das imagens
+        elif file_type == 'image':
+            file_dir = os.path.join(base_dir, 'output', 'images')
+        elif file_type == 'audio':
+            # Verificar em múltiplos diretórios possíveis
+            possible_dirs = [
+                os.path.join(base_dir, 'output', 'audio'),
+                os.path.join(base_dir, 'temp')
+            ]
+            file_path = None
+            for dir_path in possible_dirs:
+                if os.path.exists(os.path.join(dir_path, filename)):
+                    file_path = os.path.join(dir_path, filename)
+                    break
+            
+            if not file_path:
+                return jsonify({'error': 'Arquivo de áudio não encontrado'}), 404
+                
+            os.remove(file_path)
+            return jsonify({
+                'success': True,
+                'message': f'Arquivo de áudio "{filename}" excluído com sucesso'
+            })
+            
+        elif file_type == 'video':
+            # Verificar em múltiplos diretórios possíveis
+            possible_dirs = [
+                os.path.join(base_dir, 'output', 'videos'),
+                os.path.join(base_dir, 'outputs')
+            ]
+            file_path = None
+            for dir_path in possible_dirs:
+                if os.path.exists(os.path.join(dir_path, filename)):
+                    file_path = os.path.join(dir_path, filename)
+                    break
+            
+            if not file_path:
+                return jsonify({'error': 'Arquivo de vídeo não encontrado'}), 404
+                
+            os.remove(file_path)
+            return jsonify({
+                'success': True,
+                'message': f'Arquivo de vídeo "{filename}" excluído com sucesso'
+            })
+        else:
+            return jsonify({'error': 'Tipo de arquivo inválido'}), 400
+        
+        # Para texto e imagem, usar o diretório específico
+        file_path = os.path.join(file_dir, filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'Arquivo de {file_type} não encontrado'}), 404
+        
+        os.remove(file_path)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Arquivo de {file_type} "{filename}" excluído com sucesso'
+        })
+        
+    except Exception as e:
+        error_response = auto_format_error(str(e), f'Exclusão de Arquivo ({file_type})')
+        return jsonify(error_response), 500
+
+@images_bp.route('/delete/project/<project_id>/<file_type>/<filename>', methods=['DELETE'])
+def delete_project_file(project_id, file_type, filename):
+    """
+    Exclui um arquivo de um projeto específico baseado no tipo (text, image, audio, video)
+    """
+    try:
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        projects_dir = os.path.join(base_dir, 'projects')
+        
+        # Verificar se o projeto existe
+        project_path = os.path.join(projects_dir, project_id)
+        if not os.path.exists(project_path):
+            return jsonify({'error': 'Projeto não encontrado'}), 404
+        
+        # Determinar o subdiretório baseado no tipo de arquivo
+        if file_type == 'text':
+            file_dir = os.path.join(project_path, 'texts')
+        elif file_type == 'image':
+            file_dir = os.path.join(project_path, 'images')
+        elif file_type == 'audio':
+            file_dir = os.path.join(project_path, 'audio')
+        elif file_type == 'video':
+            file_dir = os.path.join(project_path, 'video')
+        else:
+            return jsonify({'error': 'Tipo de arquivo inválido'}), 400
+        
+        file_path = os.path.join(file_dir, filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'Arquivo de {file_type} não encontrado no projeto'}), 404
+        
+        os.remove(file_path)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Arquivo de {file_type} "{filename}" do projeto "{project_id}" excluído com sucesso'
+        })
+        
+    except Exception as e:
+        error_response = auto_format_error(str(e), f'Exclusão de Arquivo do Projeto ({file_type})')
+        return jsonify(error_response), 500

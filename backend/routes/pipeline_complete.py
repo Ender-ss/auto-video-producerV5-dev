@@ -693,13 +693,21 @@ def get_pipeline_status(pipeline_id: str):
 def get_pipeline_logs(pipeline_id: str):
     """Obter logs do pipeline"""
     try:
-        if pipeline_id not in pipeline_logs:
-            return jsonify({
-                'success': False,
-                'error': 'Pipeline não encontrado'
-            }), 404
+        logs = []
         
-        logs = pipeline_logs[pipeline_id]
+        # Primeiro verificar se o pipeline está na memória
+        if pipeline_id in pipeline_logs:
+            logs = pipeline_logs[pipeline_id]
+        else:
+            # Se não estiver na memória, buscar do banco de dados
+            if PipelineLog:
+                db_logs = PipelineLog.query.filter_by(pipeline_id=pipeline_id).order_by(PipelineLog.timestamp).all()
+                logs = [log.to_dict() for log in db_logs]
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Pipeline não encontrado'
+                }), 404
         
         # Filtros opcionais
         level = request.args.get('level')  # info, warning, error

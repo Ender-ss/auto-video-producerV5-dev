@@ -1,755 +1,785 @@
-/**
- * 📁 Conteúdos Gerados Page
- * 
- * Página para visualizar todos os conteúdos gerados pelas pipelines
- */
-
-import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Search, Image, Music, Video, FileText, RefreshCw, AlertCircle, HardDrive, Eye, Download, Play, Pause, Calendar, Volume2, Grid, List, Trash2, Folder, ChevronRight, ChevronDown } from 'lucide-react'
-import axios from 'axios'
-import VideoPreview from '../components/VideoPreview'
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { 
+  Play, 
+  Pause, 
+  Eye, 
+  Download, 
+  Trash2, 
+  Search, 
+  Calendar, 
+  HardDrive, 
+  Video, 
+  Music, 
+  Image, 
+  FileText, 
+  Volume2,
+  Filter,
+  Grid,
+  List,
+  RefreshCw
+} from 'lucide-react';
+import axios from 'axios';
+import VideoPreview from '../components/VideoPreview';
 
 const ConteudosGerados = () => {
   const [content, setContent] = useState({
+    text: [],
     images: [],
-    audios: [],
+    audio: [],
     videos: [],
-    total_files: 0
-  })
-  const [summary, setSummary] = useState({
-    total_images: 0,
-    total_audios: 0,
-    total_videos: 0,
-    total_files: 0
-  })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [activeTab, setActiveTab] = useState('all')
-  const [viewMode, setViewMode] = useState('grid')
-  const [currentAudio, setCurrentAudio] = useState(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [selectedProject, setSelectedProject] = useState('all')
-  const [projects, setProjects] = useState([])
-  const [expandedProjects, setExpandedProjects] = useState({})
-  const [viewByProject, setViewByProject] = useState(true)
-  const audioRef = useRef(null)
+    projects: []
+  });
+  const [pipelines, setPipelines] = useState([]);
+  const [summary, setSummary] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list');
+  const [selectedType, setSelectedType] = useState('all');
+  const [audioControls, setAudioControls] = useState({
+    currentAudio: null,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0
+  });
 
-  const [showVideoPreview, setShowVideoPreview] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState(null)
+  const audioRef = useRef(null);
 
   const fetchContent = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await fetch('/api/images/list-generated')
-      const data = await response.json()
-      
-      if (data.success) {
-        // Adicionar URLs para áudios e vídeos
-        const contentWithUrls = {
-          ...data.content,
-          audios: data.content.audios.map(audio => ({
-            ...audio,
-            url: `/api/automations/audio/${audio.filename}`
-          })),
-          videos: data.content.videos.map(video => ({
-            ...video,
-            url: `/api/automations/video/${video.filename}`
-          }))
-        }
-        setContent(contentWithUrls)
-        setSummary(data.summary)
-        
-        // Extrair projetos únicos dos conteúdos
-        const uniqueProjects = new Set()
-        data.content.images.forEach(item => {
-          if (item.directory) uniqueProjects.add(item.directory)
-        })
-        data.content.audios.forEach(item => {
-          if (item.directory) uniqueProjects.add(item.directory)
-        })
-        data.content.videos.forEach(item => {
-          if (item.directory) uniqueProjects.add(item.directory)
-        })
-        
-        const projectsArray = ['all', ...Array.from(uniqueProjects)]
-        setProjects(projectsArray)
-        
-        // Inicializar projetos expandidos
-        const initialExpanded = {}
-        projectsArray.filter(p => p !== 'all').forEach(project => {
-          initialExpanded[project] = true
-        })
-        setExpandedProjects(initialExpanded)
-      } else {
-        setError(data.error || 'Erro ao carregar conteúdos')
-      }
+      setLoading(true);
+      const [contentRes, pipelinesRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/images/list-all-content'),
+        axios.get('http://localhost:5000/api/pipelines/')
+      ]);
+
+      setContent(contentRes.data.contents);
+      setSummary(contentRes.data.summary);
+      setPipelines(pipelinesRes.data);
     } catch (err) {
-      setError('Erro de conexão: ' + err.message)
+      setError('Erro ao carregar conteúdo. Verifique se o servidor está rodando.');
+      console.error('Erro:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchContent()
-  }, [])
+    fetchContent();
+  }, []);
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('pt-BR')
-  }
+    if (!dateString) return 'Data não disponível';
+    try {
+      return format(new Date(dateString), "dd 'de' MMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
+    } catch (error) {
+      return 'Data inválida';
+    }
+  };
 
-  const getFilteredContent = () => {
-    let allContent = []
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'video':
+        return <Video className="text-blue-400" size={20} />;
+      case 'audio':
+        return <Music className="text-green-400" size={20} />;
+      case 'image':
+        return <Image className="text-purple-400" size={20} />;
+      case 'text':
+        return <FileText className="text-yellow-400" size={20} />;
+      default:
+        return <FileText className="text-gray-400" size={20} />;
+    }
+  };
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'video':
+        return 'border-blue-500/30';
+      case 'audio':
+        return 'border-green-500/30';
+      case 'image':
+        return 'border-purple-500/30';
+      case 'text':
+        return 'border-yellow-500/30';
+      default:
+        return 'border-gray-600';
+    }
+  };
+
+  const getAllContent = () => {
+    let allContent = [];
     
-    if (activeTab === 'all' || activeTab === 'images') {
-      allContent = [...allContent, ...content.images.map(item => ({ ...item, type: 'image' }))]
+    // Adicionar todos os tipos de conteúdo
+    if (content.text) {
+      allContent = allContent.concat(content.text.map(item => ({...item, type: 'text'})));
     }
-    if (activeTab === 'all' || activeTab === 'audios') {
-      allContent = [...allContent, ...content.audios.map(item => ({ ...item, type: 'audio' }))]
+    if (content.images) {
+      allContent = allContent.concat(content.images.map(item => ({...item, type: 'image'})));
     }
-    if (activeTab === 'all' || activeTab === 'videos') {
-      allContent = [...allContent, ...content.videos.map(item => ({ ...item, type: 'video' }))]
+    if (content.audio) {
+      allContent = allContent.concat(content.audio.map(item => ({...item, type: 'audio'})));
+    }
+    if (content.videos) {
+      allContent = allContent.concat(content.videos.map(item => ({...item, type: 'video'})));
+    }
+
+    // Filtrar por tipo selecionado
+    if (selectedType !== 'all') {
+      allContent = allContent.filter(item => item.type === selectedType);
     }
 
     // Filtrar por termo de busca
     if (searchTerm) {
-      allContent = allContent.filter(item => 
+      allContent = allContent.filter(item =>
         item.filename.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-    
-    // Filtrar por projeto
-    if (selectedProject !== 'all') {
-      allContent = allContent.filter(item => 
-        item.directory === selectedProject
-      )
+      );
     }
 
-    return allContent
-  }
+    // Ordenar por data de criação
+    return allContent.sort((a, b) => new Date(b.created) - new Date(a.created));
+  };
 
-  const getContentByProject = () => {
-    const filteredContent = getFilteredContent()
-    
-    // Agrupar conteúdo por projeto
-    const contentByProject = {}
-    
-    filteredContent.forEach(item => {
-      const project = item.directory || 'Sem Projeto'
+  const handleDownload = async (item) => {
+    try {
+      let downloadUrl;
       
-      if (!contentByProject[project]) {
-        contentByProject[project] = {
-          images: [],
-          audios: [],
-          videos: [],
-          all: []
-        }
-      }
-      
-      // Garantir que o array para o tipo específico exista antes de usar push
-      if (!contentByProject[project][item.type]) {
-        contentByProject[project][item.type] = []
-      }
-      
-      contentByProject[project][item.type].push(item)
-      contentByProject[project].all.push(item)
-    })
-    
-    return contentByProject
-  }
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'image': return <Image size={20} className="text-pink-400" />
-      case 'audio': return <Music size={20} className="text-green-400" />
-      case 'video': return <Video size={20} className="text-purple-400" />
-      default: return <FileText size={20} className="text-gray-400" />
-    }
-  }
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'image': return 'border-pink-500 bg-pink-500/10'
-      case 'audio': return 'border-green-500 bg-green-500/10'
-      case 'video': return 'border-purple-500 bg-purple-500/10'
-      default: return 'border-gray-500 bg-gray-500/10'
-    }
-  }
-
-  const toggleProjectExpansion = (project) => {
-    setExpandedProjects(prev => ({
-      ...prev,
-      [project]: !prev[project]
-    }))
-  }
-
-  const handlePreview = (item) => {
-    if (item.type === 'image' && item.url) {
-      window.open(item.url, '_blank')
-    } else if (item.type === 'audio' && item.url) {
-      handleAudioPlay(item)
-    } else if (item.type === 'video' && item.url) {
-      setSelectedVideo(item)
-      setShowVideoPreview(true)
-    } else {
-      alert('Preview não disponível para este tipo de arquivo')
-    }
-  }
-
-  const handleCloseVideoPreview = () => {
-    setShowVideoPreview(false)
-    setSelectedVideo(null)
-  }
-
-  const handleAudioPlay = (audioItem) => {
-    if (currentAudio?.filename === audioItem.filename) {
-      // Se é o mesmo áudio, pausar/retomar
-      if (isPlaying) {
-        audioRef.current?.pause()
-        setIsPlaying(false)
+      // Usar endpoint específico de download para cada tipo de arquivo
+      if (item.type === 'image') {
+        downloadUrl = `http://localhost:5000/api/images/download/${item.filename}`;
+      } else if (item.type === 'audio') {
+        downloadUrl = `http://localhost:5000/api/automations/download/audio/${item.filename}`;
+      } else if (item.type === 'video') {
+        downloadUrl = `http://localhost:5000/api/automations/download/video/${item.filename}`;
+      } else if (item.type === 'text') {
+        downloadUrl = `http://localhost:5000/api/images/download/text/${item.filename}`;
       } else {
-        audioRef.current?.play()
-        setIsPlaying(true)
+        // Fallback para a URL original
+        downloadUrl = `http://localhost:5000${item.url}`;
       }
-    } else {
-      // Novo áudio
-      setCurrentAudio(audioItem)
-      setIsPlaying(true)
-      setCurrentTime(0)
+      
+      const response = await axios.get(downloadUrl, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', item.filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Erro ao fazer download do arquivo');
+      console.error('Erro:', err);
     }
-  }
-
-  const handleAudioTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime)
-      setDuration(audioRef.current.duration || 0)
-    }
-  }
-
-  const handleAudioEnded = () => {
-    setIsPlaying(false)
-    setCurrentTime(0)
-  }
-
-  const handleSeek = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const percent = (e.clientX - rect.left) / rect.width
-    const newTime = percent * duration
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime
-      setCurrentTime(newTime)
-    }
-  }
-
-  const formatTime = (time) => {
-    if (isNaN(time)) return '0:00'
-    const minutes = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  const handleDownload = (item) => {
-    if (item.type === 'image' && item.url) {
-      const link = document.createElement('a')
-      link.href = item.url
-      link.download = item.filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    } else if (item.type === 'video' && item.url) {
-      const link = document.createElement('a')
-      link.href = item.url
-      link.download = item.filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    } else {
-      alert('Download direto não disponível para este tipo de arquivo')
-    }
-  }
+  };
 
   const handleDelete = async (item) => {
-    if (window.confirm(`Tem certeza que deseja excluir ${item.filename}?`)) {
+    if (window.confirm(`Tem certeza que deseja excluir "${item.filename}"?`)) {
       try {
-        await axios.delete(`/api/content/${item.type}/${item.filename}`)
-        fetchContent() // Atualiza a lista após a exclusão
-        alert('Arquivo excluído com sucesso!')
-      } catch (error) {
-        console.error('Erro ao excluir arquivo:', error)
-        alert('Erro ao excluir arquivo. Verifique o console para mais detalhes.')
+        let url;
+        
+        // Determinar a URL correta com base no tipo de arquivo e se é de um projeto
+        if (item.project_id) {
+          // Arquivo de um projeto específico
+          url = `http://localhost:5000/api/images/delete/project/${item.project_id}/${item.type}/${item.filename}`;
+        } else {
+          // Arquivo regular
+          url = `http://localhost:5000/api/images/delete/${item.type}/${item.filename}`;
+        }
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          alert(result.message);
+          // Recarregar a lista de conteúdos após a exclusão
+          fetchContent();
+        } else {
+          alert(result.error || 'Erro ao excluir arquivo');
+        }
+      } catch (err) {
+        alert('Erro ao excluir arquivo');
+        console.error('Erro:', err);
       }
     }
-  }
+  };
 
-  if (loading) {
+  const playAudio = (audioUrl) => {
+    if (audioRef.current) {
+      if (audioControls.currentAudio === audioUrl && audioControls.isPlaying) {
+        audioRef.current.pause();
+        setAudioControls(prev => ({ ...prev, isPlaying: false }));
+      } else {
+        audioRef.current.src = `http://localhost:5000${audioUrl}`;
+        audioRef.current.play();
+        setAudioControls(prev => ({ ...prev, currentAudio: audioUrl, isPlaying: true }));
+      }
+    }
+  };
+
+  const ContentCard = ({ item }) => {
+    const [previewUrl, setPreviewUrl] = useState(null);
+    const [showPreview, setShowPreview] = useState(false);
+
+    useEffect(() => {
+      if (item.type === 'image' || item.type === 'video') {
+        setPreviewUrl(`http://localhost:5000${item.url}`);
+      }
+    }, [item]);
+
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="animate-spin mr-2" size={24} />
-            <span>Carregando conteúdos...</span>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`bg-gray-800 rounded-lg border ${getTypeColor(item.type)} p-4 hover:border-gray-500 transition-all`}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            {getTypeIcon(item.type)}
+            <div>
+              <h3 className="text-white font-medium truncate max-w-xs">
+                {item.filename}
+              </h3>
+              <p className="text-gray-400 text-sm capitalize">{item.type}</p>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleDownload(item)}
+              className="text-gray-400 hover:text-white transition-colors"
+              title="Download"
+            >
+              <Download size={16} />
+            </button>
+            <button
+              onClick={() => handleDelete(item)}
+              className="text-gray-400 hover:text-red-400 transition-colors"
+              title="Excluir"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         </div>
+
+        <div className="mb-3">
+          {item.type === 'image' && previewUrl && (
+            <img 
+              src={previewUrl} 
+              alt={item.filename}
+              className="w-full h-32 object-cover rounded bg-gray-700"
+              onClick={() => setShowPreview(true)}
+            />
+          )}
+          {item.type === 'video' && previewUrl && (
+            <video 
+              src={previewUrl}
+              className="w-full h-32 object-cover rounded bg-gray-700"
+              controls={false}
+              onClick={() => setShowPreview(true)}
+            />
+          )}
+          {item.type === 'audio' && (
+            <div className="w-full h-32 bg-gray-700 rounded flex items-center justify-center">
+              <Music size={32} className="text-gray-400" />
+            </div>
+          )}
+          {item.type === 'text' && (
+            <div className="w-full h-32 bg-gray-700 rounded flex items-center justify-center">
+              <FileText size={32} className="text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1 text-sm">
+          <div className="flex items-center text-gray-400">
+            <HardDrive size={14} className="mr-2" />
+            <span>{formatFileSize(item.size)}</span>
+          </div>
+          <div className="flex items-center text-gray-400">
+            <Calendar size={14} className="mr-2" />
+            <span>{formatDate(item.created)}</span>
+          </div>
+        </div>
+
+        {item.type === 'audio' && (
+          <button
+            onClick={() => playAudio(item.url)}
+            className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-sm flex items-center justify-center"
+          >
+            {audioControls.currentAudio === item.url && audioControls.isPlaying ? (
+              <><Pause size={14} className="mr-2" /> Pausar</>
+            ) : (
+              <><Play size={14} className="mr-2" /> Reproduzir</>
+            )}
+          </button>
+        )}
+
+        {showPreview && item.type === 'image' && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowPreview(false)}>
+            <img src={previewUrl} alt={item.filename} className="max-w-full max-h-full" />
+          </div>
+        )}
+
+        {showPreview && item.type === 'video' && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowPreview(false)}>
+            <video src={previewUrl} controls autoPlay className="max-w-full max-h-full" />
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+  const ContentListItem = ({ item }) => {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className={`bg-gray-800 rounded-lg border ${getTypeColor(item.type)} p-4 hover:border-gray-500 transition-all mb-2`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            {getTypeIcon(item.type)}
+            <div>
+              <h4 className="text-white font-medium">{item.filename}</h4>
+              <p className="text-gray-400 text-sm capitalize">{item.type} • {formatFileSize(item.size)}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-400 text-sm">{formatDate(item.created)}</span>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleDownload(item)}
+                className="text-gray-400 hover:text-white transition-colors"
+                title="Download"
+              >
+                <Download size={16} />
+              </button>
+              <button
+                onClick={() => handleDelete(item)}
+                className="text-gray-400 hover:text-red-400 transition-colors"
+                title="Excluir"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+  );
+};
+
+const ProjectCard = ({ project }) => {
+    const [expanded, setExpanded] = useState(false);
+    
+    // Contar total de arquivos no projeto
+    const totalFiles = 
+      (project.contents.text?.length || 0) + 
+      (project.contents.images?.length || 0) + 
+      (project.contents.audio?.length || 0) + 
+      (project.contents.videos?.length || 0);
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
+      >
+        <div 
+          className="p-4 cursor-pointer flex justify-between items-center"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div>
+            <h3 className="text-white font-medium">Projeto: {project.project_id.substring(0, 8)}...</h3>
+            <p className="text-gray-400 text-sm">{totalFiles} arquivos</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="flex space-x-1">
+              {project.contents.text && project.contents.text.length > 0 && (
+                <FileText className="text-yellow-400" size={16} />
+              )}
+              {project.contents.images && project.contents.images.length > 0 && (
+                <Image className="text-purple-400" size={16} />
+              )}
+              {project.contents.audio && project.contents.audio.length > 0 && (
+                <Music className="text-green-400" size={16} />
+              )}
+              {project.contents.videos && project.contents.videos.length > 0 && (
+                <Video className="text-blue-400" size={16} />
+              )}
+            </div>
+            <motion.div
+              animate={{ rotate: expanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </motion.div>
+          </div>
+        </div>
+        
+        {expanded && (
+          <div className="border-t border-gray-700 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Textos */}
+              {project.contents.text && project.contents.text.length > 0 && (
+                <div className="bg-gray-750 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2 flex items-center">
+                    <FileText className="text-yellow-400 mr-2" size={16} />
+                    Textos ({project.contents.text.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {project.contents.text.slice(0, 3).map((item, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-300 truncate">{item.filename}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(item);
+                          }}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {project.contents.text.length > 3 && (
+                      <p className="text-gray-500 text-xs">+{project.contents.text.length - 3} mais</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Imagens */}
+              {project.contents.images && project.contents.images.length > 0 && (
+                <div className="bg-gray-750 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2 flex items-center">
+                    <Image className="text-purple-400 mr-2" size={16} />
+                    Imagens ({project.contents.images.length})
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {project.contents.images.slice(0, 3).map((item, index) => (
+                      <div key={index} className="relative group">
+                        <img 
+                          src={`http://localhost:5000${item.url}`} 
+                          alt={item.filename}
+                          className="w-full h-16 object-cover rounded bg-gray-700"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(item);
+                            }}
+                            className="text-white"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {project.contents.images.length > 3 && (
+                      <div className="flex items-center justify-center bg-gray-700 rounded h-16">
+                        <span className="text-gray-400 text-xs">+{project.contents.images.length - 3}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Áudios */}
+              {project.contents.audio && project.contents.audio.length > 0 && (
+                <div className="bg-gray-750 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2 flex items-center">
+                    <Music className="text-green-400 mr-2" size={16} />
+                    Áudios ({project.contents.audio.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {project.contents.audio.slice(0, 3).map((item, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-300 truncate">{item.filename}</span>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playAudio(item.url);
+                            }}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <Play size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(item);
+                            }}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {project.contents.audio.length > 3 && (
+                      <p className="text-gray-500 text-xs">+{project.contents.audio.length - 3} mais</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Vídeos */}
+              {project.contents.videos && project.contents.videos.length > 0 && (
+                <div className="bg-gray-750 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2 flex items-center">
+                    <Video className="text-blue-400 mr-2" size={16} />
+                    Vídeos ({project.contents.videos.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {project.contents.videos.slice(0, 3).map((item, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-300 truncate">{item.filename}</span>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(item);
+                            }}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {project.contents.videos.length > 3 && (
+                      <p className="text-gray-500 text-xs">+{project.contents.videos.length - 3} mais</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Carregando conteúdos...</p>
+        </div>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64 flex-col">
-            <AlertCircle className="text-red-400 mb-4" size={48} />
-            <h2 className="text-xl font-bold mb-2">Erro ao carregar conteúdos</h2>
-            <p className="text-gray-400 mb-4">{error}</p>
-            <button
-              onClick={fetchContent}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center space-x-2"
-            >
-              <RefreshCw size={16} />
-              <span>Tentar novamente</span>
-            </button>
-          </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={fetchContent}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Tentar Novamente
+          </button>
         </div>
       </div>
-    )
+    );
   }
 
-  const contentByProject = getContentByProject()
-  const projectsList = Object.keys(contentByProject)
+  const allContent = getAllContent();
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">📁 Conteúdos Gerados</h1>
-              <p className="text-gray-400">Visualize todos os arquivos gerados pelas pipelines</p>
-            </div>
-            <button
-              onClick={fetchContent}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center space-x-2"
-            >
-              <RefreshCw size={16} />
-              <span>Atualizar</span>
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold mb-2">Conteúdos Gerados</h1>
+          <p className="text-gray-400">Gerencie todos os seus conteúdos gerados pela IA</p>
+        </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="flex items-center space-x-3">
-                <Image className="text-pink-400" size={24} />
-                <div>
-                  <p className="text-sm text-gray-400">Imagens</p>
-                  <p className="text-2xl font-bold text-pink-400">{summary.total_images}</p>
-                </div>
+        {/* Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Textos</p>
+                <p className="text-2xl font-bold">{summary.total_text || 0}</p>
               </div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="flex items-center space-x-3">
-                <Music className="text-green-400" size={24} />
-                <div>
-                  <p className="text-sm text-gray-400">Áudios</p>
-                  <p className="text-2xl font-bold text-green-400">{summary.total_audios}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="flex items-center space-x-3">
-                <Video className="text-purple-400" size={24} />
-                <div>
-                  <p className="text-sm text-gray-400">Vídeos</p>
-                  <p className="text-2xl font-bold text-purple-400">{summary.total_videos}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="flex items-center space-x-3">
-                <HardDrive className="text-blue-400" size={24} />
-                <div>
-                  <p className="text-sm text-gray-400">Total</p>
-                  <p className="text-2xl font-bold text-blue-400">{summary.total_files}</p>
-                </div>
-              </div>
+              <FileText className="text-yellow-400" size={24} />
             </div>
           </div>
-
-          {/* Controls */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Buscar arquivos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            {/* Project Filter */}
-            {projects.length > 1 && (
-              <div className="flex items-center space-x-2">
-                <Folder size={16} className="text-gray-400" />
-                <select
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="all">Todos os Projetos</option>
-                  {projects.filter(p => p !== 'all').map(project => (
-                    <option key={project} value={project}>{project}</option>
-                  ))}
-                </select>
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Imagens</p>
+                <p className="text-2xl font-bold">{summary.total_images || 0}</p>
               </div>
-            )}
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">Visualização:</span>
-              <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
-                <button
-                  onClick={() => setViewByProject(true)}
-                  className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                    viewByProject
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  Por Projeto
-                </button>
-                <button
-                  onClick={() => setViewByProject(false)}
-                  className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                    !viewByProject
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  Lista
-                </button>
-              </div>
+              <Image className="text-purple-400" size={24} />
             </div>
-
-            {/* Tabs */}
-            <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
-              {[
-                { id: 'all', label: 'Todos', icon: FileText },
-                { id: 'images', label: 'Imagens', icon: Image },
-                { id: 'audios', label: 'Áudios', icon: Music },
-                { id: 'videos', label: 'Vídeos', icon: Video }
-              ].map(tab => {
-                const Icon = tab.icon
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <Icon size={16} />
-                    <span>{tab.label}</span>
-                  </button>
-                )
-              })}
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Áudios</p>
+                <p className="text-2xl font-bold">{summary.total_audio || 0}</p>
+              </div>
+              <Music className="text-green-400" size={24} />
+            </div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Vídeos</p>
+                <p className="text-2xl font-bold">{summary.total_videos || 0}</p>
+              </div>
+              <Video className="text-blue-400" size={24} />
+            </div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Projetos</p>
+                <p className="text-2xl font-bold">{summary.total_projects || 0}</p>
+              </div>
+              <svg className="text-indigo-400" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        {projectsList.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">Nenhum conteúdo encontrado</h3>
-            <p className="text-gray-500">
-              {searchTerm || selectedProject !== 'all' ? 'Tente ajustar seus filtros' : 'Execute algumas pipelines para gerar conteúdos'}
-            </p>
+        {/* Controles */}
+        <div className="bg-gray-800 rounded-lg p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Buscar conteúdo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Todos os tipos</option>
+                <option value="text">Textos</option>
+                <option value="image">Imagens</option>
+                <option value="audio">Áudios</option>
+                <option value="video">Vídeos</option>
+              </select>
+              
+              <button
+                onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+                className="bg-gray-700 text-white p-2 rounded-lg hover:bg-gray-600"
+              >
+                {viewMode === 'list' ? <Grid size={20} /> : <List size={20} />}
+              </button>
+              
+              <button
+                onClick={fetchContent}
+                className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+              >
+                <RefreshCw size={20} />
+              </button>
+            </div>
           </div>
-        ) : viewByProject ? (
-          // Visualização por projeto (estrutura de pastas)
-          <div className="space-y-4">
-            {projectsList.map(project => (
-              <div key={project} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                {/* Cabeçalho do projeto */}
-                <div 
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-750 transition-colors"
-                  onClick={() => toggleProjectExpansion(project)}
-                >
-                  <div className="flex items-center space-x-3">
-                    {expandedProjects[project] ? (
-                      <ChevronDown size={20} className="text-gray-400" />
-                    ) : (
-                      <ChevronRight size={20} className="text-gray-400" />
-                    )}
-                    <Folder size={20} className="text-blue-400" />
-                    <h3 className="font-medium text-white">{project}</h3>
-                    <span className="text-sm text-gray-400">
-                      ({contentByProject[project].all.length} arquivos)
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 text-sm">
-                    <div className="flex items-center space-x-1">
-                      <Image size={14} className="text-pink-400" />
-                      <span className="text-gray-400">{contentByProject[project].images.length}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Music size={14} className="text-green-400" />
-                      <span className="text-gray-400">{contentByProject[project].audios.length}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Video size={14} className="text-purple-400" />
-                      <span className="text-gray-400">{contentByProject[project].videos.length}</span>
-                    </div>
-                  </div>
+        </div>
+
+        {/* Conteúdo */}
+        {allContent.length === 0 && content.projects.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <FileText size={48} className="mx-auto mb-4" />
+              <p className="text-xl mb-2">Nenhum conteúdo encontrado</p>
+              <p className="text-sm">Execute uma pipeline para gerar conteúdo</p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Projetos */}
+            {content.projects && content.projects.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold mb-4 flex items-center">
+                  <svg className="text-indigo-400 mr-2" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  Projetos ({content.projects.length})
+                </h2>
+                <div className="grid grid-cols-1 gap-4">
+                  {content.projects.map((project, index) => (
+                    <ProjectCard key={project.project_id} project={project} />
+                  ))}
                 </div>
-                
-                {/* Conteúdo do projeto (expansível) */}
-                {expandedProjects[project] && (
-                  <div className="border-t border-gray-700 p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {contentByProject[project].all.map((item, index) => (
-                        <motion.div
-                          key={`${item.type}-${item.filename}-${index}`}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className={`bg-gray-750 rounded-lg border ${getTypeColor(item.type)} p-4 hover:bg-gray-700 transition-colors`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                {getTypeIcon(item.type)}
-                                <span className="text-xs font-medium text-gray-400 uppercase">{item.type}</span>
-                              </div>
-                              <div className="flex space-x-1">
-                                {item.type === 'audio' && item.url && (
-                                  <button
-                                    onClick={() => handleAudioPlay(item)}
-                                    className={`p-1 hover:bg-gray-700 rounded ${
-                                      currentAudio?.filename === item.filename && isPlaying
-                                        ? 'text-green-400'
-                                        : 'text-gray-400 hover:text-white'
-                                    }`}
-                                    title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
-                                  >
-                                    {currentAudio?.filename === item.filename && isPlaying ? (
-                                      <Pause size={14} />
-                                    ) : (
-                                      <Play size={14} />
-                                    )}
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handlePreview(item)}
-                                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                                  title="Visualizar"
-                                >
-                                  <Eye size={14} />
-                                </button>
-                                <button
-                                  onClick={() => handleDownload(item)}
-                                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                                  title="Download"
-                                >
-                                  <Download size={14} />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(item)}
-                                  className="p-1 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
-                                  title="Excluir"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                            <h3 className="font-medium text-white mb-2 truncate" title={item.filename}>
-                              {item.filename}
-                            </h3>
-                            <div className="text-xs text-gray-400 space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <HardDrive size={12} />
-                                <span>{formatFileSize(item.size)}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Calendar size={12} />
-                                <span>{formatDate(item.created_at)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+              </div>
+            )}
+            
+            {/* Outros conteúdos */}
+            {allContent.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold mb-4">Outros Conteúdos</h2>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {allContent.map((item, index) => (
+                      <ContentCard key={`${item.type}-${index}`} item={item} />
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    {allContent.map((item, index) => (
+                      <ContentListItem key={`${item.type}-${index}`} item={item} />
+                    ))}
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        ) : (
-          // Visualização em lista (padrão)
-          <div className="space-y-2">
-            {getFilteredContent().map((item, index) => (
-              <motion.div
-                key={`${item.type}-${item.filename}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`bg-gray-800 rounded-lg border ${getTypeColor(item.type)} p-4 hover:bg-gray-750 transition-colors`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    {getTypeIcon(item.type)}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-white truncate" title={item.filename}>
-                        {item.filename}
-                      </h3>
-                      <div className="flex items-center space-x-4 text-xs text-gray-400">
-                        <span>{formatFileSize(item.size)}</span>
-                        <span>{formatDate(item.created_at)}</span>
-                        {item.directory && <span>📁 {item.directory}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    {item.type === 'audio' && item.url && (
-                      <button
-                        onClick={() => handleAudioPlay(item)}
-                        className={`p-2 hover:bg-gray-700 rounded ${
-                          currentAudio?.filename === item.filename && isPlaying
-                            ? 'text-green-400'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                        title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
-                      >
-                        {currentAudio?.filename === item.filename && isPlaying ? (
-                          <Pause size={16} />
-                        ) : (
-                          <Play size={16} />
-                        )}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handlePreview(item)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                      title="Visualizar"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDownload(item)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
-                      title="Download"
-                    >
-                      <Download size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item)}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
-                      title="Excluir"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            )}
           </div>
         )}
+
+        {/* Áudio Player Oculto */}
+        <audio ref={audioRef} />
       </div>
-
-      {/* Audio Player */}
-      {currentAudio && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-50">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center space-x-4">
-              {/* Audio Info */}
-              <div className="flex items-center space-x-3 min-w-0 flex-1">
-                <div className="bg-green-500/20 p-2 rounded-lg">
-                  <Volume2 className="text-green-400" size={20} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-white font-medium truncate">{currentAudio.filename}</h4>
-                  <p className="text-gray-400 text-sm">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => handleAudioPlay(currentAudio)}
-                  className="bg-green-600 hover:bg-green-700 p-2 rounded-lg"
-                >
-                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                </button>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="flex-1 max-w-md">
-                <div
-                  className="bg-gray-700 h-2 rounded-full cursor-pointer"
-                  onClick={handleSeek}
-                >
-                  <div
-                    className="bg-green-500 h-2 rounded-full transition-all"
-                    style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden Audio Element */}
-      {currentAudio && (
-        <audio
-          ref={audioRef}
-          src={currentAudio.url}
-          onTimeUpdate={handleAudioTimeUpdate}
-          onEnded={handleAudioEnded}
-          onLoadedMetadata={handleAudioTimeUpdate}
-          onError={(e) => {
-            console.error('Erro ao carregar áudio:', e);
-            alert('Não foi possível reproduzir o áudio. Verifique se o arquivo está disponível.');
-          }}
-        />
-      )}
-
-      {/* Video Preview Modal */}
-      {showVideoPreview && selectedVideo && (
-        <VideoPreview
-          video={selectedVideo}
-          isOpen={showVideoPreview}
-          onClose={handleCloseVideoPreview}
-        />
-      )}
     </div>
-  )
-}
+  );
+};
 
-export default ConteudosGerados
+export default ConteudosGerados;

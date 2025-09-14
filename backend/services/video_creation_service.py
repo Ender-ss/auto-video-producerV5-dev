@@ -127,29 +127,75 @@ class VideoCreationService:
             self._log('info', 'Criando clipes de imagem')
             image_clips = self._create_image_clips(images, image_timings, resolution)
             
+            # Verificar se os clipes foram criados corretamente
+            if not image_clips:
+                raise Exception('Nenhum clipe de imagem foi criado')
+            
+            self._log('info', f'{len(image_clips)} clipes de imagem criados com sucesso')
+            
+            # Log informações sobre os clipes criados
+            for i, clip in enumerate(image_clips):
+                self._log('info', f'Clip {i+1}: duração={clip.duration:.2f}s, tamanho={clip.w if hasattr(clip, "w") else "N/A"}x{clip.h if hasattr(clip, "h") else "N/A"}')
+            
             # Adicionar transições se solicitado
             if transitions:
                 self._log('info', 'Adicionando transições entre imagens')
+                original_clips = image_clips
                 image_clips = self._add_transitions(image_clips)
+                
+                # Verificar se as transições foram aplicadas corretamente
+                if len(image_clips) != len(original_clips):
+                    self._log('warning', f'O número de clipes mudou após as transições: {len(original_clips)} -> {len(image_clips)}')
+                
+                # Log informações sobre os clipes com transições
+                for i, clip in enumerate(image_clips):
+                    self._log('info', f'Clip com transição {i+1}: duração={clip.duration:.2f}s, tamanho={clip.w if hasattr(clip, "w") else "N/A"}x{clip.h if hasattr(clip, "h") else "N/A"}')
             
             # Combinar clipes de imagem
             self._log('info', 'Combinando clipes de imagem')
-            video_clip = concatenate_videoclips(image_clips, method='compose')
+            try:
+                # Tentar concatenar com método chain
+                video_clip = concatenate_videoclips(image_clips, method='chain')
+                self._log('info', f'Clipes concatenados com método chain, duração total: {video_clip.duration:.2f}s, tamanho: {video_clip.w if hasattr(video_clip, "w") else "N/A"}x{video_clip.h if hasattr(video_clip, "h") else "N/A"}')
+            except Exception as e:
+                self._log('warning', f'Erro ao concatenar com método chain: {str(e)}')
+                try:
+                    # Fallback para método compose
+                    video_clip = concatenate_videoclips(image_clips, method='compose')
+                    self._log('info', f'Clipes concatenados com método compose, duração total: {video_clip.duration:.2f}s, tamanho: {video_clip.w if hasattr(video_clip, "w") else "N/A"}x{video_clip.h if hasattr(video_clip, "h") else "N/A"}')
+                except Exception as e2:
+                    self._log('error', f'Erro ao concatenar com método compose: {str(e2)}')
+                    # Último recurso: usar o primeiro clipe
+                    video_clip = image_clips[0] if image_clips else None
+                    if video_clip:
+                        self._log('warning', f'Usando apenas o primeiro clipe como fallback, duração: {video_clip.duration:.2f}s, tamanho: {video_clip.w if hasattr(video_clip, "w") else "N/A"}x{video_clip.h if hasattr(video_clip, "h") else "N/A"}')
+                    else:
+                        raise Exception('Não foi possível criar o vídeo final - nenhum clipe disponível')
             
             # Adicionar áudio
             self._log('info', 'Adicionando áudio ao vídeo')
             audio_clip = AudioFileClip(audio_path)
+            self._log('info', f'Áudio carregado com duração: {audio_clip.duration:.2f}s')
+            
+            # Verificar se o vídeo clip foi criado corretamente
+            if video_clip is None:
+                raise Exception('Vídeo clip não foi criado corretamente')
+            
             video_clip = video_clip.with_audio(audio_clip)
+            self._log('info', f'Áudio adicionado ao vídeo, duração do vídeo: {video_clip.duration:.2f}s')
             
             # Ajustar duração do vídeo para corresponder ao áudio
             if video_clip.duration != audio_duration:
                 self._log('info', f'Ajustando duração do vídeo: {video_clip.duration:.2f}s -> {audio_duration:.2f}s')
-                video_clip = video_clip.set_duration(audio_duration)
+                video_clip = video_clip.with_duration(audio_duration)
+                self._log('info', f'Duração do vídeo ajustada para: {video_clip.duration:.2f}s')
             
             # Adicionar legendas se solicitado
             if subtitles:
                 self._log('info', 'Adicionando legendas ao vídeo')
+                original_duration = video_clip.duration
                 video_clip = self._add_subtitles(video_clip, script_text, audio_duration, tts_segments)
+                self._log('info', f'Legendas adicionadas ao vídeo, duração antes: {original_duration:.2f}s, depois: {video_clip.duration:.2f}s')
             
             # Definir configurações de qualidade adaptativas
             codec_settings = self._get_adaptive_codec_settings(quality, resolution, audio_duration)
@@ -159,6 +205,7 @@ class VideoCreationService:
             output_path = os.path.join(self.output_dir, output_filename)
             
             self._log('info', 'Iniciando renderização do vídeo')
+            self._log('info', f'Informações do vídeo antes da renderização: duração={video_clip.duration:.2f}s, tamanho={video_clip.w if hasattr(video_clip, "w") else "N/A"}x{video_clip.h if hasattr(video_clip, "h") else "N/A"}')
             
             # Renderização otimizada com configurações avançadas
             self._render_video_optimized(
@@ -170,10 +217,15 @@ class VideoCreationService:
             final_duration = video_clip.duration
             
             # Limpar recursos
+            self._log('info', 'Limpando recursos')
             video_clip.close()
             audio_clip.close()
-            for clip in image_clips:
-                clip.close()
+            for i, clip in enumerate(image_clips):
+                try:
+                    clip.close()
+                    self._log('info', f'Clipe {i+1} fechado com sucesso')
+                except Exception as e:
+                    self._log('warning', f'Erro ao fechar clipe {i+1}: {str(e)}')
             
             self._log('info', 'Vídeo criado com sucesso', {
                 'output_path': output_path,
@@ -473,32 +525,46 @@ class VideoCreationService:
                 # Criar clipe de imagem
                 try:
                     from moviepy import ImageClip as MoviePyImageClip
-                    img_clip = MoviePyImageClip(img_path, duration=duration)
+                    img_clip = MoviePyImageClip(img_path)
+                    img_clip = img_clip.with_duration(duration)
+                    self._log('info', f'Clipe de imagem criado com duração: {duration:.2f}s, tamanho: {img_clip.w}x{img_clip.h}')
                 except ImportError:
                     raise Exception('ImageClip não disponível - MoviePy não está instalado corretamente')
+                except Exception as e:
+                    self._log('error', f'Erro ao criar clipe de imagem: {str(e)}')
+                    raise
                 
                 # Redimensionar mantendo proporção
-                img_clip = img_clip.resize(height=height)
+                img_clip = img_clip.resized(height=height)
+                self._log('info', f'Imagem redimensionada para altura {height}, novo tamanho: {img_clip.w}x{img_clip.h}')
                 
-                # Se a imagem for mais larga que o vídeo, centralizar
+                # Se a imagem for mais larga que o vídeo, redimensionar pela largura
                 if img_clip.w > width:
-                    img_clip = img_clip.resize(width=width)
+                    img_clip = img_clip.resized(width=width)
+                    self._log('info', f'Imagem redimensionada para largura {width}, novo tamanho: {img_clip.w}x{img_clip.h}')
                 
                 # Centralizar imagem
-                img_clip = img_clip.set_position('center')
+                img_clip = img_clip.with_position('center')
+                self._log('info', f'Imagem centralizada')
                 
                 # Adicionar fundo preto se necessário
                 if img_clip.w < width or img_clip.h < height:
                     try:
                         from moviepy import ColorClip as MoviePyColorClip, CompositeVideoClip as MoviePyCompositeVideoClip
                         background = MoviePyColorClip(size=(width, height), color=(0, 0, 0), duration=duration)
-                        img_clip = MoviePyCompositeVideoClip([background, img_clip.set_position('center')])
+                        img_clip = MoviePyCompositeVideoClip([background, img_clip.with_position('center')])
+                        self._log('info', f'Fundo preto adicionado para imagem {i+1} (tamanho ajustado)')
                     except ImportError:
                         self._log('warning', 'ColorClip/CompositeVideoClip não disponível, usando imagem sem fundo')
+                    except Exception as e:
+                        self._log('error', f'Erro ao adicionar fundo preto: {str(e)}')
+                else:
+                    # Se a imagem já tem o tamanho correto, não adicionar fundo preto
+                    self._log('info', f'Imagem {i+1} já tem o tamanho correto, sem fundo preto adicional')
                 
                 image_clips.append(img_clip)
                 
-                self._log('info', f'Imagem {i + 1}/{len(images)} processada com sucesso (duração: {duration:.2f}s)')
+                self._log('info', f'Imagem {i + 1}/{len(images)} processada com sucesso (duração: {duration:.2f}s, tamanho final: {img_clip.w}x{img_clip.h})')
                 
             except Exception as e:
                 self._log('warning', f'Erro ao criar clipe {i+1}: {str(e)}')
@@ -507,9 +573,10 @@ class VideoCreationService:
                     from moviepy import ColorClip as MoviePyColorClip
                     fallback_clip = MoviePyColorClip(
                         size=(width, height), 
-                        color=(0, 0, 0),  # Mudar para preto em vez de cinza
+                        color=(64, 64, 64),  # Usar cinza escuro em vez de preto para melhor visualização
                         duration=end_time - start_time
                     )
+                    self._log('warning', f'Usando clipe de fallback cinza para imagem {i+1}')
                     image_clips.append(fallback_clip)
                 except ImportError:
                     self._log('error', 'Não foi possível criar clipe de fallback - ColorClip não disponível')
@@ -529,13 +596,13 @@ class VideoCreationService:
         for i, clip in enumerate(clips):
             if i == 0:
                 # Primeiro clipe: apenas fade in
-                clip = clip.with_effects([fadein(transition_duration)])
+                clip = clip.fadein(transition_duration)
             elif i == len(clips) - 1:
                 # Último clipe: apenas fade out
-                clip = clip.with_effects([fadeout(transition_duration)])
+                clip = clip.fadeout(transition_duration)
             else:
                 # Clipes do meio: fade in e fade out
-                clip = clip.with_effects([fadein(transition_duration), fadeout(transition_duration)])
+                clip = clip.fadein(transition_duration).fadeout(transition_duration)
             
             transitioned_clips.append(clip)
         
@@ -884,7 +951,7 @@ class VideoCreationService:
             
             # Criar preview dos primeiros X segundos
             preview_duration = min(duration, video.duration)
-            preview = video.subclip(0, preview_duration)
+            preview = video.subclipped(0, preview_duration)
             
             # Salvar preview
             preview_filename = f"preview_{self.pipeline_id}.mp4"

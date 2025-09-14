@@ -2113,6 +2113,54 @@ def generate_tts_elevenlabs():
 
 # Função removida - duplicada mais abaixo
 
+@automations_bp.route('/download/audio/<filename>')
+def download_audio_file(filename):
+    """Download de arquivos de áudio gerados"""
+    try:
+        import os
+        from flask import send_file
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+        filepath = os.path.join(temp_dir, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                'success': False,
+                'error': 'Arquivo não encontrado'
+            }), 404
+
+        return send_file(filepath, as_attachment=True, download_name=filename)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro ao fazer download: {str(e)}'
+        }), 500
+
+@automations_bp.route('/download/video/<filename>')
+def download_video_file(filename):
+    """Download de arquivos de vídeo gerados"""
+    try:
+        import os
+        from flask import send_file
+
+        output_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'videos')
+        filepath = os.path.join(output_dir, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                'success': False,
+                'error': 'Arquivo não encontrado'
+            }), 404
+
+        return send_file(filepath, as_attachment=True, download_name=filename)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro ao fazer download: {str(e)}'
+        }), 500
+
 @automations_bp.route('/download/<filename>')
 def download_audio(filename):
     """Download de arquivos de áudio gerados"""
