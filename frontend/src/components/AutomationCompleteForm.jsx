@@ -138,7 +138,8 @@ INSTRUÇÕES:
               quality: parsedData.config?.images?.quality || 'high',
               total_images: parsedData.config?.images?.total_images || 10,
               custom_prompt: parsedData.config?.images?.custom_prompt || false,
-              custom_instructions: parsedData.config?.images?.custom_instructions || ''
+              custom_instructions: parsedData.config?.images?.custom_instructions || '',
+              agent_style: parsedData.config?.images?.agent_style || true
             },
             video: {
               enabled: parsedData.config?.video?.enabled !== undefined ? parsedData.config.video.enabled : true,
@@ -327,7 +328,8 @@ INSTRUÇÕES:
           quality: 'high',
           total_images: 10,
           custom_prompt: false,
-          custom_instructions: ''
+          custom_instructions: '',
+          agent_style: true
         },
         video: {
           enabled: true,
@@ -2119,6 +2121,18 @@ const MediaSection = ({ formData, onChange }) => {
                 />
                 <label htmlFor="images-custom-prompt" className="text-sm font-medium text-gray-300">
                   Usar prompt personalizado
+                </label>
+              </div>
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="images-agent-style"
+                  checked={formData.config.images.agent_style}
+                  onChange={(e) => onChange('config.images.agent_style', e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="images-agent-style" className="text-sm font-medium text-gray-300">
+                  Aplicar estilo do agente selecionado ({formData.agent.specialized_type}) às imagens
                 </label>
               </div>
               {formData.config.titles.custom_prompt && (

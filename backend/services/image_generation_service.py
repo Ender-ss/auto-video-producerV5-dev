@@ -46,7 +46,7 @@ class ImageGenerationService:
     
     def _generate_images_with_automation_logic(self, script_text: str, provider: str, 
                                              style: str, resolution: str, image_count: int, 
-                                             custom_image_prompt: str = "") -> List[Dict[str, Any]]:
+                                             custom_image_prompt: str = "", selected_agent: str = None) -> List[Dict[str, Any]]:
         """Gerar imagens usando a mesma lógica da aba de automações"""
         try:
             # Preparar parâmetros como na aba de automações
@@ -75,6 +75,10 @@ class ImageGenerationService:
                 else:
                     # Usar a lógica padrão se não houver prompt personalizado
                     final_prompt = f"{scene_text}, {style}"
+                
+                # Adicionar informação do agente selecionado ao prompt, se disponível
+                if selected_agent:
+                    final_prompt = f"{final_prompt}, Agente: {selected_agent}"
                 
                 prompts_to_generate.append(final_prompt)
             
@@ -180,14 +184,15 @@ class ImageGenerationService:
             return None
     
     def generate_images_for_script_total(self, script_text: str, provider: str, style: str, 
-                                        resolution: str, total_images: int, custom_image_prompt: str = "") -> Dict[str, Any]:
+                                        resolution: str, total_images: int, custom_image_prompt: str = "", 
+                                        selected_agent: str = None) -> Dict[str, Any]:
         """Gerar imagens distribuindo total de imagens ao longo de todo o roteiro"""
         try:
             self._log('info', f'Iniciando geração de {total_images} imagens distribuídas ao longo do roteiro')
             
             # Usar a lógica de distribuição uniforme que já existe nas automações
             generated_images = self._generate_images_with_automation_logic(
-                script_text, provider, style, resolution, total_images, custom_image_prompt
+                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent
             )
             
             return {
@@ -202,7 +207,8 @@ class ImageGenerationService:
             raise
 
     def generate_images_for_script(self, script_text: str, provider: str, style: str, 
-                                 resolution: str, per_chapter: int, custom_image_prompt: str = "") -> Dict[str, Any]:
+                                 resolution: str, per_chapter: int, custom_image_prompt: str = "", 
+                                 selected_agent: str = None) -> Dict[str, Any]:
         """Gerar imagens para o roteiro usando a mesma lógica da aba de automações"""
         try:
             self._log('info', 'Iniciando geração de imagens para o roteiro')
@@ -221,7 +227,7 @@ class ImageGenerationService:
             
             # Gerar imagens usando a lógica da aba de automações
             generated_images = self._generate_images_with_automation_logic(
-                script_text, provider, style, resolution, total_images
+                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent
             )
             
             return {

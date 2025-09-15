@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Image, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
-const ImageGenerationStep = ({ script, onComplete, onError }) => {
+const ImageGenerationStep = ({ script, onComplete, onError, agent }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImages, setGeneratedImages] = useState([]);
   const [error, setError] = useState(null);
@@ -60,6 +60,22 @@ const ImageGenerationStep = ({ script, onComplete, onError }) => {
         <Image size={20} className="mr-2 text-pink-400" />
         Etapa: Geração de Imagens
       </h3>
+
+      {agent && (
+        <div className="mb-4 p-3 bg-gray-700 rounded-lg">
+          <div className="flex items-center text-sm text-gray-300 mb-2">
+            <span className="font-medium">Agente:</span>
+            <span className="ml-2 text-white">{agent.type || 'N/A'}</span>
+            {agent.specialized_type && (
+              <>
+                <span className="mx-2">•</span>
+                <span className="font-medium">Tipo:</span>
+                <span className="ml-2 text-white">{agent.specialized_type}</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex items-center text-yellow-400">

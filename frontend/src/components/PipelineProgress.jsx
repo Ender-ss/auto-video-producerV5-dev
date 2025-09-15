@@ -1127,6 +1127,20 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                             <span className="text-gray-400">Provedor:</span>
                             <p className="text-white">{pipeline.results.images.provider || 'N/A'}</p>
                           </div>
+                          {pipeline.config?.agent && (
+                            <>
+                              <div>
+                                <span className="text-gray-400">Agente:</span>
+                                <p className="text-white">{pipeline.config.agent.type || 'N/A'}</p>
+                              </div>
+                              {pipeline.config.agent.specialized_type && (
+                                <div>
+                                  <span className="text-gray-400">Tipo Especializado:</span>
+                                  <p className="text-white">{pipeline.config.agent.specialized_type}</p>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                         
                         {pipeline.results.images.generated_images && (

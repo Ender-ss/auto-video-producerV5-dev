@@ -323,6 +323,7 @@ const Pipeline = () => {
                     <div className="mt-4">
                       <ImageGenerationStep
                         script={pipeline.script}
+                        agent={pipeline.config?.agent}
                         onComplete={(images) => console.log('Imagens geradas:', images)}
                         onError={(error) => console.error('Erro na geração de imagens:', error)}
                       />

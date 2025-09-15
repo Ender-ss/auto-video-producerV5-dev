@@ -44,6 +44,7 @@ def generate_images_route():
         use_custom_image_prompt = data.get('use_custom_image_prompt', False)
         custom_image_prompt = data.get('custom_image_prompt', '').strip()
         image_count = data.get('image_count', 1)
+        selected_agent = data.get('selected_agent', None)
         
         # Validações
         if use_custom_prompt:
@@ -79,7 +80,7 @@ def generate_images_route():
             # Modo: Baseado em roteiro
             if use_ai_agent and ai_agent_prompt:
                 # Usar IA Agent para criar prompts específicos
-                scene_prompts = generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt, custom_image_prompt)
+                scene_prompts = generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt, custom_image_prompt, selected_agent)
                 if not scene_prompts:
                     error_response = format_error_response('internal_error', 'Não foi possível gerar prompts automaticamente com IA', 'IA Agent para Imagens')
                     return jsonify(error_response), 500
@@ -222,7 +223,7 @@ def distribute_scenes_evenly(scenes, image_count):
         
         return selected_scenes
 
-def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt=False, custom_image_prompt=None):
+def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt=False, custom_image_prompt=None, selected_agent=None):
     """
     Usa IA para gerar prompts específicos de imagem baseados no roteiro.
     """
@@ -235,8 +236,15 @@ def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, i
             try:
                 prompts_config = load_prompts_config()
                 image_config = prompts_config.get('image_prompts', {})
-                base_prompt = image_config.get('prompt', ai_agent_prompt)
-                print(f"Usando prompt personalizado de imagem: {base_prompt[:100]}...")
+                
+                # Verificar se há um prompt específico para o agente selecionado
+                if selected_agent and 'agent_specific_prompts' in image_config and selected_agent in image_config['agent_specific_prompts']:
+                    base_prompt = image_config['agent_specific_prompts'][selected_agent]
+                    print(f"Usando prompt específico do agente {selected_agent}: {base_prompt[:100]}...")
+                else:
+                    # Usar prompt padrão
+                    base_prompt = image_config.get('default_prompt', ai_agent_prompt)
+                    print(f"Usando prompt padrão de imagem: {base_prompt[:100]}...")
             except Exception as e:
                 print(f"Erro ao carregar prompt personalizado de imagem: {e}")
                 base_prompt = ai_agent_prompt

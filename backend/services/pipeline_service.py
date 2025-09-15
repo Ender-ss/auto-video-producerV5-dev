@@ -1373,7 +1373,14 @@ class PipelineService:
             
             # Verificar se temos um agente específico e se há um prompt personalizado para ele
             agent_type = self.config.get('agent_type', 'default')
-            custom_image_prompt = images_prompts.get(agent_type, images_prompts.get('default', 'Crie uma descrição detalhada para geração de imagem baseada no contexto: {context}. A imagem deve ser visualmente atrativa e relevante ao conteúdo.'))
+            selected_agent = self.config.get('selected_agent', None)
+            
+            # Se não houver agente selecionado, usar o agent_type como fallback
+            if not selected_agent:
+                selected_agent = agent_type
+            
+            # Verificar se há um prompt específico para o agente selecionado
+            custom_image_prompt = images_prompts.get(selected_agent, images_prompts.get('default', 'Crie uma descrição detalhada para geração de imagem baseada no contexto: {context}. A imagem deve ser visualmente atrativa e relevante ao conteúdo.'))
             
             # Importar serviço de geração de imagens
             from services.image_generation_service import ImageGenerationService
@@ -1384,7 +1391,7 @@ class PipelineService:
             
             # Gerar imagens com prompt personalizado usando nova lógica de total
             result = image_service.generate_images_for_script_total(
-                script_text, provider, style, resolution, total_images, custom_image_prompt
+                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent
             )
             
             self._update_progress('images', 100)
