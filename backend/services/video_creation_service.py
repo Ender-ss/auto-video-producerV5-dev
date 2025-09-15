@@ -11,6 +11,12 @@ import subprocess
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
 
+# Adicionar diretório raiz ao path para importar video_distribution_config
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Importar configurações de distribuição de vídeo
+from video_distribution_config import DURATION_TOLERANCE, TRANSITION_DURATION
+
 # Adicionar diretório routes ao path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -187,35 +193,48 @@ class VideoCreationService:
                 raise Exception('O vídeo clip tem duração zero')
             
             # Ajustar duração do vídeo para corresponder ao áudio se necessário
-            if abs(video_clip.duration - audio_clip.duration) > 0.1:  # Diferença maior que 0.1s
-                self._log('info', f'Ajustando duração do vídeo: {video_clip.duration:.2f}s -> {audio_clip.duration:.2f}s')
+            duration_difference = abs(video_clip.duration - audio_clip.duration)
+            tolerance = 0.5  # Tolerância de 0.5 segundos para evitar ajustes desnecessários
+            
+            if duration_difference > tolerance:
+                self._log('info', f'Ajustando duração do vídeo: {video_clip.duration:.2f}s -> {audio_clip.duration:.2f}s (diferença: {duration_difference:.2f}s)')
                 
                 # Se o vídeo é mais curto, redistribuir uniformemente o tempo extra entre todos os clipes
                 if video_clip.duration < audio_clip.duration:
-                    # Calcular quanto tempo precisamos adicionar
-                    extra_time = audio_clip.duration - video_clip.duration
+                    # Nova lógica: recalcular os timings e recriar os clipes para manter distribuição uniforme
+                    self._log('info', 'Recalculando timings e recriando clipes para manter distribuição uniforme')
                     
-                    # Redistribuir uniformemente entre todos os clipes
-                    extra_time_per_clip = extra_time / len(image_clips)
+                    # Fechar clipes antigos
+                    for clip in image_clips:
+                        try:
+                            clip.close()
+                        except:
+                            pass
                     
-                    # Ajustar cada clipe
-                    for i, clip in enumerate(image_clips):
-                        new_duration = clip.duration + extra_time_per_clip
-                        image_clips[i] = clip.with_duration(new_duration)
-                        self._log('info', f'Clipe {i+1} ajustado: {clip.duration:.2f}s -> {new_duration:.2f}s')
+                    # Recalcular timings uniformemente com a duração do áudio
+                    new_timings = self._calculate_uniform_timings(images, audio_clip.duration)
                     
-                    # Recriar o vídeo com os clipes ajustados
+                    # Recriar clipes de imagem com os novos timings
+                    image_clips = self._create_image_clips(images, new_timings, resolution)
+                    
+                    # Aplicar transições novamente se necessário
+                    if transitions:
+                        image_clips = self._add_transitions(image_clips)
+                    
+                    # Recriar o vídeo com os clipes recalculados
                     try:
                         video_clip = concatenate_videoclips(image_clips, method='chain')
                     except Exception as e:
                         self._log('warning', f'Erro ao concatenar com método chain após ajuste: {str(e)}')
                         video_clip = concatenate_videoclips(image_clips, method='compose')
                     
-                    self._log('info', f'Duração do vídeo ajustada para: {video_clip.duration:.2f}s')
+                    self._log('info', f'Duração do vídeo ajustada para: {video_clip.duration:.2f}s após recálculo completo')
                 else:
                     # Se o vídeo é mais longo, cortar para corresponder ao áudio
                     video_clip = video_clip.subclipped(0, audio_clip.duration)
                     self._log('info', f'Duração do vídeo cortada para: {video_clip.duration:.2f}s')
+            else:
+                self._log('info', f'Duração do vídeo está próxima o suficiente do áudio (diferença: {duration_difference:.2f}s), nenhum ajuste necessário')
             
             # Adicionar áudio ao vídeo
             video_clip = video_clip.with_audio(audio_clip)
@@ -227,6 +246,12 @@ class VideoCreationService:
                 original_duration = video_clip.duration
                 video_clip = self._add_subtitles(video_clip, script_text, audio_duration, tts_segments)
                 self._log('info', f'Legendas adicionadas ao vídeo, duração antes: {original_duration:.2f}s, depois: {video_clip.duration:.2f}s')
+                
+                # Verificar se a duração mudou significativamente após adicionar legendas
+                subtitle_duration_diff = abs(video_clip.duration - audio_clip.duration)
+                if subtitle_duration_diff > tolerance:
+                    self._log('info', f'Ajustando duração após adicionar legendas: {video_clip.duration:.2f}s -> {audio_clip.duration:.2f}s')
+                    video_clip = video_clip.subclipped(0, audio_clip.duration)
             
             # Definir configurações de qualidade adaptativas
             codec_settings = self._get_adaptive_codec_settings(quality, resolution, audio_duration)
@@ -669,23 +694,23 @@ class VideoCreationService:
         if len(clips) <= 1:
             return clips
         
-        transition_duration = 0.5  # 0.5 segundos de transição
+        transition_duration = TRANSITION_DURATION  # Usar duração configurada nas transições
         
         transitioned_clips = []
         
         for i, clip in enumerate(clips):
             # Verificar se o clipe é um CompositeVideoClip
-            if hasattr(clip, 'fadein'):
+            if hasattr(clip, 'with_effects'):
                 # Clip normal: aplicar transições
                 if i == 0:
                     # Primeiro clipe: apenas fade in
-                    clip = clip.fadein(transition_duration)
+                    clip = clip.with_effects([FadeIn(transition_duration)])
                 elif i == len(clips) - 1:
                     # Último clipe: apenas fade out
-                    clip = clip.fadeout(transition_duration)
+                    clip = clip.with_effects([FadeOut(transition_duration)])
                 else:
                     # Clipes do meio: fade in e fade out
-                    clip = clip.fadein(transition_duration).fadeout(transition_duration)
+                    clip = clip.with_effects([FadeIn(transition_duration), FadeOut(transition_duration)])
             else:
                 # CompositeVideoClip: não aplicar transições diretamente
                 self._log('warning', f'Clip {i+1} é um CompositeVideoClip, transições não aplicadas')
@@ -970,7 +995,6 @@ class VideoCreationService:
                 'bitrate': codec_settings.get('bitrate', '5500k'),
                 'preset': codec_settings.get('preset', 'medium'),
                 'threads': threads,
-                'logger': None,
                 'temp_audiofile': os.path.join(self.temp_dir, 'temp_audio.m4a'),
                 'remove_temp': True
             }
@@ -1019,8 +1043,7 @@ class VideoCreationService:
                     codec='libx264',
                     audio_codec='aac',
                     bitrate=codec_settings.get('bitrate', '5500k'),
-                    preset=codec_settings.get('preset', 'medium'),
-                    logger=None
+                    preset=codec_settings.get('preset', 'medium')
                 )
                 self._log('info', 'Renderização básica concluída com sucesso')
             except Exception as fallback_error:
