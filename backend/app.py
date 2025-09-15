@@ -196,6 +196,12 @@ class Pipeline(db.Model):
             video_results = {}
             warnings = []
         
+        # Calcular tempo decorrido
+        elapsed_time = 0
+        if self.started_at:
+            end_time = self.completed_at or datetime.utcnow()
+            elapsed_time = (end_time - self.started_at).total_seconds()
+        
         return {
             'id': self.id,
             'pipeline_id': self.pipeline_id,
@@ -224,6 +230,7 @@ class Pipeline(db.Model):
             'started_at': self.started_at.isoformat(),
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'estimated_completion': self.estimated_completion.isoformat() if self.estimated_completion else None,
+            'elapsed_time': elapsed_time,
             'error_message': self.error_message,
             'warnings': warnings
         }

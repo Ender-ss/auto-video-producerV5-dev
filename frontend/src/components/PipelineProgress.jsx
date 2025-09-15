@@ -277,7 +277,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
     } else if (minutes > 0) {
       return `${minutes}m ${secs}s`
     } else {
-      return `${secs}s`
+      return `${Math.round(seconds / 60 * 100) / 100}min`
     }
   }
 

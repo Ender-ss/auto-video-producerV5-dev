@@ -651,6 +651,18 @@ def get_pipeline_status(pipeline_id: str):
                     if db_pipeline.completed_at:
                         pipeline_state['completed_at'] = db_pipeline.completed_at.isoformat()
             
+            # Calcular elapsed_time para pipelines ativos
+            if 'started_at' in pipeline_state:
+                try:
+                    start_time = datetime.fromisoformat(pipeline_state['started_at'])
+                    end_time = datetime.utcnow()
+                    if 'completed_at' in pipeline_state and pipeline_state['completed_at']:
+                        end_time = datetime.fromisoformat(pipeline_state['completed_at'])
+                    pipeline_state['elapsed_time'] = (end_time - start_time).total_seconds()
+                except Exception as e:
+                    logger.warning(f"Erro ao calcular elapsed_time para pipeline ativo: {e}")
+                    pipeline_state['elapsed_time'] = 0
+            
             # Incluir logs no estado do pipeline para o frontend
             pipeline_state['logs'] = pipeline_logs.get(pipeline_id, [])
             
