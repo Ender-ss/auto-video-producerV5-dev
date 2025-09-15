@@ -1370,7 +1370,10 @@ class PipelineService:
             
             # Obter prompt personalizado para imagens
             images_prompts = self.custom_prompts.get('images', {})
-            custom_image_prompt = images_prompts.get('default', 'Crie uma descrição detalhada para geração de imagem baseada no contexto: {context}. A imagem deve ser visualmente atrativa e relevante ao conteúdo.')
+            
+            # Verificar se temos um agente específico e se há um prompt personalizado para ele
+            agent_type = self.config.get('agent_type', 'default')
+            custom_image_prompt = images_prompts.get(agent_type, images_prompts.get('default', 'Crie uma descrição detalhada para geração de imagem baseada no contexto: {context}. A imagem deve ser visualmente atrativa e relevante ao conteúdo.'))
             
             # Importar serviço de geração de imagens
             from services.image_generation_service import ImageGenerationService

@@ -45,7 +45,8 @@ class ImageGenerationService:
             logger.error(f"Erro ao adicionar log: {str(e)}")
     
     def _generate_images_with_automation_logic(self, script_text: str, provider: str, 
-                                             style: str, resolution: str, image_count: int) -> List[Dict[str, Any]]:
+                                             style: str, resolution: str, image_count: int, 
+                                             custom_image_prompt: str = "") -> List[Dict[str, Any]]:
         """Gerar imagens usando a mesma lógica da aba de automações"""
         try:
             # Preparar parâmetros como na aba de automações
@@ -64,7 +65,17 @@ class ImageGenerationService:
             # Gerar prompts finais com estilo
             prompts_to_generate = []
             for scene_text in scenes_to_use:
-                final_prompt = f"{scene_text}, {style}"
+                # Se houver um prompt personalizado, use-o substituindo o contexto
+                if custom_image_prompt:
+                    # Substituir {context} pelo texto da cena
+                    final_prompt = custom_image_prompt.replace('{context}', scene_text)
+                    # Adicionar o estilo no final, se não estiver já no prompt
+                    if style.lower() not in final_prompt.lower():
+                        final_prompt = f"{final_prompt}, {style}"
+                else:
+                    # Usar a lógica padrão se não houver prompt personalizado
+                    final_prompt = f"{scene_text}, {style}"
+                
                 prompts_to_generate.append(final_prompt)
             
             # Gerar imagens para cada prompt
@@ -176,7 +187,7 @@ class ImageGenerationService:
             
             # Usar a lógica de distribuição uniforme que já existe nas automações
             generated_images = self._generate_images_with_automation_logic(
-                script_text, provider, style, resolution, total_images
+                script_text, provider, style, resolution, total_images, custom_image_prompt
             )
             
             return {
