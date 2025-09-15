@@ -18,6 +18,168 @@ images_bp = Blueprint('images', __name__)
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '..', 'output', 'images')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+@images_bp.route('/generate-enhanced', methods=['POST'])
+def generate_images_enhanced_route():
+    """
+    Gera imagens a partir de um roteiro usando divisão inteligente e opções avançadas.
+    """
+    try:
+        data = request.get_json()
+        
+        # Parâmetros básicos
+        script = data.get('script', '').strip()
+        api_key = data.get('api_key', '').strip()
+        provider = data.get('provider', 'pollinations')  # pollinations, together, gemini
+        model = data.get('model', 'black-forest-labs/FLUX.1-krea-dev')
+        style_prompt = data.get('style', 'cinematic, high detail, 4k')
+        format_size = data.get('format', '1024x1024')
+        quality = data.get('quality', 'standard')
+        pollinations_model = data.get('pollinations_model', 'flux')  # flux ou gpt
+        
+        # Parâmetros avançados
+        use_ai_agent = data.get('use_ai_agent', False)
+        ai_agent_prompt = data.get('ai_agent_prompt', '')
+        use_custom_prompt = data.get('use_custom_prompt', False)
+        custom_prompt = data.get('custom_prompt', '').strip()
+        use_custom_image_prompt = data.get('use_custom_image_prompt', False)
+        custom_image_prompt = data.get('custom_image_prompt', '').strip()
+        image_count = data.get('image_count', 1)
+        selected_agent = data.get('selected_agent', None)
+        
+        # Novos parâmetros para divisão inteligente
+        split_strategy = data.get('split_strategy', 'intelligent')  # intelligent ou traditional
+        enable_variations = data.get('enable_variations', False)
+        variation_intensity = data.get('variation_intensity', 1.0)
+        target_scenes = data.get('target_scenes', None)
+        
+        # Validações
+        if use_custom_prompt:
+            if not custom_prompt:
+                error_response = format_error_response('validation_error', 'Prompt personalizado é obrigatório quando selecionado', 'Geração de Imagens')
+                return jsonify(error_response), 400
+        else:
+            if not script:
+                error_response = format_error_response('validation_error', 'Roteiro é obrigatório para gerar imagens baseadas no conteúdo', 'Geração de Imagens')
+                return jsonify(error_response), 400
+
+        # Pollinations.ai não requer chave de API (é gratuito)
+        if not api_key and provider != 'pollinations':
+            error_response = format_error_response('api_key_missing', f'Chave da API ({provider}) é obrigatória', 'Geração de Imagens')
+            return jsonify(error_response), 400
+
+        # Processar formato da imagem
+        try:
+            width, height = map(int, format_size.split('x'))
+        except ValueError:
+            width, height = 1024, 1024
+
+        generated_images = []
+        prompts_to_generate = []
+
+        # Determinar prompts baseado no modo selecionado
+        if use_custom_prompt:
+            # Modo: Prompt personalizado
+            for i in range(image_count):
+                final_prompt = f"{custom_prompt}, {style_prompt}"
+                prompts_to_generate.append(final_prompt)
+        else:
+            # Modo: Baseado em roteiro
+            if use_ai_agent and ai_agent_prompt:
+                # Usar IA Agent para criar prompts específicos
+                scene_prompts = generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt, custom_image_prompt, selected_agent)
+                if not scene_prompts:
+                    error_response = format_error_response('internal_error', 'Não foi possível gerar prompts automaticamente com IA', 'IA Agent para Imagens')
+                    return jsonify(error_response), 500
+                
+                for scene_prompt in scene_prompts:
+                    final_prompt = f"{scene_prompt}, {style_prompt}"
+                    prompts_to_generate.append(final_prompt)
+            else:
+                # Dividir roteiro em cenas usando a estratégia selecionada
+                if split_strategy == 'intelligent':
+                    scenes = split_script_intelligently(script, target_scenes or image_count)
+                else:
+                    # Modo tradicional
+                    scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+                
+                if not scenes:
+                    error_response = format_error_response('content_too_long', 'Não foi possível dividir o roteiro em cenas', 'Análise de Roteiro')
+                    return jsonify(error_response), 400
+                
+                # Distribuir cenas uniformemente ao longo do roteiro completo
+                scenes_to_use = distribute_scenes_evenly(scenes, image_count, enable_variations, variation_intensity)
+                
+                for scene_text in scenes_to_use:
+                    final_prompt = f"{scene_text}, {style_prompt}"
+                    prompts_to_generate.append(final_prompt)
+
+        # Gerar imagens para cada prompt
+        for i, prompt in enumerate(prompts_to_generate):
+            try:
+                # Gerar imagem baseado no provedor
+                if provider == 'gemini':
+                    image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                elif provider == 'pollinations':
+                    image_bytes = generate_image_pollinations(prompt, width, height, quality, pollinations_model)
+                else:  # together
+                    image_bytes = generate_image_together(prompt, api_key, width, height, quality, model)
+                
+                if image_bytes is None:
+                    print(f"Erro ao gerar imagem {i+1}: {prompt[:50]}...")
+                    continue
+
+                # Salvar a imagem
+                timestamp = int(time.time() * 1000)
+                filename = f"image_{timestamp}_{i+1}.png"
+                filepath = os.path.join(OUTPUT_DIR, filename)
+
+                with open(filepath, 'wb') as f:
+                    f.write(image_bytes)
+
+                # URL para acessar a imagem
+                image_url = f"/api/images/view/{filename}"
+                generated_images.append({
+                    'prompt': prompt,
+                    'url': image_url,
+                    'provider': provider
+                })
+                
+                # Delay entre gerações para respeitar limites de taxa
+                if i < len(prompts_to_generate) - 1:  # Não aguardar após a última imagem
+                    if provider == 'pollinations':
+                        time.sleep(5)  # 5 segundos para Pollinations
+                    else:
+                        time.sleep(2)  # 2 segundos para outras APIs
+                        
+            except Exception as e:
+                print(f"Erro ao processar imagem {i+1}: {str(e)}")
+                generated_images.append({
+                    'prompt': prompt,
+                    'url': None,
+                    'provider': provider,
+                    'error': str(e)
+                })
+                continue
+
+        if not generated_images:
+            error_response = format_error_response('internal_error', 'Todas as tentativas de geração de imagem falharam', 'Geração de Imagens')
+            return jsonify(error_response), 500
+
+        return jsonify({
+            'success': True,
+            'message': f'{len([img for img in generated_images if img.get("url")])} imagens geradas com sucesso!',
+            'images': generated_images,
+            'total_requested': len(prompts_to_generate),
+            'total_generated': len([img for img in generated_images if img.get("url")]),
+            'split_strategy': split_strategy,
+            'enable_variations': enable_variations,
+            'variation_intensity': variation_intensity
+        })
+
+    except Exception as e:
+        error_response = auto_format_error(str(e), 'Geração de Imagens')
+        return jsonify(error_response), 500
+
 @images_bp.route('/generate', methods=['POST'])
 def generate_images_route():
     """
@@ -89,11 +251,11 @@ def generate_images_route():
                     final_prompt = f"{scene_prompt}, {style_prompt}"
                     prompts_to_generate.append(final_prompt)
             else:
-                # Dividir roteiro em cenas/parágrafos (modo tradicional)
-                scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+                # Dividir roteiro em cenas usando divisão inteligente
+                scenes = split_script_intelligently(script, image_count)
                 
                 if not scenes:
-                    error_response = format_error_response('content_too_long', 'O roteiro precisa ter parágrafos separados para gerar imagens', 'Análise de Roteiro')
+                    error_response = format_error_response('content_too_long', 'Não foi possível dividir o roteiro em cenas', 'Análise de Roteiro')
                     return jsonify(error_response), 400
                 
                 # Distribuir cenas uniformemente ao longo do roteiro completo
@@ -150,17 +312,98 @@ def generate_images_route():
             'message': f'{len(generated_images)} imagens geradas com sucesso!',
             'image_urls': generated_images,
             'total_requested': len(prompts_to_generate),
-            'total_generated': len(generated_images)
+            'total_generated': len(generated_images),
+            'split_strategy': 'intelligent'
         })
 
     except Exception as e:
         error_response = auto_format_error(str(e), 'Geração de Imagens')
         return jsonify(error_response), 500
 
-def distribute_scenes_evenly(scenes, image_count):
+def split_script_intelligently(script, target_scenes=None):
+    """
+    Divide o roteiro de forma inteligente, identificando cenas significativas.
+    
+    Args:
+        script (str): O roteiro completo
+        target_scenes (int, optional): Número desejado de cenas. Se None, usa divisão automática.
+    
+    Returns:
+        list: Lista de cenas divididas inteligentemente
+    """
+    # Dividir inicialmente por parágrafos duplos
+    initial_scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+    
+    if not initial_scenes:
+        return []
+    
+    # Se não temos um alvo específico, retornar as cenas iniciais
+    if target_scenes is None or len(initial_scenes) <= target_scenes:
+        return initial_scenes
+    
+    # Se precisamos de mais cenas que as iniciais, tentar dividir parágrafos longos
+    if len(initial_scenes) < target_scenes:
+        enhanced_scenes = []
+        
+        for scene in initial_scenes:
+            # Se o parágrafo é longo (mais de 3 frases), tentar dividir
+            sentences = [s.strip() for s in scene.split('.') if s.strip()]
+            
+            if len(sentences) > 3:
+                # Dividir em duas partes: primeira metade e segunda metade das frases
+                mid_point = len(sentences) // 2
+                first_part = '. '.join(sentences[:mid_point]) + '.'
+                second_part = '. '.join(sentences[mid_point:]) + '.'
+                
+                enhanced_scenes.append(first_part)
+                enhanced_scenes.append(second_part)
+            else:
+                enhanced_scenes.append(scene)
+        
+        # Se ainda não temos cenas suficientes, dividir por frases
+        if len(enhanced_scenes) < target_scenes:
+            final_scenes = []
+            for scene in enhanced_scenes:
+                if len(final_scenes) >= target_scenes:
+                    break
+                    
+                # Dividir por frases se ainda precisamos de mais cenas
+                sentences = [s.strip() for s in scene.split('.') if s.strip()]
+                if len(sentences) > 1 and len(final_scenes) + len(sentences) <= target_scenes:
+                    for sentence in sentences:
+                        final_scenes.append(sentence + '.')
+                else:
+                    final_scenes.append(scene)
+            
+            return final_scenes[:target_scenes]
+        
+        return enhanced_scenes[:target_scenes]
+    
+    # Se temos mais cenas que o alvo, selecionar as mais importantes
+    # Algoritmo simples: selecionar cenas uniformemente distribuídas
+    step = len(initial_scenes) / target_scenes
+    selected_scenes = []
+    
+    for i in range(target_scenes):
+        scene_index = int(i * step)
+        scene_index = min(scene_index, len(initial_scenes) - 1)
+        selected_scenes.append(initial_scenes[scene_index])
+    
+    return selected_scenes
+
+def distribute_scenes_evenly(scenes, image_count, enable_variations=False, intensity=1.0):
     """
     Distribui cenas uniformemente ao longo do roteiro completo.
     Evita repetições desnecessárias e garante distribuição inteligente.
+    
+    Args:
+        scenes (list): Lista de cenas disponíveis
+        image_count (int): Número de imagens desejadas
+        enable_variations (bool): Se deve habilitar variações nas cenas
+        intensity (float): Intensidade das variações (0.0 a 1.0)
+    
+    Returns:
+        list: Lista de cenas selecionadas para geração de imagens
     """
     total_scenes = len(scenes)
     
@@ -191,7 +434,7 @@ def distribute_scenes_evenly(scenes, image_count):
         remaining_images = image_count - total_scenes
         
         # Distribuir as imagens extras uniformemente entre as cenas
-        if remaining_images > 0:
+        if remaining_images > 0 and enable_variations:
             # Lista de variações para tornar cada prompt único
             variations = [
                 "different angle and perspective",
@@ -211,6 +454,12 @@ def distribute_scenes_evenly(scenes, image_count):
                 "dynamic composition"
             ]
             
+            # Ajustar a intensidade das variações
+            if intensity < 1.0:
+                # Usar apenas uma parte das variações com base na intensidade
+                variations_count = max(1, int(len(variations) * intensity))
+                variations = variations[:variations_count]
+            
             for i in range(remaining_images):
                 scene_index = i % total_scenes
                 variation_index = i % len(variations)
@@ -220,6 +469,11 @@ def distribute_scenes_evenly(scenes, image_count):
                 variation = variations[variation_index]
                 varied_scene = f"{original_scene}, {variation}"
                 selected_scenes.append(varied_scene)
+        elif remaining_images > 0:
+            # Se variações não estão habilitadas, apenas repetir as cenas
+            for i in range(remaining_images):
+                scene_index = i % total_scenes
+                selected_scenes.append(scenes[scene_index])
         
         return selected_scenes
 
@@ -297,7 +551,7 @@ Retorne apenas os prompts, um por linha, sem numeração ou formatação extra.
                     return prompts[:image_count]  # Garantir que não exceda o número solicitado
         
         # Fallback: dividir roteiro em partes e distribuir uniformemente
-        scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+        scenes = split_script_intelligently(script, image_count)
         if scenes:
             return distribute_scenes_evenly(scenes, image_count)
         else:
@@ -306,7 +560,7 @@ Retorne apenas os prompts, um por linha, sem numeração ou formatação extra.
     except Exception as e:
         print(f"Erro ao gerar prompts com IA Agent: {str(e)}")
         # Fallback: dividir roteiro em partes e distribuir uniformemente
-        scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+        scenes = split_script_intelligently(script, image_count)
         if scenes:
             return distribute_scenes_evenly(scenes, image_count)
         else:
