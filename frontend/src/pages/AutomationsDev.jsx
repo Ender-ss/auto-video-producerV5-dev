@@ -128,7 +128,7 @@ const AutomationsDev = () => {
   const [imageProvider, setImageProvider] = useState('pollinations')
   const [imageFormat, setImageFormat] = useState('1024x1024')
   const [imageQuality, setImageQuality] = useState('standard')
-  const [pollinationsModel, setPollinationsModel] = useState('flux')
+  const [pollinationsModel, setPollinationsModel] = useState('gpt')
   const [aiAgentPrompt, setAiAgentPrompt] = useState('Você é um especialista em criação de prompts visuais para IA. Analise o roteiro fornecido e crie prompts detalhados e específicos para gerar imagens que representem as principais cenas e momentos do conteúdo.\n\nREGRAS IMPORTANTES:\n- Cada prompt deve ter pelo menos 25 palavras\n- Inclua detalhes sobre cenário, personagens, emoções, iluminação e estilo visual\n- Não inclua títulos, cabeçalhos ou numeração\n- Cada prompt deve ser uma descrição visual completa e independente\n- Separe cada prompt por uma linha em branco\n\nFormato: Um prompt visual detalhado por parágrafo, separados por quebras de linha duplas.')
   const [aiAgentProvider, setAiAgentProvider] = useState('openai')
   const [imageQueue, setImageQueue] = useState([])

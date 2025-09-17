@@ -139,7 +139,8 @@ INSTRUÇÕES:
               total_images: parsedData.config?.images?.total_images || 10,
               custom_prompt: parsedData.config?.images?.custom_prompt || false,
               custom_instructions: parsedData.config?.images?.custom_instructions || '',
-              agent_style: parsedData.config?.images?.agent_style || true
+              agent_style: parsedData.config?.images?.agent_style || true,
+              pollinations_model: parsedData.config?.images?.pollinations_model || 'gpt'
             },
             video: {
               enabled: parsedData.config?.video?.enabled !== undefined ? parsedData.config.video.enabled : true,
@@ -329,7 +330,8 @@ INSTRUÇÕES:
           total_images: 10,
           custom_prompt: false,
           custom_instructions: '',
-          agent_style: true
+          agent_style: true,
+          pollinations_model: 'gpt'
         },
         video: {
           enabled: true,
@@ -2065,10 +2067,27 @@ const MediaSection = ({ formData, onChange }) => {
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
                 <option value="pollinations">Pollinations</option>
+                <option value="gemini">Gemini 2.0 Flash</option>
                 <option value="deepai">DeepAI</option>
                 <option value="dall-e">DALL-E</option>
               </select>
             </div>
+            {formData.config.images.provider === 'pollinations' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Modelo Pollinations
+                </label>
+                <select
+                  value={formData.config.images.pollinations_model || 'gpt'}
+                  onChange={(e) => onChange('config.images.pollinations_model', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                >
+                  <option value="gpt">GPT Image (Melhor para realismo)</option>
+                  <option value="flux">FLUX (Melhor para arte e criatividade)</option>
+                  <option value="flux-kontext">FLUX Kontext (Contexto avançado)</option>
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Estilo

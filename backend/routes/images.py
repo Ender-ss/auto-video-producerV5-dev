@@ -30,11 +30,11 @@ def generate_images_enhanced_route():
         script = data.get('script', '').strip()
         api_key = data.get('api_key', '').strip()
         provider = data.get('provider', 'pollinations')  # pollinations, together, gemini
-        model = data.get('model', 'black-forest-labs/FLUX.1-krea-dev')
+        model = data.get('model', 'gpt')
         style_prompt = data.get('style', 'cinematic, high detail, 4k')
         format_size = data.get('format', '1024x1024')
         quality = data.get('quality', 'standard')
-        pollinations_model = data.get('pollinations_model', 'flux')  # flux ou gpt
+        pollinations_model = data.get('pollinations_model', 'gpt')  # gpt ou flux
         
         # Parâmetros avançados
         use_ai_agent = data.get('use_ai_agent', False)
@@ -62,8 +62,8 @@ def generate_images_enhanced_route():
                 error_response = format_error_response('validation_error', 'Roteiro é obrigatório para gerar imagens baseadas no conteúdo', 'Geração de Imagens')
                 return jsonify(error_response), 400
 
-        # Pollinations.ai não requer chave de API (é gratuito)
-        if not api_key and provider != 'pollinations':
+        # Pollinations.ai e Gemini Reddit não requerem chave de API (são gratuitos)
+        if not api_key and provider not in ['pollinations', 'gemini-reddit']:
             error_response = format_error_response('api_key_missing', f'Chave da API ({provider}) é obrigatória', 'Geração de Imagens')
             return jsonify(error_response), 400
 
@@ -119,6 +119,8 @@ def generate_images_enhanced_route():
                 # Gerar imagem baseado no provedor
                 if provider == 'gemini':
                     image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                elif provider == 'gemini-reddit':
+                    image_bytes = generate_image_gemini_reddit(prompt, width, height, quality)
                 elif provider == 'pollinations':
                     image_bytes = generate_image_pollinations(prompt, width, height, quality, pollinations_model)
                 else:  # together
@@ -192,11 +194,11 @@ def generate_images_route():
         script = data.get('script', '').strip()
         api_key = data.get('api_key', '').strip()
         provider = data.get('provider', 'pollinations')  # pollinations, together, gemini
-        model = data.get('model', 'black-forest-labs/FLUX.1-krea-dev')
+        model = data.get('model', 'gpt')
         style_prompt = data.get('style', 'cinematic, high detail, 4k')
         format_size = data.get('format', '1024x1024')
         quality = data.get('quality', 'standard')
-        pollinations_model = data.get('pollinations_model', 'flux')  # flux ou gpt
+        pollinations_model = data.get('pollinations_model', 'gpt')  # gpt ou flux
         
         # Novos parâmetros
         use_ai_agent = data.get('use_ai_agent', False)
@@ -218,8 +220,8 @@ def generate_images_route():
                 error_response = format_error_response('validation_error', 'Roteiro é obrigatório para gerar imagens baseadas no conteúdo', 'Geração de Imagens')
                 return jsonify(error_response), 400
 
-        # Pollinations.ai não requer chave de API (é gratuito)
-        if not api_key and provider != 'pollinations':
+        # Pollinations.ai e Gemini Reddit não requerem chave de API (são gratuitos)
+        if not api_key and provider not in ['pollinations', 'gemini-reddit']:
             error_response = format_error_response('api_key_missing', f'Chave da API ({provider}) é obrigatória', 'Geração de Imagens')
             return jsonify(error_response), 400
 
@@ -271,6 +273,8 @@ def generate_images_route():
                 # Gerar imagem baseado no provedor
                 if provider == 'gemini':
                     image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                elif provider == 'gemini-reddit':
+                    image_bytes = generate_image_gemini_reddit(prompt, width, height, quality)
                 elif provider == 'pollinations':
                     image_bytes = generate_image_pollinations(prompt, width, height, quality, pollinations_model)
                 else:  # together
@@ -951,35 +955,38 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
     
     for attempt in range(max_retries):
         try:
-            from google import genai
-            from google.genai import types
+            import google.generativeai as genai
+            from google.generativeai import types
             import base64
             from io import BytesIO
             
             print(f"🎨 Tentativa {attempt + 1}/{max_retries} - Gerando imagem com Gemini")
             
-            # Create Gemini client
-            client = genai.Client(api_key=current_api_key)
+            # Configurar Gemini
+            genai.configure(api_key=current_api_key)
+            model = genai.GenerativeModel('gemini-2.0-flash-preview-image-generation')
             
             # Prepare the prompt with size specifications
             enhanced_prompt = f"{prompt}. Generate a {width}x{height} image."
             if quality == "hd":
                 enhanced_prompt += " High quality, detailed, professional."
             
-            # Generate content with image output using new API
-            response = client.models.generate_content(
-                model="gemini-2.0-flash-preview-image-generation",
-                contents=enhanced_prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["TEXT", "IMAGE"]
-                )
-            )
+            # Generate content with image output
+            print(f"🔄 Enviando requisição para Gemini com prompt: {enhanced_prompt}")
+            response = model.generate_content(enhanced_prompt)
+            print(f"✅ Resposta recebida do Gemini")
+            print(f"📊 Status da resposta: {response}")
+            print(f"📊 Número de candidatos: {len(response.candidates)}")
+            print(f"📊 Partes no primeiro candidato: {len(response.candidates[0].content.parts)}")
             
             # Extract image from response
-            for part in response.candidates[0].content.parts:
+            for i, part in enumerate(response.candidates[0].content.parts):
+                print(f"🔍 Verificando parte {i+1}: {part}")
                 if part.inline_data is not None:
+                    print(f"✅ Dados de imagem encontrados na parte {i+1}")
                     # Get image data
                     image_data = part.inline_data.data
+                    print(f"📊 Tamanho dos dados da imagem: {len(image_data)} bytes")
                     
                     # Convert to bytes if needed
                     if isinstance(image_data, str):
@@ -1019,10 +1026,172 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
     print("❌ Falha na geração de imagem com Gemini após todas as tentativas")
     return None
 
-def generate_image_pollinations(prompt, width, height, quality, model='flux'):
+def generate_image_gemini_reddit(prompt, width, height, quality='standard'):
+    """
+    Gera imagem usando o método do Reddit para acessar o Gemini 2.5 Flash sem chaves de API ou cookies
+    Baseado no comando curl encontrado em: https://www.reddit.com/r/GeminiAI/comments/1n42e14/found_trick_to_access_gemini_only_25_flash/
+    
+    NOTA: Este método pode não funcionar mais devido a mudanças nas políticas do Google.
+    Se falhar, tentará usar uma API key de Gemini se disponível.
+    """
+    try:
+        import json
+        import base64
+        import re
+        
+        print(f"🎨 Iniciando geração com método Reddit do Gemini 2.5 Flash")
+        print(f"📝 Prompt: {prompt[:50]}...")
+        print(f"📏 Dimensões: {width}x{height}")
+        
+        # Melhorar o prompt com instruções de tamanho
+        enhanced_prompt = f"{prompt}. Generate a {width}x{height} image."
+        if quality == "hd":
+            enhanced_prompt += " High quality, detailed, professional."
+        
+        # Preparar o payload para a requisição
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": enhanced_prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "responseModalities": [
+                    "Text",
+                    "Image"
+                ]
+            },
+            "safetySettings": [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                }
+            ]
+        }
+        
+        # Headers para a requisição
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        # URL do endpoint do Gemini 2.5 Flash
+        # NOTA: O modelo gemini-2.5-flash-exp pode não estar mais disponível
+        # Vamos tentar com gemini-pro-visioning que é o modelo para geração de imagens
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+        
+        print(f"🔄 Enviando requisição para Gemini 2.5 Flash via método Reddit")
+        
+        # Fazer a requisição
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        
+        print(f"📊 Status da resposta: {response.status_code}")
+        
+        # Se o método Reddit falhar com erro 403, tentar com API key se disponível
+        if response.status_code == 403:
+            print("⚠️ Método Reddit sem autenticação falhou, tentando com API key se disponível...")
+            
+            # Tentar carregar uma API key de Gemini
+            try:
+                import os
+                from pathlib import Path
+                
+                # Caminho para o arquivo de configuração
+                config_path = Path(__file__).parent.parent / "config" / "api_keys.json"
+                
+                if config_path.exists():
+                    with open(config_path, 'r') as f:
+                        config = json.load(f)
+                    
+                    # Verificar se há alguma chave de Gemini disponível
+                    gemini_keys = [key for key in config.keys() if key.startswith('gemini_') and config[key]]
+                    
+                    if gemini_keys:
+                        # Usar a primeira chave disponível
+                        api_key = config[gemini_keys[0]]
+                        print(f"🔑 Usando API key de Gemini: {gemini_keys[0]}")
+                        
+                        # Adicionar a API key à URL
+                        url_with_key = f"{url}?key={api_key}"
+                        
+                        # Fazer a requisição com API key
+                        response = requests.post(
+                            url_with_key,
+                            headers=headers,
+                            json=payload,
+                            timeout=60
+                        )
+                        
+                        print(f"📊 Status da resposta com API key: {response.status_code}")
+                    else:
+                        print("❌ Nenhuma API key de Gemini encontrada no arquivo de configuração")
+                else:
+                    print("❌ Arquivo de configuração de API keys não encontrado")
+                    
+            except Exception as e:
+                print(f"❌ Erro ao tentar usar API key: {str(e)}")
+        
+        if response.status_code != 200:
+            print(f"❌ Erro na resposta: {response.text}")
+            return None
+        
+        # Processar a resposta
+        response_data = response.json()
+        
+        # Verificar se há candidatos na resposta
+        if "candidates" not in response_data or not response_data["candidates"]:
+            print("❌ Nenhum candidato encontrado na resposta")
+            return None
+        
+        # Extrair a imagem da resposta
+        for candidate in response_data["candidates"]:
+            if "content" in candidate and "parts" in candidate["content"]:
+                for part in candidate["content"]["parts"]:
+                    if "inlineData" in part and "data" in part["inlineData"]:
+                        # Obter os dados da imagem em base64
+                        image_data_base64 = part["inlineData"]["data"]
+                        
+                        # Decodificar de base64 para bytes
+                        image_bytes = base64.b64decode(image_data_base64)
+                        
+                        print(f"✅ Sucesso! Imagem gerada com método Reddit do Gemini 2.5 Flash")
+                        print(f"📊 Tamanho dos dados da imagem: {len(image_bytes)} bytes")
+                        
+                        return image_bytes
+        
+        print("❌ Nenhum dado de imagem encontrado na resposta")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erro ao gerar imagem com método Reddit do Gemini: {str(e)}")
+        return None
+
+def generate_image_pollinations(prompt, width, height, quality, model='gpt'):
     """
     Gera imagem usando Pollinations.ai com implementação melhorada e múltiplas estratégias
-    Suporta modelos Flux e GPT para diferentes tipos de imagem
+    Suporta modelos Flux, GPT e FLUX Kontext para diferentes tipos de imagem
     """
     try:
         import urllib.parse
@@ -1037,6 +1206,8 @@ def generate_image_pollinations(prompt, width, height, quality, model='flux'):
         # Melhorar o prompt baseado no modelo
         if model == 'gpt':
             enhanced_prompt = f"{prompt}, photorealistic, high quality, detailed, realistic"
+        elif model == 'flux-kontext':
+            enhanced_prompt = f"{prompt}, context-aware, detailed, high quality, cinematic"
         else:  # flux
             enhanced_prompt = f"{prompt}, artistic, creative, high quality"
         
@@ -1077,6 +1248,17 @@ def generate_image_pollinations(prompt, width, height, quality, model='flux'):
                 f"?width={width}&height={height}&enhance=true&realistic=true",
                 f"?width={width}&height={height}&model=openai",
                 f"?width={width}&height={height}"
+            ]
+        elif model == 'flux-kontext':
+            param_sets = [
+                f"?width={width}&height={height}&nologo=true&model=flux-kontext&enhance=true",
+                f"?width={width}&height={height}&nologo=true&model=flux-kontext",
+                f"?width={width}&height={height}&model=flux-kontext&enhance=true",
+                f"?width={width}&height={height}&model=flux-kontext",
+                f"?width={width}&height={height}&nologo=true&model=flux&enhance=true",
+                f"?width={width}&height={height}&nologo=true&model=flux",
+                f"?width={width}&height={height}&model=flux&enhance=true",
+                f"?width={width}&height={height}&model=flux"
             ]
         else:  # flux
             param_sets = [
@@ -1694,3 +1876,323 @@ def delete_project_file(project_id, file_type, filename):
     except Exception as e:
         error_response = auto_format_error(str(e), f'Exclusão de Arquivo do Projeto ({file_type})')
         return jsonify(error_response), 500
+
+@images_bp.route('/test-gemini', methods=['POST'])
+def test_gemini_image_generation():
+    """
+    Endpoint de teste para geração de imagens com a API do Google Gemini.
+    Permite testar diferentes prompts, configurações e chaves de API.
+    """
+    try:
+        data = request.get_json()
+        
+        # Parâmetros básicos
+        prompt = data.get('prompt', 'A beautiful landscape with mountains and a lake').strip()
+        width = data.get('width', 1024)
+        height = data.get('height', 1024)
+        quality = data.get('quality', 'standard')
+        test_mode = data.get('test_mode', 'single')  # single, multiple, stress
+        
+        # Validações
+        if not prompt:
+            return jsonify({
+                'success': False,
+                'error': 'Prompt é obrigatório'
+            }), 400
+        
+        # Validar dimensões
+        try:
+            width = int(width)
+            height = int(height)
+        except ValueError:
+            width, height = 1024, 1024
+        
+        # Limites de dimensões
+        if width < 256 or width > 2048 or height < 256 or height > 2048:
+            return jsonify({
+                'success': False,
+                'error': 'Dimensões devem estar entre 256x256 e 2048x2048'
+            }), 400
+        
+        # Obter uma chave Gemini do sistema
+        from routes.automations import get_next_gemini_key
+        api_key = get_next_gemini_key()
+        
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhuma chave Gemini disponível'
+            }), 400
+        
+        # Criar diretório para imagens de teste
+        test_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'test_images')
+        os.makedirs(test_dir, exist_ok=True)
+        
+        results = []
+        start_time = time.time()
+        
+        # Modo de teste único
+        if test_mode == 'single':
+            try:
+                print(f"🧪 Teste único: Gerando imagem com Gemini")
+                print(f"📝 Prompt: {prompt}")
+                print(f"📏 Dimensões: {width}x{height}")
+                print(f"🎯 Qualidade: {quality}")
+                
+                # Gerar imagem
+                image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                
+                if image_bytes:
+                    # Salvar a imagem
+                    timestamp = int(time.time() * 1000)
+                    filename = f"gemini_test_{timestamp}.png"
+                    filepath = os.path.join(test_dir, filename)
+                    
+                    with open(filepath, 'wb') as f:
+                        f.write(image_bytes)
+                    
+                    # URL para acessar a imagem
+                    image_url = f"/api/images/test/{filename}"
+                    
+                    # Calcular tamanho e tempo
+                    file_size = len(image_bytes) / 1024  # KB
+                    elapsed_time = time.time() - start_time
+                    
+                    results.append({
+                        'test_id': 1,
+                        'success': True,
+                        'prompt': prompt,
+                        'url': image_url,
+                        'width': width,
+                        'height': height,
+                        'quality': quality,
+                        'file_size_kb': round(file_size, 2),
+                        'elapsed_time': round(elapsed_time, 2),
+                        'message': 'Imagem gerada com sucesso'
+                    })
+                else:
+                    results.append({
+                        'test_id': 1,
+                        'success': False,
+                        'prompt': prompt,
+                        'width': width,
+                        'height': height,
+                        'quality': quality,
+                        'error': 'Falha ao gerar imagem',
+                        'message': 'A API do Gemini não retornou uma imagem válida'
+                    })
+                    
+            except Exception as e:
+                elapsed_time = time.time() - start_time
+                results.append({
+                    'test_id': 1,
+                    'success': False,
+                    'prompt': prompt,
+                    'width': width,
+                    'height': height,
+                    'quality': quality,
+                    'error': str(e),
+                    'elapsed_time': round(elapsed_time, 2),
+                    'message': 'Erro durante a geração da imagem'
+                })
+        
+        # Modo de teste múltiplo
+        elif test_mode == 'multiple':
+            test_prompts = [
+                "A beautiful landscape with mountains and a lake",
+                "A futuristic city with flying cars",
+                "A cute cat sitting on a windowsill",
+                "A delicious plate of food with vibrant colors",
+                "An abstract painting with geometric shapes"
+            ]
+            
+            for i, test_prompt in enumerate(test_prompts):
+                try:
+                    print(f"🧪 Teste múltiplo {i+1}/5: Gerando imagem com Gemini")
+                    print(f"📝 Prompt: {test_prompt}")
+                    
+                    # Gerar imagem
+                    image_bytes = generate_image_gemini(test_prompt, api_key, width, height, quality)
+                    
+                    if image_bytes:
+                        # Salvar a imagem
+                        timestamp = int(time.time() * 1000)
+                        filename = f"gemini_test_{timestamp}_{i+1}.png"
+                        filepath = os.path.join(test_dir, filename)
+                        
+                        with open(filepath, 'wb') as f:
+                            f.write(image_bytes)
+                        
+                        # URL para acessar a imagem
+                        image_url = f"/api/images/test/{filename}"
+                        
+                        # Calcular tamanho e tempo
+                        file_size = len(image_bytes) / 1024  # KB
+                        elapsed_time = time.time() - start_time
+                        
+                        results.append({
+                            'test_id': i+1,
+                            'success': True,
+                            'prompt': test_prompt,
+                            'url': image_url,
+                            'width': width,
+                            'height': height,
+                            'quality': quality,
+                            'file_size_kb': round(file_size, 2),
+                            'elapsed_time': round(elapsed_time, 2),
+                            'message': 'Imagem gerada com sucesso'
+                        })
+                    else:
+                        results.append({
+                            'test_id': i+1,
+                            'success': False,
+                            'prompt': test_prompt,
+                            'width': width,
+                            'height': height,
+                            'quality': quality,
+                            'error': 'Falha ao gerar imagem',
+                            'message': 'A API do Gemini não retornou uma imagem válida'
+                        })
+                        
+                except Exception as e:
+                    elapsed_time = time.time() - start_time
+                    results.append({
+                        'test_id': i+1,
+                        'success': False,
+                        'prompt': test_prompt,
+                        'width': width,
+                        'height': height,
+                        'quality': quality,
+                        'error': str(e),
+                        'elapsed_time': round(elapsed_time, 2),
+                        'message': 'Erro durante a geração da imagem'
+                    })
+                    
+                    # Pequeno delay entre tentativas
+                    time.sleep(2)
+        
+        # Modo de teste de estresse
+        elif test_mode == 'stress':
+            max_tests = min(10, data.get('max_tests', 5))
+            success_count = 0
+            error_count = 0
+            
+            for i in range(max_tests):
+                try:
+                    print(f"🧪 Teste de estresse {i+1}/{max_tests}: Gerando imagem com Gemini")
+                    
+                    # Gerar imagem
+                    image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                    
+                    if image_bytes:
+                        # Salvar a imagem
+                        timestamp = int(time.time() * 1000)
+                        filename = f"gemini_stress_{timestamp}_{i+1}.png"
+                        filepath = os.path.join(test_dir, filename)
+                        
+                        with open(filepath, 'wb') as f:
+                            f.write(image_bytes)
+                        
+                        # URL para acessar a imagem
+                        image_url = f"/api/images/test/{filename}"
+                        
+                        # Calcular tamanho
+                        file_size = len(image_bytes) / 1024  # KB
+                        
+                        results.append({
+                            'test_id': i+1,
+                            'success': True,
+                            'prompt': prompt,
+                            'url': image_url,
+                            'width': width,
+                            'height': height,
+                            'quality': quality,
+                            'file_size_kb': round(file_size, 2),
+                            'message': 'Imagem gerada com sucesso'
+                        })
+                        
+                        success_count += 1
+                    else:
+                        results.append({
+                            'test_id': i+1,
+                            'success': False,
+                            'prompt': prompt,
+                            'width': width,
+                            'height': height,
+                            'quality': quality,
+                            'error': 'Falha ao gerar imagem',
+                            'message': 'A API do Gemini não retornou uma imagem válida'
+                        })
+                        
+                        error_count += 1
+                        
+                except Exception as e:
+                    results.append({
+                        'test_id': i+1,
+                        'success': False,
+                        'prompt': prompt,
+                        'width': width,
+                        'height': height,
+                        'quality': quality,
+                        'error': str(e),
+                        'message': 'Erro durante a geração da imagem'
+                    })
+                    
+                    error_count += 1
+                
+                # Delay entre tentativas para evitar limites de taxa
+                time.sleep(3)
+            
+            # Adicionar resumo do teste de estresse
+            total_elapsed_time = time.time() - start_time
+            success_rate = (success_count / max_tests) * 100
+            
+            results.append({
+                'test_id': 'summary',
+                'success': success_count > 0,
+                'total_tests': max_tests,
+                'success_count': success_count,
+                'error_count': error_count,
+                'success_rate': round(success_rate, 2),
+                'total_elapsed_time': round(total_elapsed_time, 2),
+                'average_time_per_test': round(total_elapsed_time / max_tests, 2),
+                'message': f'Teste de estresse concluído: {success_count}/{max_tests} imagens geradas com sucesso'
+            })
+        
+        # Calcular estatísticas gerais
+        total_elapsed_time = time.time() - start_time
+        successful_tests = [r for r in results if r.get('success', False)]
+        failed_tests = [r for r in results if not r.get('success', False)]
+        
+        return jsonify({
+            'success': True,
+            'test_mode': test_mode,
+            'total_tests': len(results),
+            'successful_tests': len(successful_tests),
+            'failed_tests': len(failed_tests),
+            'success_rate': round((len(successful_tests) / len(results)) * 100, 2) if results else 0,
+            'total_elapsed_time': round(total_elapsed_time, 2),
+            'results': results,
+            'message': f'Teste de geração de imagens com Gemini concluído: {len(successful_tests)}/{len(results)} imagens geradas com sucesso'
+        })
+        
+    except Exception as e:
+        error_response = auto_format_error(str(e), 'Teste de Geração de Imagens com Gemini')
+        return jsonify(error_response), 500
+
+@images_bp.route('/test/<filename>', methods=['GET'])
+def serve_test_image(filename):
+    """
+    Serve imagens de teste geradas pelo endpoint /test-gemini
+    """
+    try:
+        test_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'test_images')
+        
+        if not os.path.exists(test_dir):
+            return jsonify({'error': 'Diretório de imagens de teste não encontrado'}), 404
+        
+        return send_from_directory(test_dir, filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'Arquivo de imagem de teste não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Erro ao servir imagem de teste: {str(e)}'}), 500

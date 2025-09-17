@@ -16,19 +16,26 @@ const ImageGeneration = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [apiKey, setApiKey] = useState('');
-    const [provider, setProvider] = useState('together'); // together ou gemini
+    const [provider, setProvider] = useState('together'); // together, gemini, gemini-reddit ou pollinations
     const [format, setFormat] = useState('1024x1024'); // formato da imagem
     const [quality, setQuality] = useState('standard'); // qualidade da imagem
     const [batchCount, setBatchCount] = useState(1);
     const [delayBetweenImages, setDelayBetweenImages] = useState(3);
     const [currentBatch, setCurrentBatch] = useState(0);
     const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
-    const [pollinationsModel, setPollinationsModel] = useState('flux'); // flux ou gpt
+    const [pollinationsModel, setPollinationsModel] = useState('gpt'); // flux ou gpt
     const [isCancelled, setIsCancelled] = useState(false);
     const [abortController, setAbortController] = useState(null);
 
     useEffect(() => {
         const fetchApiKey = async () => {
+            // Não precisa de chave de API para gemini-reddit ou pollinations
+            if (provider === 'gemini-reddit' || provider === 'pollinations') {
+                setApiKey('');
+                setError(null);
+                return;
+            }
+            
             try {
                 const apiEndpoint = provider === 'gemini' ? 'gemini_1' : 'together';
                 const response = await fetch(`/api/settings/api-keys/${apiEndpoint}`);
@@ -71,8 +78,8 @@ const ImageGeneration = () => {
     }, []);
 
     const handleGenerateImages = async () => {
-        // Verificar se a chave de API é necessária (não é necessária para Pollinations.ai)
-        if (!apiKey && provider !== 'pollinations') {
+        // Verificar se a chave de API é necessária (não é necessária para Pollinations.ai ou Gemini Reddit)
+        if (!apiKey && provider !== 'pollinations' && provider !== 'gemini-reddit') {
             const providerName = provider === 'gemini' ? 'Gemini' : 'Together.ai';
             setError(`A chave da API do ${providerName} não está configurada.`);
             return;
@@ -516,8 +523,9 @@ const ImageGeneration = () => {
                             value={provider}
                             onChange={(e) => setProvider(e.target.value)}
                         >
-                            <option value="together">Together.ai (FLUX)</option>
+                            <option value="together">Together.ai (GPT)</option>
                             <option value="gemini">Google Gemini</option>
+                            <option value="gemini-reddit">Google Gemini (via Reddit - Sem API Key)</option>
                             <option value="pollinations">Pollinations.ai (Gratuito)</option>
                         </select>
                         {provider === 'pollinations' && (
@@ -527,7 +535,7 @@ const ImageGeneration = () => {
                                     <ul className="text-sm text-green-300 space-y-1">
                                         <li>• ✅ Completamente gratuito</li>
                                         <li>• 🚀 Sem necessidade de API key</li>
-                                        <li>• 🎨 Múltiplos modelos de IA (Flux, GPT Image)</li>
+                                        <li>• 🎨 Múltiplos modelos de IA (GPT, Flux)</li>
                                         <li>• ⚡ Geração rápida e de alta qualidade</li>
                                         <li>• 🔄 Sistema de fallback inteligente</li>
                                     </ul>
@@ -541,8 +549,8 @@ const ImageGeneration = () => {
                                         value={pollinationsModel}
                                         onChange={(e) => setPollinationsModel(e.target.value)}
                                     >
-                                        <option value="flux">🎨 Flux - Melhor para arte e criatividade</option>
                                         <option value="gpt">🖼️ GPT Image - Melhor para realismo</option>
+                                        <option value="flux">🎨 Flux - Melhor para arte e criatividade</option>
                                     </select>
                                     <p className="text-xs text-blue-300 mt-1">
                                         {pollinationsModel === 'flux' ? 
@@ -550,6 +558,20 @@ const ImageGeneration = () => {
                                             '📸 GPT Image: Ideal para fotos realistas e cenários do mundo real'
                                         }
                                     </p>
+                                </div>
+                            </div>
+                        )}
+                        {provider === 'gemini-reddit' && (
+                            <div className="mt-3 space-y-3">
+                                <div className="p-3 bg-purple-900/30 border border-purple-600 rounded-lg">
+                                    <h4 className="text-purple-400 font-semibold mb-2">🔮 Gemini via Reddit - Vantagens</h4>
+                                    <ul className="text-sm text-purple-300 space-y-1">
+                                        <li>• ✅ Acesso ao Google Gemini 2.5 Flash</li>
+                                        <li>• 🚀 Sem necessidade de API key</li>
+                                        <li>• 🎨 Alta qualidade de imagem</li>
+                                        <li>• 🔗 Método alternativo via endpoint do Reddit</li>
+                                        <li>• 🔄 Sistema de retry automático</li>
+                                    </ul>
                                 </div>
                             </div>
                         )}
@@ -659,7 +681,7 @@ const ImageGeneration = () => {
                 <div className="space-y-3">
                     <button 
                         onClick={handleGenerateImages}
-                        disabled={isLoading || isGeneratingBatch || (!script && !customPrompt && !pastedText && !selectedSavedScript) || (!apiKey && provider !== 'pollinations')}
+                        disabled={isLoading || isGeneratingBatch || (!script && !customPrompt && !pastedText && !selectedSavedScript) || (!apiKey && provider !== 'pollinations' && provider !== 'gemini-reddit')}
                         className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-lg font-semibold disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
                     >
                         {isGeneratingBatch ? 

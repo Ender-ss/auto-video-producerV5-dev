@@ -120,7 +120,7 @@ const SettingsSimple = () => {
     { key: 'openai', name: 'OpenAI GPT-4', description: 'Melhor qualidade para títulos e roteiros' },
     { key: 'openrouter', name: 'OpenRouter', description: 'Acesso a múltiplos modelos (Claude, Llama, etc.)' },
     { key: 'elevenlabs', name: 'ElevenLabs', description: 'Text-to-Speech de alta qualidade' },
-    { key: 'together', name: 'Together.ai FLUX', description: 'Geração de imagens gratuita' },
+    { key: 'together', name: 'Together.ai GPT', description: 'Geração de imagens gratuita' },
     { key: 'rapidapi', name: 'RapidAPI YouTube', description: 'Extração de dados do YouTube' }
   ]
 

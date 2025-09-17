@@ -145,8 +145,8 @@ except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 try:
-    import google.genai as google_genai
-    from google.genai import types
+    import google.generativeai as google_genai
+    from google.generativeai import types
     GOOGLE_GENAI_TTS_AVAILABLE = True
 except ImportError:
     GOOGLE_GENAI_TTS_AVAILABLE = False

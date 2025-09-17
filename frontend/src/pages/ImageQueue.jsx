@@ -13,7 +13,7 @@ const ImageQueue = () => {
     title: '',
     prompts: '',
     provider: 'pollinations',
-    model: 'flux',
+    model: 'gpt',
     style: 'cinematic, high detail, 4k',
     format: '1024x1024',
     quality: 'standard'
@@ -27,7 +27,7 @@ const ImageQueue = () => {
     ai_model: 'gpt-3.5-turbo',
     auto_queue: true,
     provider: 'pollinations',
-    model: 'flux',
+    model: 'gpt',
     style: 'cinematic, high detail, 4k',
     format: '1024x1024',
     quality: 'standard'
@@ -104,7 +104,7 @@ const ImageQueue = () => {
           title: '',
           prompts: '',
           provider: 'pollinations',
-          model: 'flux',
+          model: 'gpt',
           style: 'cinematic, high detail, 4k',
           format: '1024x1024',
           quality: 'standard'
@@ -146,7 +146,7 @@ const ImageQueue = () => {
           ai_model: 'gpt-3.5-turbo',
           auto_queue: true,
           provider: 'pollinations',
-          model: 'flux',
+          model: 'gpt',
           style: 'cinematic, high detail, 4k',
           format: '1024x1024',
           quality: 'standard'
@@ -503,8 +503,8 @@ const ImageQueue = () => {
                       onChange={(e) => setNewQueue({...newQueue, model: e.target.value})}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="flux">Flux</option>
                       <option value="gpt">GPT</option>
+                      <option value="flux">Flux</option>
                     </select>
                   </div>
                 </div>
@@ -651,8 +651,8 @@ const ImageQueue = () => {
                           onChange={(e) => setScriptForm({...scriptForm, model: e.target.value})}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          <option value="flux">Flux</option>
                           <option value="gpt">GPT</option>
+                          <option value="flux">Flux</option>
                         </select>
                       </div>
                     </div>

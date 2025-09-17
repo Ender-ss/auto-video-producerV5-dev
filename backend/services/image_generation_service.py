@@ -46,7 +46,8 @@ class ImageGenerationService:
     
     def _generate_images_with_automation_logic(self, script_text: str, provider: str, 
                                              style: str, resolution: str, image_count: int, 
-                                             custom_image_prompt: str = "", selected_agent: str = None) -> List[Dict[str, Any]]:
+                                             custom_image_prompt: str = "", selected_agent: str = None,
+                                             pollinations_model: str = 'gpt') -> List[Dict[str, Any]]:
         """Gerar imagens usando a mesma lógica da aba de automações"""
         try:
             # Preparar parâmetros como na aba de automações
@@ -91,7 +92,8 @@ class ImageGenerationService:
                     image_bytes = None
                     
                     if provider == 'pollinations' and generate_image_pollinations:
-                        image_bytes = generate_image_pollinations(prompt, width, height, 'standard', 'flux')
+                        # Usar o modelo Pollinations passado como parâmetro
+                        image_bytes = generate_image_pollinations(prompt, width, height, 'standard', pollinations_model)
                     elif provider == 'gemini' and generate_image_gemini:
                         # Obter chave da API
                         api_key = self._get_api_key('gemini')
@@ -101,7 +103,7 @@ class ImageGenerationService:
                         # Obter chave da API
                         api_key = self._get_api_key('together')
                         if api_key:
-                            image_bytes = generate_image_together(prompt, api_key, width, height, 'standard', 'black-forest-labs/FLUX.1-krea-dev')
+                            image_bytes = generate_image_together(prompt, api_key, width, height, 'standard', 'gpt')
                     
                     if image_bytes is None:
                         self._log('warning', f'Falha ao gerar imagem {i+1}/{len(prompts_to_generate)}: {prompt[:50]}...')
@@ -185,14 +187,14 @@ class ImageGenerationService:
     
     def generate_images_for_script_total(self, script_text: str, provider: str, style: str, 
                                         resolution: str, total_images: int, custom_image_prompt: str = "", 
-                                        selected_agent: str = None) -> Dict[str, Any]:
+                                        selected_agent: str = None, pollinations_model: str = 'gpt') -> Dict[str, Any]:
         """Gerar imagens distribuindo total de imagens ao longo de todo o roteiro"""
         try:
             self._log('info', f'Iniciando geração de {total_images} imagens distribuídas ao longo do roteiro')
             
             # Usar a lógica de distribuição uniforme que já existe nas automações
             generated_images = self._generate_images_with_automation_logic(
-                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent
+                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent, pollinations_model
             )
             
             return {
@@ -208,7 +210,7 @@ class ImageGenerationService:
 
     def generate_images_for_script(self, script_text: str, provider: str, style: str, 
                                  resolution: str, per_chapter: int, custom_image_prompt: str = "", 
-                                 selected_agent: str = None) -> Dict[str, Any]:
+                                 selected_agent: str = None, pollinations_model: str = 'gpt') -> Dict[str, Any]:
         """Gerar imagens para o roteiro usando a mesma lógica da aba de automações"""
         try:
             self._log('info', 'Iniciando geração de imagens para o roteiro')
@@ -227,7 +229,7 @@ class ImageGenerationService:
             
             # Gerar imagens usando a lógica da aba de automações
             generated_images = self._generate_images_with_automation_logic(
-                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent
+                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent, pollinations_model
             )
             
             return {
@@ -487,7 +489,7 @@ class ImageGenerationService:
         return f"{description}{modifier}{technical_tags}"
     
     def _generate_with_pollinations(self, image_prompts: List[Dict[str, Any]], 
-                                  resolution: str, style: str) -> List[Dict[str, Any]]:
+                                  resolution: str, style: str, pollinations_model: str = 'gpt') -> List[Dict[str, Any]]:
         """Gerar imagens usando Pollinations"""
         generated_images = []
         
@@ -497,7 +499,7 @@ class ImageGenerationService:
                 
                 # Gerar imagem
                 image_result = self._generate_single_image_pollinations(
-                    prompt_data['full_prompt'], resolution, i + 1
+                    prompt_data['full_prompt'], resolution, i + 1, pollinations_model
                 )
                 
                 if image_result:
@@ -520,7 +522,7 @@ class ImageGenerationService:
         return generated_images
     
     def _generate_single_image_pollinations(self, prompt: str, resolution: str, 
-                                          image_index: int) -> Optional[Dict[str, Any]]:
+                                          image_index: int, pollinations_model: str = 'gpt') -> Optional[Dict[str, Any]]:
         """Gerar uma única imagem usando Pollinations"""
         try:
             # Preparar parâmetros
@@ -535,9 +537,18 @@ class ImageGenerationService:
                 'width': width,
                 'height': height,
                 'seed': int(time.time()) + image_index,  # Seed único
-                'model': 'flux',  # Modelo padrão
+                'model': pollinations_model,  # Modelo selecionado
                 'enhance': 'true'
             }
+            
+            # Parâmetros específicos para cada modelo
+            if pollinations_model == 'gpt':
+                params['model'] = 'openai/dalle'
+                params['realistic'] = 'true'
+                params['nologo'] = 'true'
+            elif pollinations_model == 'flux-kontext':
+                params['model'] = 'flux-kontext'
+                params['enhance'] = 'true'
             
             # Fazer requisição
             for attempt in range(self.max_retries):
@@ -563,6 +574,7 @@ class ImageGenerationService:
                             'url': response.url,
                             'file_size': file_size,
                             'resolution': resolution,
+                            'model': pollinations_model,
                             'generation_time': datetime.utcnow().isoformat()
                         }
                     

@@ -21,7 +21,7 @@ class ImageQueue(db.Model):
     current_prompt_index = db.Column(db.Integer, default=0)
     total_prompts = db.Column(db.Integer, nullable=False)
     provider = db.Column(db.String(50), default='pollinations')
-    model = db.Column(db.String(100), default='flux')
+    model = db.Column(db.String(100), default='gpt')
     style = db.Column(db.String(200), default='cinematic, high detail, 4k')
     format_size = db.Column(db.String(20), default='1024x1024')
     quality = db.Column(db.String(20), default='standard')
@@ -62,7 +62,7 @@ class ScriptPrompt(db.Model):
     generated_prompts = db.Column(db.Text, nullable=False)  # JSON array
     total_prompts = db.Column(db.Integer, nullable=False)
     provider = db.Column(db.String(50), default='pollinations')
-    model = db.Column(db.String(100), default='flux')
+    model = db.Column(db.String(100), default='gpt')
     style = db.Column(db.String(200), default='cinematic, high detail, 4k')
     format_size = db.Column(db.String(20), default='1024x1024')
     quality = db.Column(db.String(20), default='standard')

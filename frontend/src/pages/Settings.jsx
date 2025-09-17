@@ -337,7 +337,7 @@ const Settings = () => {
       title: 'Geração de Imagens',
       icon: Image,
       apis: [
-        { key: 'together', name: 'Together.ai FLUX', description: 'Gratuito - Recomendado' }
+        { key: 'together', name: 'Together.ai GPT', description: 'Gratuito - Recomendado' }
       ]
     }
   ]

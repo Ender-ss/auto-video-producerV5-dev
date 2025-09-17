@@ -459,7 +459,8 @@ def start_complete_automation():
                 'provider': 'pollinations',
                 'style': 'cinematic',
                 'resolution': '1920x1080',
-                'per_chapter': 2
+                'per_chapter': 2,
+                'pollinations_model': 'gpt'
             },
             'video': {
                 'enabled': True,
@@ -989,9 +990,18 @@ def update_pipeline_progress(pipeline_id: str, step: str, progress: int, status:
     # Calcular progresso geral
     total_steps = len(pipeline_state['steps'])
     completed_steps = sum(1 for s in pipeline_state['steps'].values() if s['status'] == 'completed')
-    current_step_progress = progress / 100
     
-    overall_progress = int(((completed_steps + current_step_progress) / total_steps) * 100)
+    # Calcular o progresso baseado no número de etapas concluídas + progresso da etapa atual
+    # Cada etapa tem peso igual no progresso total
+    step_weight = 100 / total_steps
+    
+    if status == 'completed':
+        # Se a etapa atual foi concluída, contar como um passo completo
+        overall_progress = int(completed_steps * step_weight)
+    else:
+        # Se a etapa está em andamento, adicionar o progresso proporcional da etapa atual
+        overall_progress = int(completed_steps * step_weight + (progress / 100) * step_weight)
+    
     pipeline_state['progress'] = min(overall_progress, 100)
 
 def validate_step_dependencies(pipeline_id: str, current_step: str) -> bool:

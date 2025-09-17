@@ -63,7 +63,7 @@ const Pipeline = () => {
       channel: 'Success Stories',
       status: 'generating_images',
       progress: 60,
-      current_step: 'Gerando imagens com FLUX',
+      current_step: 'Gerando imagens com GPT',
       started_at: '2024-01-30T10:45:00',
       estimated_completion: '2024-01-30T11:30:00',
       video_style: 'educational',

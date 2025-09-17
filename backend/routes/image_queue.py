@@ -34,7 +34,7 @@ def create_image_queue():
         title = data.get('title', '').strip()
         prompts = data.get('prompts', [])
         provider = data.get('provider', 'pollinations')
-        model = data.get('model', 'flux')
+        model = data.get('model', 'gpt')  # gpt ou flux
         style = data.get('style', 'cinematic, high detail, 4k')
         format_size = data.get('format', '1024x1024')
         quality = data.get('quality', 'standard')
@@ -183,7 +183,7 @@ def script_to_prompts():
         
         # Configurações da fila (se auto_queue for True)
         provider = data.get('provider', 'pollinations')
-        model = data.get('model', 'flux')
+        model = data.get('model', 'gpt')  # gpt ou flux
         style = data.get('style', 'cinematic, high detail, 4k')
         format_size = data.get('format', '1024x1024')
         quality = data.get('quality', 'standard')
@@ -355,7 +355,7 @@ def process_image_queue(queue_id, app):
                 queue.error_message = str(e)
                 db.session.commit()
 
-def process_script_to_prompts(script_id, auto_queue=False, provider='pollinations', model='flux', style='cinematic, high detail, 4k', format_size='1024x1024', quality='standard', app=None):
+def process_script_to_prompts(script_id, auto_queue=False, provider='pollinations', model='gpt', style='cinematic, high detail, 4k', format_size='1024x1024', quality='standard', app=None):
     """Processar roteiro para gerar prompts automaticamente"""
     try:
         if app is None:

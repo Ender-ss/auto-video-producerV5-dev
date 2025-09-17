@@ -73,7 +73,7 @@ const Analytics = () => {
     { service: 'OpenAI GPT-4', requests: 245, cost: 12.30, success_rate: 98 },
     { service: 'Gemini Pro', requests: 180, cost: 0.00, success_rate: 94 },
     { service: 'ElevenLabs TTS', requests: 95, cost: 28.50, success_rate: 99 },
-    { service: 'FLUX Images', requests: 320, cost: 0.00, success_rate: 96 }
+    { service: 'GPT Images', requests: 320, cost: 0.00, success_rate: 96 }
   ]
 
   return (

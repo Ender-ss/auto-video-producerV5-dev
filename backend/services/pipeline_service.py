@@ -1390,8 +1390,12 @@ class PipelineService:
             self._update_progress('images', 50)
             
             # Gerar imagens com prompt personalizado usando nova lógica de total
+            # Obter o modelo Pollinations da configuração
+            images_config = self.config.get('images', {})
+            pollinations_model = images_config.get('pollinations_model', 'gpt')  # gpt ou flux
+            
             result = image_service.generate_images_for_script_total(
-                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent
+                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent, pollinations_model
             )
             
             self._update_progress('images', 100)

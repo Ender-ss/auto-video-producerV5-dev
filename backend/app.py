@@ -477,6 +477,29 @@ def system_status():
             'error': str(e)
         }), 500
 
+@app.route('/test-gemini')
+def test_gemini_page():
+    """Página de teste para geração de imagens com Gemini"""
+    try:
+        # Caminho para o arquivo HTML
+        html_path = os.path.join('..', 'frontend', 'public', 'test-gemini.html')
+        
+        # Verificar se o arquivo existe
+        if not os.path.exists(html_path):
+            return jsonify({
+                'success': False,
+                'error': 'Página de teste não encontrada'
+            }), 404
+        
+        # Retornar o arquivo HTML
+        return send_file(html_path)
+    except Exception as e:
+        logger.error(f"Erro ao servir página de teste Gemini: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 # Importar e registrar rotas
 def register_blueprints():
     """Registrar blueprints das rotas"""
