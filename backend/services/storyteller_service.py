@@ -1048,7 +1048,7 @@ class StorytellerService:
         for attempt in range(total_key_attempts):
             current_api_key = api_key
             if not current_api_key:
-                current_api_key = get_next_gemini_key() if get_next_gemini_key else os.getenv('GEMINI_API_KEY')
+                current_api_key = get_next_gemini_key() if get_next_gemini_key else None
     
             if not current_api_key:
                 raise Exception("Nenhuma chave Gemini disponível (rotação/ambiente)")

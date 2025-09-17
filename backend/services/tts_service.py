@@ -528,7 +528,9 @@ class TTSService:
         """Obter chave da API para o provedor especificado"""
         try:
             if provider == 'gemini':
-                return os.getenv('GEMINI_API_KEY')
+                # Importar a função de rotação de chaves do módulo de automações
+                from routes.automations import get_next_gemini_key
+                return get_next_gemini_key()
             elif provider == 'elevenlabs':
                 return os.getenv('ELEVENLABS_API_KEY')
             return None

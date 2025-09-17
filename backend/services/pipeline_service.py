@@ -1382,6 +1382,11 @@ class PipelineService:
             # Verificar se há um prompt específico para o agente selecionado
             custom_image_prompt = images_prompts.get(selected_agent, images_prompts.get('default', 'Crie uma descrição detalhada para geração de imagem baseada no contexto: {context}. A imagem deve ser visualmente atrativa e relevante ao conteúdo.'))
             
+            # Log para depuração
+            self._log('info', f'Custom image prompt original: {custom_image_prompt}')
+            self._log('info', f'Selected agent: {selected_agent}')
+            self._log('info', f'Images prompts: {images_prompts}')
+            
             # Importar serviço de geração de imagens
             from services.image_generation_service import ImageGenerationService
             
@@ -1394,8 +1399,11 @@ class PipelineService:
             images_config = self.config.get('images', {})
             pollinations_model = images_config.get('pollinations_model', 'gpt')  # gpt ou flux
             
+            # Traduzir o roteiro para inglês para melhor geração de imagens com Pollinations
+            translated_script_text = self._translate_script_to_english(script_text)
+            
             result = image_service.generate_images_for_script_total(
-                script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent, pollinations_model
+                translated_script_text, provider, style, resolution, total_images, custom_image_prompt, selected_agent, pollinations_model
             )
             
             self._update_progress('images', 100)
@@ -1426,6 +1434,120 @@ class PipelineService:
         except Exception as e:
             self._log('error', f'Erro na geração de imagens: {str(e)}')
             raise
+    
+    def _translate_script_to_english(self, script_text: str) -> str:
+        """Traduz o roteiro para inglês para melhor geração de imagens"""
+        try:
+            self._log('info', 'Iniciando tradução do roteiro para inglês')
+            
+            # Verificar se o roteiro já está em inglês
+            if self._is_likely_english(script_text):
+                self._log('info', 'Roteiro já parece estar em inglês, pulando tradução')
+                return script_text
+            
+            # Obter configuração de tradução
+            translation_config = self.config.get('translation', {})
+            provider = translation_config.get('provider', 'openai')  # openai, gemini, auto
+            
+            # Tentar traduzir com diferentes provedores
+            translated_text = None
+            
+            if provider in ['openai', 'auto'] and not translated_text:
+                translated_text = self._translate_with_openai(script_text)
+            
+            if provider in ['gemini', 'auto'] and not translated_text:
+                translated_text = self._translate_with_gemini(script_text)
+            
+            if translated_text:
+                self._log('info', 'Tradução do roteiro concluída com sucesso')
+                return translated_text
+            else:
+                self._log('warning', 'Não foi possível traduzir o roteiro, usando original')
+                return script_text
+                
+        except Exception as e:
+            self._log('error', f'Erro na tradução do roteiro: {str(e)}')
+            return script_text  # Retorna o texto original em caso de erro
+    
+    def _is_likely_english(self, text: str) -> bool:
+        """Verifica se o texto provavelmente já está em inglês"""
+        try:
+            # Palavras comuns em português que indicam que o texto não está em inglês
+            portuguese_indicators = [
+                ' e ', ' de ', ' para ', ' com ', ' um ', ' uma ', ' o ', ' a ', ' os ', ' as ',
+                ' que ', ' do ', ' da ', ' em ', ' no ', ' na ', ' por ', ' como ', ' mais ',
+                ' muito ', ' muito ', ' foi ', ' ser ', ' ter ', ' estar ', ' fazer ', ' ir ',
+                ' este ', ' esta ', ' isto ', ' aquele ', ' aquela ', ' aquilo ', ' seu ',
+                ' sua ', ' dele ', ' dela ', ' deles ', ' delas ', ' nosso ', ' nossa '
+            ]
+            
+            # Contar ocorrências de indicadores de português
+            portuguese_count = sum(1 for indicator in portuguese_indicators if indicator.lower() in text.lower())
+            
+            # Se houver mais de 5 indicadores de português, considerar que o texto está em português
+            return portuguese_count < 5
+            
+        except Exception:
+            return False  # Em caso de erro, assumir que não está em inglês
+    
+    def _translate_with_openai(self, text: str) -> str:
+        """Traduz texto usando OpenAI"""
+        try:
+            import os
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                self._log('warning', 'Chave da API OpenAI não encontrada')
+                return None
+            
+            import openai
+            client = openai.OpenAI(api_key=api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a professional translator. Translate the given text from Portuguese to English. Maintain the original meaning, tone and structure. Only return the translated text, without any additional comments or explanations."},
+                    {"role": "user", "content": text}
+                ],
+                max_tokens=4000,
+                temperature=0.3
+            )
+            
+            if response.choices and len(response.choices) > 0:
+                return response.choices[0].message.content.strip()
+            
+            return None
+            
+        except Exception as e:
+            self._log('error', f'Erro na tradução com OpenAI: {str(e)}')
+            return None
+    
+    def _translate_with_gemini(self, text: str) -> str:
+        """Traduz texto usando Gemini"""
+        try:
+            # Importar a função de rotação de chaves do módulo de automações
+            from routes.automations import get_next_gemini_key
+            api_key = get_next_gemini_key()
+            
+            if not api_key:
+                self._log('warning', 'Chave da API Gemini não encontrada')
+                return None
+            
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-pro')
+            
+            prompt = f"Translate the following text from Portuguese to English. Maintain the original meaning, tone and structure. Only return the translated text, without any additional comments or explanations:\n\n{text}"
+            
+            response = model.generate_content(prompt)
+            
+            if response and hasattr(response, 'text'):
+                return response.text.strip()
+            
+            return None
+            
+        except Exception as e:
+            self._log('error', f'Erro na tradução com Gemini: {str(e)}')
+            return None
     
     # ================================
     # 🎯 ETAPA 7: CRIAÇÃO DE VÍDEO

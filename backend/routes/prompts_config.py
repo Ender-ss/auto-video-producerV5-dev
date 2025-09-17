@@ -92,29 +92,29 @@ Roteiro:""",
         "variables": ["title", "premise", "chapters", "target_words"]
     },
     "image_prompts": {
-        "name": "Geração de Prompts de Imagem",
-        "description": "Prompt usado pelo Gemini para criar prompts de imagem a partir do roteiro",
-        "prompt": """Você é um especialista em direção de arte e criação de prompts para IA de geração de imagens. Sua tarefa é analisar um trecho de roteiro e criar prompts detalhados para gerar imagens que complementem o conteúdo.
+        "name": "Image Prompt Generation",
+        "description": "Prompt used by Gemini to create image prompts from the script",
+        "prompt": """You are an expert in art direction and creating prompts for AI image generation. Your task is to analyze a script segment and create detailed prompts to generate images that complement the content.
 
-Trecho do roteiro:
+Script segment:
 {script_segment}
 
-Crie um prompt detalhado para geração de imagem que:
+Create a detailed prompt for image generation that:
 
-1. Capture a essência visual do conteúdo
-2. Seja específico sobre estilo, cores e composição
-3. Inclua detalhes técnicos (iluminação, ângulo, etc.)
-4. Seja otimizado para IA de geração de imagens
-5. Mantenha consistência visual com o tema
+1. Captures the visual essence of the content
+2. Be specific about style, colors and composition
+3. Include technical details (lighting, angle, etc.)
+4. Be optimized for AI image generation
+5. Maintain visual consistency with the theme
 
-Formato do prompt:
-- Descrição principal (o que mostrar)
-- Estilo visual (fotográfico, ilustração, etc.)
-- Cores dominantes
-- Composição e enquadramento
-- Qualidade e detalhes técnicos
+Prompt format:
+- Main description (what to show)
+- Visual style (photographic, illustration, etc.)
+- Dominant colors
+- Composition and framing
+- Quality and technical details
 
-Prompt de imagem:""",
+Image prompt:""",
         "variables": ["script_segment"]
     }
 }

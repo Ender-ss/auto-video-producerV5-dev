@@ -20,7 +20,10 @@ import {
   Save,
   Eye,
   User,
-  RotateCcw
+  RotateCcw,
+  Loader2,
+  Plus,
+  Trash2
 } from 'lucide-react'
 
 const AutomationCompleteForm = ({ onSubmit, onClose }) => {
@@ -413,6 +416,14 @@ Este é o FIM da história. Deve:
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showChannelsManager, setShowChannelsManager] = useState(false)
   const [showPromptManager, setShowPromptManager] = useState(false)
+  const [showImagePreview, setShowImagePreview] = useState(false)
+  const [imageAgentPrompt, setImageAgentPrompt] = useState('')
+  
+  // Estados para edição de prompts de agentes especializados
+  const [editingAgent, setEditingAgent] = useState(null)
+  const [editingPromptType, setEditingPromptType] = useState(null)
+  const [editingPromptSubtype, setEditingPromptSubtype] = useState(null)
+  const [promptText, setPromptText] = useState('')
 
   // Specialized agents configuration with localStorage persistence
   const [customAgents, setCustomAgents] = useState(() => {
@@ -477,276 +488,119 @@ ESTRUTURA DO INÍCIO:
 5. Plante as sementes da descoberta que mudará tudo
 
 ELEMENTOS OBRIGATÓRIOS:
-- Contraste visual entre os dois mundos (luxo vs simplicidade)
-- Características que humanizam o personagem pobre
-- Sinais de vazio emocional no personagem rico
-- Situação inicial que permitirá a descoberta
-
-IMPORTANTE: Seja detalhado, extenso e minucioso. Crie uma introdução rica que estabeleça claramente os contrastes e prepare o terreno para a transformação emocional.`,
+- Contraste visual entre os dois mundos (luxo vs simplicidade)`,
               meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
 
 TÍTULO: {titulo}
 PREMISSA: {premissa}
 
-CONTEXTO ANTERIOR:
+CONTEXTO DO CAPÍTULO ANTERIOR:
 {previousContent}
 
-DESENVOLVIMENTO - Histórias de Milionários:
-Esta é a continuação do MEIO da história. Deve desenvolver:
+ESTRUTURA DO MEIO:
+1. Desenvolva o encontro entre os personagens de mundos diferentes
+2. Mostre como suas perspectivas começam a mudar
+3. Introduza conflitos e tensões entre os dois mundos
+4. Aprofunde as características humanas de cada personagem
+5. Avance na direção da descoberta emocional principal
 
-1. APROXIMAÇÃO DOS MUNDOS:
-- Situações que forçam a convivência entre os personagens
-- Quebra gradual de preconceitos do personagem rico
-- Demonstração das qualidades humanas do personagem pobre
-
-2. CONFLITOS E DESCOBERTAS:
-- Resistência inicial do milionário em aceitar a realidade
-- Pequenas revelações que abalam suas certezas
-- Contraste entre valores materiais e humanos
-
-3. INTENSIFICAÇÃO EMOCIONAL:
-- Momentos de vulnerabilidade do personagem rico
-- Demonstrações de generosidade/sabedoria do personagem pobre
-- Pistas sobre a descoberta principal que está por vir
-
-ELEMENTOS ESSENCIAIS:
-- Diálogos que revelem diferenças de perspectiva
-- Situações que testem os valores de cada personagem
-- Crescimento emocional gradual do protagonista
-- Preparação para o clímax da descoberta
-
-IMPORTANTE: Seja detalhado, extenso e minucioso. Desenvolva as relações de forma orgânica, mostrando a transformação gradual através de situações concretas.`,
+ELEMENTOS OBRIGATÓRIOS:
+- Diálogos que mostrem o contraste de valores
+- Situações que desafiem as preconcepções
+- Momentos de conexão humana genuína
+- Desenvolvimento gradual da trama emocional`,
               fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
 
 TÍTULO: {titulo}
 PREMISSA: {premissa}
 
-CONTEXTO ANTERIOR:
+CONTEXTO DO CAPÍTULO ANTERIOR:
 {previousContent}
 
-CONCLUSÃO - Histórias de Milionários:
-Este é o FIM da história. Deve proporcionar:
+ESTRUTURA DO FIM:
+1. Conduza à descoberta emocional principal
+2. Mostre a transformação dos personagens
+3. Resolva os conflitos de forma satisfatória
+4. Estabeleça o novo equilíbrio entre os mundos
+5. Reflita sobre as lições aprendidas
 
-1. REVELAÇÃO PRINCIPAL:
-- A descoberta emocional que muda tudo (parentesco, passado, sacrifício)
-- Momento de reconhecimento da verdade
-- Impacto emocional profundo no protagonista rico
-
-2. TRANSFORMAÇÃO COMPLETA:
-- Mudança radical de perspectiva do milionário
-- Reconhecimento do valor das pessoas sobre o dinheiro
-- Ações concretas que demonstram a mudança
-
-3. RESOLUÇÃO EMOCIONAL:
-- Reconexão com valores humanos verdadeiros
-- Reparação de danos causados pela arrogância
-- Novo equilíbrio entre riqueza material e emocional
-
-4. MENSAGEM FINAL:
-- Reflexão sobre o que realmente importa na vida
-- Valorização das relações humanas
-- Crítica construtiva aos valores puramente materialistas
-
-ELEMENTOS FINAIS OBRIGATÓRIOS:
-- Momento catártico de reconhecimento
-- Ação redentora do protagonista
-- Desfecho que honra ambos os personagens
-- Mensagem inspiracional sobre valores humanos
-
-IMPORTANTE: Seja detalhado, extenso e minucioso na conclusão. Crie um final emocionalmente impactante que entregue a transformação completa e deixe uma mensagem poderosa sobre valores humanos versus materiais.`
+ELEMENTOS OBRIGATÓRIOS:
+- Revelação emocional impactante
+- Transformação genuína dos personagens
+- Resolução que valorize as qualidades humanas
+- Mensagem final sobre o verdadeiro significado da riqueza`
             },
             images: {
-              cinematic: `Crie uma descrição cinematográfica para uma imagem de história de milionários que represente: {scene_description}. 
-A imagem deve:
-- Destacar contrastes sociais (luxo vs simplicidade)
-- Mostrar elementos emocionais da cena
-- Ter qualidade cinematográfica e iluminação dramática
-- Refletir a transformação ou descoberta emocional
-- Incluir simbolismo sobre valores humanos vs materiais`,
-              contrast: `Crie uma descrição para imagem que contraste classes sociais representando: {scene_description}.
-Foque em:
-- Diferenças visuais claras entre riqueza e simplicidade
-- Elementos que humanizem ambos os personagens
-- Composição que destaque a conexão emocional
-- Simbolismo sobre verdadeira riqueza`
+              cinematic: `Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}.
+A imagem deve ter:
+- Qualidade cinematográfica profissional
+- Iluminação dramática e composição cuidadosa
+- Elementos visuais que representem o contraste social
+- Atmosfera emocional que transmita a mensagem da história
+- Detalhes que sugiram riqueza material e riqueza humana`,
+              contrast: `Crie uma descrição para uma imagem com forte contraste visual que represente: {scene_description}.
+A imagem deve destacar:
+- Contraste marcante entre luz e sombra
+- Elementos visuais que simbolizem diferenças sociais
+- Composição que enfatize o conflito entre mundos
+- Simbolismo visual sobre riqueza versus humanidade
+- Paleta de cores que reforce o tema do contraste`
             }
           }
         }
       }
       
-      // Merge saved agents with defaults
+      // Merge saved agents with default agents
       const mergedAgents = { ...defaultAgents }
-      Object.keys(savedAgents).forEach(key => {
-        if (mergedAgents[key]) {
-          // Merge prompts
-          mergedAgents[key].prompts = { 
-            ...mergedAgents[key].prompts, 
-            ...savedAgents[key].prompts 
+      for (const agentKey in savedAgents) {
+        if (savedAgents[agentKey]) {
+          mergedAgents[agentKey] = {
+            ...defaultAgents[agentKey],
+            ...savedAgents[agentKey],
+            prompts: {
+              ...defaultAgents[agentKey]?.prompts,
+              ...savedAgents[agentKey]?.prompts,
+              titles: {
+                ...defaultAgents[agentKey]?.prompts?.titles,
+                ...savedAgents[agentKey]?.prompts?.titles
+              },
+              premises: {
+                ...defaultAgents[agentKey]?.prompts?.premises,
+                ...savedAgents[agentKey]?.prompts?.premises
+              },
+              scripts: {
+                ...defaultAgents[agentKey]?.prompts?.scripts,
+                ...savedAgents[agentKey]?.prompts?.scripts
+              },
+              images: {
+                ...defaultAgents[agentKey]?.prompts?.images,
+                ...savedAgents[agentKey]?.prompts?.images
+              }
+            }
           }
-        } else {
-          // Add new agent
-          mergedAgents[key] = savedAgents[key]
         }
-      })
+      }
       
       return mergedAgents
     } catch (e) {
-      console.error('Failed to load saved agents from localStorage:', e)
-      // Return default agents if there's an error
-      return {
-        millionaire_stories: {
-          name: 'Histórias de Milionários',
-          description: 'Especializado em narrativas com contraste social, transformação de vida e descobertas emocionais',
-          prompts: {
-            titles: {
-              viral: `Crie títulos virais para histórias de milionários e contraste social sobre: {topic}. 
-Os títulos devem:
-- Destacar o contraste social (rico vs pobre)
-- Despertar curiosidade sobre a transformação
-- Incluir elementos emocionais
-- Ser chamativos e clickbait
-Exemplos: "Milionário Descobre Segredo Chocante...", "Rica Empresária Não Sabia Que Sua Faxineira..."`,
-              educational: `Crie títulos educacionais para histórias de milionários sobre: {topic}. 
-Foque em:
-- Lições de vida e valores
-- Contrastes sociais educativos
-- Mensagens inspiracionais
-- Reflexões sobre riqueza e humanidade`
-            },
-            premises: {
-              narrative: `Crie uma premissa narrativa para história de milionário sobre: {title}.
-A premissa deve incluir:
-- Personagem milionário/rico com vida aparentemente perfeita
-- Personagem de classe baixa com qualidades humanas especiais
-- Situação que os conecta (trabalho, acaso, família)
-- Descoberta emocional que muda perspectivas
-- Contraste entre riqueza material e riqueza humana
-- Aproximadamente {word_count} palavras`,
-              educational: `Crie uma premissa educacional para história de milionário sobre: {title}.
-Deve abordar:
-- Lições sobre valores versus dinheiro
-- Importância das relações humanas
-- Crítica social construtiva
-- Mensagens inspiracionais
-- Aproximadamente {word_count} palavras`
-            },
-            scripts: {
-              inicio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+      console.error('Erro ao carregar agentes personalizados:', e)
+      return {}
+    }
+  })
 
-TÍTULO: {titulo}
-PREMISSA: {premissa}
-
-ESTILO NARRATIVO - Histórias de Milionários:
-- Contraste forte entre riqueza material e pobreza emocional
-- Personagens ricos aparentemente bem-sucedidos mas vazios
-- Personagens pobres com riqueza humana e valores sólidos
-- Descobertas familiares/pessoais que abalam estruturas
-- Transformação através do reconhecimento de valores verdadeiros
-
-ESTRUTURA DO INÍCIO:
-1. Apresente o protagonista milionário em seu mundo de luxo
-2. Mostre sua vida aparentemente perfeita mas emocionalmente vazia
-3. Introduza o personagem de classe baixa com suas qualidades humanas
-4. Estabeleça a situação que os conectará
-5. Plante as sementes da descoberta que mudará tudo
-
-ELEMENTOS OBRIGATÓRIOS:
-- Contraste visual entre os dois mundos (luxo vs simplicidade)
-- Características que humanizam o personagem pobre
-- Sinais de vazio emocional no personagem rico
-- Situação inicial que permitirá a descoberta
-
-IMPORTANTE: Seja detalhado, extenso e minucioso. Crie uma introdução rica que estabeleça claramente os contrastes e prepare o terreno para a transformação emocional.`,
-              meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
-
-TÍTULO: {titulo}
-PREMISSA: {premissa}
-
-CONTEXTO ANTERIOR:
-{previousContent}
-
-DESENVOLVIMENTO - Histórias de Milionários:
-Esta é a continuação do MEIO da história. Deve desenvolver:
-
-1. APROXIMAÇÃO DOS MUNDOS:
-- Situações que forçam a convivência entre os personagens
-- Quebra gradual de preconceitos do personagem rico
-- Demonstração das qualidades humanas do personagem pobre
-
-2. CONFLITOS E DESCOBERTAS:
-- Resistência inicial do milionário em aceitar a realidade
-- Pequenas revelações que abalam suas certezas
-- Contraste entre valores materiais e humanos
-
-3. INTENSIFICAÇÃO EMOCIONAL:
-- Momentos de vulnerabilidade do personagem rico
-- Demonstrações de generosidade/sabedoria do personagem pobre
-- Pistas sobre a descoberta principal que está por vir
-
-ELEMENTOS ESSENCIAIS:
-- Diálogos que revelem diferenças de perspectiva
-- Situações que testem os valores de cada personagem
-- Crescimento emocional gradual do protagonista
-- Preparação para o clímax da descoberta
-
-IMPORTANTE: Seja detalhado, extenso e minucioso. Desenvolva as relações de forma orgânica, mostrando a transformação gradual através de situações concretas.`,
-              fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
-
-TÍTULO: {titulo}
-PREMISSA: {premissa}
-
-CONTEXTO ANTERIOR:
-{previousContent}
-
-CONCLUSÃO - Histórias de Milionários:
-Este é o FIM da história. Deve proporcionar:
-
-1. REVELAÇÃO PRINCIPAL:
-- A descoberta emocional que muda tudo (parentesco, passado, sacrifício)
-- Momento de reconhecimento da verdade
-- Impacto emocional profundo no protagonista rico
-
-2. TRANSFORMAÇÃO COMPLETA:
-- Mudança radical de perspectiva do milionário
-- Reconhecimento do valor das pessoas sobre o dinheiro
-- Ações concretas que demonstram a mudança
-
-3. RESOLUÇÃO EMOCIONAL:
-- Reconexão com valores humanos verdadeiros
-- Reparação de danos causados pela arrogância
-- Novo equilíbrio entre riqueza material e emocional
-
-4. MENSAGEM FINAL:
-- Reflexão sobre o que realmente importa na vida
-- Valorização das relações humanas
-- Crítica construtiva aos valores puramente materialistas
-
-ELEMENTOS FINAIS OBRIGATÓRIOS:
-- Momento catártico de reconhecimento
-- Ação redentora do protagonista
-- Desfecho que honra ambos os personagens
-- Mensagem inspiracional sobre valores humanos
-
-IMPORTANTE: Seja detalhado, extenso e minucioso na conclusão. Crie um final emocionalmente impactante que entregue a transformação completa e deixe uma mensagem poderosa sobre valores humanos versus materiais.`
-            },
-            images: {
-              cinematic: `Crie uma descrição cinematográfica para uma imagem de história de milionários que represente: {scene_description}. 
-A imagem deve:
-- Destacar contrastes sociais (luxo vs simplicidade)
-- Mostrar elementos emocionais da cena
-- Ter qualidade cinematográfica e iluminação dramática
-- Refletir a transformação ou descoberta emocional
-- Incluir simbolismo sobre valores humanos vs materiais`,
-              contrast: `Crie uma descrição para imagem que contraste classes sociais representando: {scene_description}.
-Foque em:
-- Diferenças visuais claras entre riqueza e simplicidade
-- Elementos que humanizem ambos os personagens
-- Composição que destaque a conexão emocional
-- Simbolismo sobre verdadeira riqueza`
-            }
-          }
-        }
+  // Update imageAgentPrompt when agent or image settings change
+  useEffect(() => {
+    if (formData.agent.type === 'specialized' && formData.config.images.agent_style) {
+      const agentType = formData.agent.specialized_type
+      const imageStyle = formData.config.images.style
+      
+      if (customAgents[agentType] && customAgents[agentType].prompts && customAgents[agentType].prompts.images && customAgents[agentType].prompts.images[imageStyle]) {
+        setImageAgentPrompt(customAgents[agentType].prompts.images[imageStyle])
+      } else {
+        setImageAgentPrompt('')
       }
+    } else {
+      setImageAgentPrompt('')
     }
   })
 
@@ -776,6 +630,8 @@ Foque em:
     })
   }
 
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -784,7 +640,7 @@ Foque em:
       // Include specialized agent data in submission
       const submissionData = {
         ...formData,
-        specialized_agents: customAgents
+        customAgents: customAgents
       }
       await onSubmit(submissionData)
     } catch (error) {
@@ -818,6 +674,23 @@ Foque em:
       }
     }))
     setShowPromptManager(false)
+  }
+
+  // Função para abrir o editor de prompts de agentes especializados
+  const openPromptEditor = (agentKey, promptType, subtype = null) => {
+    const agent = customAgents[agentKey]
+    let currentPrompt = ''
+    
+    if (subtype) {
+      currentPrompt = agent.prompts[promptType]?.[subtype] || ''
+    } else {
+      currentPrompt = agent.prompts[promptType] || ''
+    }
+    
+    setEditingAgent(agentKey)
+    setEditingPromptType(promptType)
+    setEditingPromptSubtype(subtype)
+    setPromptText(currentPrompt)
   }
 
   const handleResetForm = () => {
@@ -987,8 +860,9 @@ Foque em:
                 <AgentSection 
                   formData={formData} 
                   onChange={handleInputChange}
-                  specialized_agents={customAgents}
+                  customAgents={customAgents}
                   onUpdateAgent={setCustomAgents}
+                  openPromptEditor={openPromptEditor}
                 />
               )}
               {activeSection === 'ai' && (
@@ -1002,7 +876,7 @@ Foque em:
                 <MediaSection formData={formData} onChange={handleInputChange} />
               )}
               {activeSection === 'prompts' && (
-                <PromptsSection formData={formData} onChange={handleInputChange} />
+                <PromptsSection formData={formData} onChange={handleInputChange} customAgents={customAgents} />
               )}
               {activeSection === 'advanced' && (
               <AdvancedSection formData={formData} onChange={handleInputChange} />
@@ -1071,6 +945,63 @@ Foque em:
                         <span>Sistema Padrão - {formData.config.premises.style}</span>
                       </div>
                     )}
+                  </div>
+                </div>
+                
+                {/* Imagens */}
+                <div>
+                  <h4 className="text-lg font-medium text-white flex items-center space-x-2 mb-2">
+                    <Image size={16} className="text-yellow-400" />
+                    <span>Imagens:</span>
+                  </h4>
+                  <div className="ml-6 space-y-2">
+                    {formData.config.images.custom_prompt ? (
+                      <div className="flex items-center space-x-2 text-blue-300">
+                        <User size={14} />
+                        <span>Prompt Personalizado</span>
+                      </div>
+                    ) : formData.config.images.agent_style && formData.agent.type === 'specialized' ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2 text-purple-300">
+                          <Bot size={14} />
+                          <span>Estilo do Agente: {formData.agent.specialized_type}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowImagePreview(!showImagePreview)}
+                          className="flex items-center space-x-1 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                          <Eye size={12} />
+                          <span>Ver prompt do agente</span>
+                        </button>
+                        {showImagePreview && (
+                          <div className="bg-gray-700/50 border border-gray-600 rounded p-3 text-sm text-gray-300 max-h-40 overflow-y-auto">
+                            {imageAgentPrompt ? (
+                              <pre className="whitespace-pre-wrap break-words">{imageAgentPrompt}</pre>
+                            ) : (
+                              <div className="flex items-center space-x-2 text-gray-400">
+                                <Loader2 size={14} className="animate-spin" />
+                                <span>Carregando prompt do agente...</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-gray-300">
+                        <Settings size={14} />
+                        <span>Sistema Padrão - {formData.config.images.style}</span>
+                      </div>
+                    )}
+                    <div className="text-sm text-gray-400 flex items-center space-x-2">
+                      <span>Provedor: {formData.config.images.provider}</span>
+                      <span>•</span>
+                      <span>Estilo: {formData.config.images.style}</span>
+                      <span>•</span>
+                      <span>Qualidade: {formData.config.images.quality}</span>
+                      <span>•</span>
+                      <span>Quantidade: {formData.config.images.total_images}</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -1174,6 +1105,35 @@ Foque em:
           </div>
         </div>
       )}
+
+      {/* Modal de Edição de Prompts para Agentes Especializados */}
+      {editingAgent && (
+        <PromptEditorModal
+          isOpen={!!editingAgent}
+          onClose={() => {
+            setEditingAgent(null);
+            setEditingPromptType(null);
+            setEditingPromptSubtype(null);
+            setPromptText('');
+          }}
+          onSave={() => {
+            // Salvamento é feito individualmente por subtipo no modal
+            setEditingAgent(null);
+            setEditingPromptType(null);
+            setEditingPromptSubtype(null);
+            setPromptText('');
+          }}
+          agentName={customAgents[editingAgent]?.name || ''}
+          promptType={editingPromptType}
+          promptSubtype={editingPromptSubtype}
+          promptText={promptText}
+          setPromptText={setPromptText}
+          customAgents={customAgents}
+          setCustomAgents={setCustomAgents}
+          editingAgent={editingAgent}
+          editingPromptType={editingPromptType}
+        />
+      )}
     </motion.div>
   )
 }
@@ -1252,63 +1212,12 @@ const BasicSection = ({ formData, onChange, onOpenChannelsManager }) => {
 }
 
 // Seção de Agentes Especializados
-const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent }) => {
-  const [editingAgent, setEditingAgent] = useState(null)
-  const [editingPromptType, setEditingPromptType] = useState(null)
-  const [editingPromptSubtype, setEditingPromptSubtype] = useState(null)
-  const [promptText, setPromptText] = useState('')
+const AgentSection = ({ formData, onChange, customAgents, onUpdateAgent, openPromptEditor }) => {
+  
 
-  const openPromptEditor = (agentKey, promptType, subtype = null) => {
-    const agent = specialized_agents[agentKey]
-    let currentPrompt = ''
-    
-    if (subtype) {
-      currentPrompt = agent.prompts[promptType]?.[subtype] || ''
-    } else {
-      currentPrompt = agent.prompts[promptType] || ''
-    }
-    
-    setEditingAgent(agentKey)
-    setEditingPromptType(promptType)
-    setEditingPromptSubtype(subtype)
-    setPromptText(currentPrompt)
-  }
+  
 
-  const savePrompt = () => {
-    const updatedAgents = { ...specialized_agents }
-    
-    if (editingPromptSubtype) {
-      if (!updatedAgents[editingAgent].prompts[editingPromptType]) {
-        updatedAgents[editingAgent].prompts[editingPromptType] = {}
-      }
-      updatedAgents[editingAgent].prompts[editingPromptType][editingPromptSubtype] = promptText
-    } else {
-      updatedAgents[editingAgent].prompts[editingPromptType] = promptText
-    }
-    
-    onUpdateAgent(updatedAgents)
-    
-    // Persist changes to localStorage
-    try {
-      const savedAgents = JSON.parse(localStorage.getItem('customAgents') || '{}')
-      savedAgents[editingAgent] = updatedAgents[editingAgent]
-      localStorage.setItem('customAgents', JSON.stringify(savedAgents))
-    } catch (e) {
-      console.error('Failed to save agent prompts to localStorage:', e)
-    }
-    
-    setEditingAgent(null)
-    setEditingPromptType(null)
-    setEditingPromptSubtype(null)
-    setPromptText('')
-  }
-
-  const cancelEdit = () => {
-    setEditingAgent(null)
-    setEditingPromptType(null)
-    setEditingPromptSubtype(null)
-    setPromptText('')
-  }
+  
   return (
     <div className="space-y-6">
       <div>
@@ -1366,7 +1275,7 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <h4 className="text-lg font-medium text-white mb-3">Escolha o Agente Especializado</h4>
             <div className="space-y-4">
-              {Object.entries(specialized_agents).map(([key, agent]) => (
+              {Object.entries(customAgents).map(([key, agent]) => (
                 <div key={key} className="border border-gray-600 rounded-lg hover:bg-gray-700/50 transition-colors">
                   <div className="flex items-start space-x-3 p-4">
                     <input
@@ -1382,146 +1291,162 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
                       <div className="text-gray-400 text-sm">{agent.description}</div>
                     </div>
                   </div>
-                  <div className="px-4 pb-4">
-                    <div className="text-xs text-gray-500 mb-2">Personalizar prompts:</div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'titles', 'viral')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Títulos Virais
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'titles', 'educational')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Títulos Educacionais
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'premises', 'narrative')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Premissas Narrativas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'premises', 'educational')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Premissas Educacionais
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'scripts', 'inicio')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Roteiro Início
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'scripts', 'meio')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Roteiro Meio
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'scripts', 'fim')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Roteiro Fim
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'images', 'cinematic')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Imagens Cinematográficas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPromptEditor(key, 'images', 'contrast')}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
-                      >
-                        Imagens Contraste
-                      </button>
+                  
+                  {/* Seção de prompts do agente especializado */}
+                  {formData.agent?.specialized_type === key && (
+                    <div className="px-4 pb-4 border-t border-gray-600 mt-3 pt-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-sm font-medium text-white">Prompts do Agente</h5>
+                        <button
+                          type="button"
+                          onClick={() => openPromptEditor(key, 'titles')}
+                          className="text-xs text-blue-400 hover:text-blue-300"
+                        >
+                          Editar todos
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {/* Títulos */}
+                        <div className="bg-gray-700/50 rounded p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h6 className="text-xs font-medium text-yellow-400 flex items-center">
+                              <FileText size={12} className="mr-1" /> Títulos
+                            </h6>
+                            <button
+                              type="button"
+                              onClick={() => openPromptEditor(key, 'titles')}
+                              className="text-xs text-gray-400 hover:text-blue-400"
+                            >
+                              Editar todos
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-300">
+                            {agent.prompts.titles && Object.entries(agent.prompts.titles).map(([style, prompt]) => (
+                              <div key={style} className="mb-1 flex items-start justify-between group">
+                                <div className="flex-1">
+                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => openPromptEditor(key, 'titles', style)}
+                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Premissas */}
+                        <div className="bg-gray-700/50 rounded p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h6 className="text-xs font-medium text-blue-400 flex items-center">
+                              <FileText size={12} className="mr-1" /> Premissas
+                            </h6>
+                            <button
+                              type="button"
+                              onClick={() => openPromptEditor(key, 'premises')}
+                              className="text-xs text-gray-400 hover:text-blue-400"
+                            >
+                              Editar todos
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-300">
+                            {agent.prompts.premises && Object.entries(agent.prompts.premises).map(([style, prompt]) => (
+                              <div key={style} className="mb-1 flex items-start justify-between group">
+                                <div className="flex-1">
+                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => openPromptEditor(key, 'premises', style)}
+                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Roteiros */}
+                        <div className="bg-gray-700/50 rounded p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h6 className="text-xs font-medium text-purple-400 flex items-center">
+                              <FileText size={12} className="mr-1" /> Roteiros
+                            </h6>
+                            <button
+                              type="button"
+                              onClick={() => openPromptEditor(key, 'scripts')}
+                              className="text-xs text-gray-400 hover:text-blue-400"
+                            >
+                              Editar todos
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-300">
+                            {agent.prompts.scripts && Object.entries(agent.prompts.scripts).map(([style, prompt]) => (
+                              <div key={style} className="mb-1 flex items-start justify-between group">
+                                <div className="flex-1">
+                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => openPromptEditor(key, 'scripts', style)}
+                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Imagens */}
+                        <div className="bg-gray-700/50 rounded p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h6 className="text-xs font-medium text-pink-400 flex items-center">
+                              <Image size={12} className="mr-1" /> Imagens
+                            </h6>
+                            <button
+                              type="button"
+                              onClick={() => openPromptEditor(key, 'images')}
+                              className="text-xs text-gray-400 hover:text-blue-400"
+                            >
+                              Editar todos
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-300">
+                            {agent.prompts.images && Object.entries(agent.prompts.images).map(([style, prompt]) => (
+                              <div key={style} className="mb-1 flex items-start justify-between group">
+                                <div className="flex-1">
+                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => openPromptEditor(key, 'images', style)}
+                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-gray-500 italic mt-3">
+                        Personalizar prompts: Clique nos botões "Editar" acima ou acesse a seção "Prompts" para personalizar todos os prompts deste agente
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-
-      {/* Modal de Edição de Prompt */}
-      {editingAgent && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 border-b border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  Editar Prompt: {specialized_agents[editingAgent]?.name} - {editingPromptType === 'titles' ? 'Títulos' : editingPromptType === 'premises' ? 'Premissas' : editingPromptType === 'scripts' ? 'Roteiros' : 'Imagens'} - {editingPromptSubtype || 'Geral'}
-                </h3>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Conteúdo do Prompt
-                  </label>
-                  <textarea
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
-                    rows={20}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors resize-none font-mono text-sm"
-                    placeholder="Digite o conteúdo do prompt personalizado..."
-                  />
-                </div>
-                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm">
-                      <p className="text-blue-200 font-medium mb-1">Variáveis Disponíveis</p>
-                      <p className="text-blue-300">
-                        Use variáveis como <code>{'{titulo}'}</code>, <code>{'{premissa}'}</code>, <code>{'{previousContent}'}</code> para conteúdo dinâmico.
-Para roteiros, use <code>{'{previousContent}'}</code> no final.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={savePrompt}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
-                >
-                  Salvar Prompt
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -2435,7 +2360,229 @@ const MediaSection = ({ formData, onChange }) => {
 // Seção de Mídia
 
 // Seção de Prompts
-const PromptsSection = ({ formData, onChange }) => {
+const PromptsSection = ({ formData, onChange, customAgents }) => {
+  const [editingAgent, setEditingAgent] = useState(null)
+  const [editingPromptType, setEditingPromptType] = useState(null)
+  const [editingPromptSubtype, setEditingPromptSubtype] = useState(null)
+  const [promptText, setPromptText] = useState('')
+
+  const openPromptEditor = (agentKey, promptType, subtype = null) => {
+    const agent = customAgents[agentKey]
+    let currentPrompt = ''
+    
+    if (subtype) {
+      currentPrompt = agent.prompts[promptType]?.[subtype] || ''
+    } else {
+      currentPrompt = agent.prompts[promptType] || ''
+    }
+    
+    setEditingAgent(agentKey)
+    setEditingPromptType(promptType)
+    setEditingPromptSubtype(subtype)
+    setPromptText(currentPrompt)
+  }
+
+  const handleResetAgentPrompt = (agentType, promptCategory, promptStyle) => {
+    // Default agents configuration
+    const defaultAgents = {
+      millionaire_stories: {
+        name: 'Histórias de Milionários',
+        description: 'Especializado em narrativas com contraste social, transformação de vida e descobertas emocionais',
+        prompts: {
+          titles: {
+            viral: `Crie títulos virais para histórias de milionários e contraste social sobre: {topic}. 
+Os títulos devem:
+- Destacar o contraste social (rico vs pobre)
+- Despertar curiosidade sobre a transformação
+- Incluir elementos emocionais
+- Ser chamativos e clickbait
+Exemplos: "Milionário Descobre Segredo Chocante...", "Rica Empresária Não Sabia Que Sua Faxineira..."`,
+            educational: `Crie títulos educacionais para histórias de milionários sobre: {topic}. 
+Foque em:
+- Lições de vida e valores
+- Contrastes sociais educativos
+- Mensagens inspiracionais
+- Reflexões sobre riqueza e humanidade`
+          },
+          premises: {
+            narrative: `Crie uma premissa narrativa para história de milionário sobre: {title}.
+A premissa deve incluir:
+- Personagem milionário/rico com vida aparentemente perfeita
+- Personagem de classe baixa com qualidades humanas especiais
+- Situação que os conecta (trabalho, acaso, família)
+- Descoberta emocional que muda perspectivas
+- Contraste entre riqueza material e riqueza humana
+- Aproximadamente {word_count} palavras`,
+            educational: `Crie uma premissa educacional para história de milionário sobre: {title}.
+Deve abordar:
+- Lições sobre valores versus dinheiro
+- Importância das relações humanas
+- Crítica social construtiva
+- Mensagens inspiracionais
+- Aproximadamente {word_count} palavras`
+          },
+          scripts: {
+            inicio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+ESTILO NARRATIVO - Histórias de Milionários:
+- Contraste forte entre riqueza material e pobreza emocional
+- Personagens ricos aparentemente bem-sucedidos mas vazios
+- Personagens pobres com riqueza humana e valores sólidos
+- Descobertas familiares/pessoais que abalam estruturas
+- Transformação através do reconhecimento de valores verdadeiros
+
+ESTRUTURA DO INÍCIO:
+1. Apresente o protagonista milionário em seu mundo de luxo
+2. Mostre sua vida aparentemente perfeita mas emocionalmente vazia
+3. Introduza o personagem de classe baixa com suas qualidades humanas
+4. Estabeleça a situação que os conectará
+5. Plante as sementes da descoberta que mudará tudo
+
+ELEMENTOS OBRIGATÓRIOS:
+- Contraste visual entre os dois mundos (luxo vs simplicidade)`,
+            meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+CONTEXTO DO CAPÍTULO ANTERIOR:
+{previousContent}
+
+ESTRUTURA DO MEIO:
+1. Desenvolva o encontro entre os personagens de mundos diferentes
+2. Mostre como suas perspectivas começam a mudar
+3. Introduza conflitos e tensões entre os dois mundos
+4. Aprofunde as características humanas de cada personagem
+5. Avance na direção da descoberta emocional principal
+
+ELEMENTOS OBRIGATÓRIOS:
+- Diálogos que mostrem o contraste de valores
+- Situações que desafiem as preconcepções
+- Momentos de conexão humana genuína
+- Desenvolvimento gradual da trama emocional`,
+            fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+CONTEXTO DO CAPÍTULO ANTERIOR:
+{previousContent}
+
+ESTRUTURA DO FIM:
+1. Conduza à descoberta emocional principal
+2. Mostre a transformação dos personagens
+3. Resolva os conflitos de forma satisfatória
+4. Estabeleça o novo equilíbrio entre os mundos
+5. Reflita sobre as lições aprendidas
+
+ELEMENTOS OBRIGATÓRIOS:
+- Revelação emocional impactante
+- Transformação genuína dos personagens
+- Resolução que valorize as qualidades humanas
+- Mensagem final sobre o verdadeiro significado da riqueza`
+          },
+          images: {
+            cinematic: `Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}.
+A imagem deve ter:
+- Qualidade cinematográfica profissional
+- Iluminação dramática e composição cuidadosa
+- Elementos visuais que representem o contraste social
+- Atmosfera emocional que transmita a mensagem da história
+- Detalhes que sugiram riqueza material e riqueza humana`,
+            contrast: `Crie uma descrição para uma imagem com forte contraste visual que represente: {scene_description}.
+A imagem deve destacar:
+- Contraste marcante entre luz e sombra
+- Elementos visuais que simbolizem diferenças sociais
+- Composição que enfatize o conflito entre mundos
+- Simbolismo visual sobre riqueza versus humanidade
+- Paleta de cores que reforce o tema do contraste`
+          }
+        }
+      }
+    }
+
+    const updatedAgents = { ...customAgents }
+    
+    // Check if the agent exists
+    if (updatedAgents[agentType] && updatedAgents[agentType].prompts) {
+      // Check if the prompt category exists
+      if (updatedAgents[agentType].prompts[promptCategory]) {
+        // Check if the specific prompt style exists in default
+        if (defaultAgents[agentType] && 
+            defaultAgents[agentType].prompts && 
+            defaultAgents[agentType].prompts[promptCategory] && 
+            defaultAgents[agentType].prompts[promptCategory][promptStyle]) {
+          
+          // Reset to default value
+          updatedAgents[agentType].prompts[promptCategory][promptStyle] = 
+            defaultAgents[agentType].prompts[promptCategory][promptStyle]
+          
+          // Save to localStorage
+          localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
+          
+          // Update imageAgentPrompt if this is an image prompt
+          if (promptCategory === 'images' && 
+              formData.agent.type === 'specialized' && 
+              formData.agent.specialized_type === agentType &&
+              formData.config.images.style === promptStyle) {
+            onChange('config.images.image_agent_prompt', defaultAgents[agentType].prompts[promptCategory][promptStyle])
+          }
+        }
+      }
+    }
+  }
+
+  const savePrompt = () => {
+    const updatedAgents = { ...customAgents }
+    
+    if (editingPromptSubtype) {
+      if (!updatedAgents[editingAgent].prompts[editingPromptType]) {
+        updatedAgents[editingAgent].prompts[editingPromptType] = {}
+      }
+      updatedAgents[editingAgent].prompts[editingPromptType][editingPromptSubtype] = promptText
+    } else {
+      updatedAgents[editingAgent].prompts[editingPromptType] = promptText
+    }
+    
+    // Update customAgents in parent component
+    const event = {
+      target: {
+        name: 'customAgents',
+        value: updatedAgents
+      }
+    }
+    onChange('customAgents', updatedAgents)
+    
+    // Persist changes to localStorage
+    try {
+      localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
+    } catch (e) {
+      console.error('Failed to save agent prompts to localStorage:', e)
+    }
+    
+    // Update imageAgentPrompt if this is an image prompt
+    if (editingPromptType === 'images' && 
+        formData.agent.type === 'specialized' && 
+        formData.agent.specialized_type === editingAgent &&
+        formData.config.images.style === editingPromptSubtype) {
+      onChange('config.images.image_agent_prompt', promptText)
+    }
+    
+    setEditingAgent(null)
+    setEditingPromptType(null)
+    setEditingPromptSubtype(null)
+    setPromptText('')
+  }
+
+  const cancelEdit = () => {
+    setEditingAgent(null)
+    setEditingPromptType(null)
+    setEditingPromptSubtype(null)
+    setPromptText('')
+  }
   const [editingPrompt, setEditingPrompt] = useState(null)
   const [tempPromptValue, setTempPromptValue] = useState('')
 
@@ -2666,11 +2813,62 @@ const PromptsSection = ({ formData, onChange }) => {
             Resetar Seção
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {renderPromptCard('images', 'cinematic', 'Cinematográfico', 'Prompts para imagens com qualidade cinematográfica', Video)}
-          {renderPromptCard('images', 'minimalist', 'Minimalista', 'Prompts para imagens limpas e minimalistas', Settings)}
-          {renderPromptCard('images', 'artistic', 'Artístico', 'Prompts para imagens criativas e expressivas', Image)}
-        </div>
+        
+        {formData.agent?.type === 'specialized' && formData.agent?.specialized_type && customAgents[formData.agent.specialized_type] ? (
+          <div className="space-y-4">
+            <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
+              <p className="text-purple-300 text-sm">
+                Exibindo prompts especializados do agente: <span className="font-medium">{customAgents[formData.agent.specialized_type].name}</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(customAgents[formData.agent.specialized_type].prompts.images).map(([style, prompt]) => (
+                <div key={style} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Image size={16} className="text-pink-400" />
+                      <h5 className="text-sm font-medium text-white capitalize">{style}</h5>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(formData.agent.specialized_type, 'images', style)}
+                        className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
+                        title="Editar prompt"
+                      >
+                        <FileText size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResetAgentPrompt(formData.agent.specialized_type, 'images', style)}
+                        className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
+                        title="Resetar para padrão"
+                      >
+                        <AlertCircle size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-gray-400 mb-3">Prompt especializado do agente</p>
+                  
+                  <div 
+                    className="text-xs text-gray-300 bg-gray-700 p-3 rounded cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => openPromptEditor(formData.agent.specialized_type, 'images', style)}
+                    title="Clique para editar"
+                  >
+                    {prompt && prompt.length > 150 ? `${prompt.substring(0, 150)}...` : prompt || ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {renderPromptCard('images', 'cinematic', 'Cinematográfico', 'Prompts para imagens com qualidade cinematográfica', Video)}
+            {renderPromptCard('images', 'minimalist', 'Minimalista', 'Prompts para imagens limpas e minimalistas', Settings)}
+            {renderPromptCard('images', 'artistic', 'Artístico', 'Prompts para imagens criativas e expressivas', Image)}
+          </div>
+        )}
       </div>
 
       {/* Informações sobre variáveis */}
@@ -2774,6 +2972,298 @@ const AdvancedSection = ({ formData, onChange }) => {
                 Desabilitar etapas pode afetar o resultado final. Certifique-se de que as dependências 
                 estão configuradas corretamente antes de iniciar a automação.
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Modal de Edição de Prompts para Agentes Especializados
+const PromptEditorModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  agentName, 
+  promptType, 
+  promptSubtype, 
+  promptText, 
+  setPromptText,
+  customAgents,
+  setCustomAgents,
+  editingAgent,
+  editingPromptType
+}) => {
+  if (!isOpen) return null
+
+  const [activeTab, setActiveTab] = useState(promptSubtype || Object.keys(customAgents[editingAgent]?.prompts[promptType] || {})[0] || '')
+  const [newSubtypeName, setNewSubtypeName] = useState('')
+  const [showAddSubtype, setShowAddSubtype] = useState(false)
+
+  const getPromptTypeLabel = (type) => {
+    const labels = {
+      'titles': 'Títulos',
+      'premises': 'Premissas',
+      'scripts': 'Roteiros',
+      'images': 'Imagens'
+    }
+    return labels[type] || type
+  }
+
+  const getPromptSubtypeLabel = (subtype) => {
+    if (!subtype) return ''
+    
+    const labels = {
+      'viral': 'Viral',
+      'educational': 'Educacional',
+      'professional': 'Profissional',
+      'narrative': 'Narrativa',
+      'informative': 'Informativa',
+      'cinematic': 'Cinematográfico',
+      'minimalist': 'Minimalista',
+      'artistic': 'Artística',
+      'contrast': 'Contraste',
+      'inicio': 'Início',
+      'meio': 'Meio',
+      'fim': 'Fim'
+    }
+    return labels[subtype] || subtype
+  }
+
+  const getAvailableVariables = () => {
+    const variables = {
+      'titles': ['{topic} - Tópico do vídeo'],
+      'premises': ['{title} - Título', '{word_count} - Contagem de palavras'],
+      'scripts': ['{title} - Título', '{premise} - Premissa', '{duration} - Duração', '{previousContent} - Conteúdo anterior'],
+      'images': ['{scene_description} - Descrição da cena']
+    }
+    return variables[promptType] || []
+  }
+
+  const handleSaveSubtype = () => {
+    if (activeTab && promptText.trim()) {
+      const updatedAgents = { ...customAgents }
+      if (!updatedAgents[editingAgent].prompts[promptType]) {
+        updatedAgents[editingAgent].prompts[promptType] = {}
+      }
+      updatedAgents[editingAgent].prompts[promptType][activeTab] = promptText.trim()
+      
+      setCustomAgents(updatedAgents)
+      localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
+      
+      // Show success message
+      alert(`Prompt ${getPromptSubtypeLabel(activeTab)} salvo com sucesso!`)
+    }
+  }
+
+  const handleAddNewSubtype = () => {
+    if (newSubtypeName.trim()) {
+      const subtypeKey = newSubtypeName.toLowerCase().replace(/\s+/g, '_')
+      const updatedAgents = { ...customAgents }
+      if (!updatedAgents[editingAgent].prompts[promptType]) {
+        updatedAgents[editingAgent].prompts[promptType] = {}
+      }
+      updatedAgents[editingAgent].prompts[promptType][subtypeKey] = ''
+      
+      setCustomAgents(updatedAgents)
+      localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
+      
+      setActiveTab(subtypeKey)
+      setPromptText('')
+      setNewSubtypeName('')
+      setShowAddSubtype(false)
+    }
+  }
+
+  const handleDeleteSubtype = (subtypeKey) => {
+    if (window.confirm(`Tem certeza que deseja excluir o subtipo "${getPromptSubtypeLabel(subtypeKey)}"?`)) {
+      const updatedAgents = { ...customAgents }
+      if (updatedAgents[editingAgent].prompts[promptType]) {
+        delete updatedAgents[editingAgent].prompts[promptType][subtypeKey]
+        
+        setCustomAgents(updatedAgents)
+        localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
+        
+        // Switch to first available subtype or clear if none left
+        const remainingSubtypes = Object.keys(updatedAgents[editingAgent].prompts[promptType] || {})
+        if (remainingSubtypes.length > 0) {
+          setActiveTab(remainingSubtypes[0])
+          setPromptText(updatedAgents[editingAgent].prompts[promptType][remainingSubtypes[0]] || '')
+        } else {
+          setActiveTab('')
+          setPromptText('')
+        }
+      }
+    }
+  }
+
+  // Update promptText when activeTab changes
+  useEffect(() => {
+    if (activeTab && customAgents[editingAgent]?.prompts[promptType]?.[activeTab]) {
+      setPromptText(customAgents[editingAgent].prompts[promptType][activeTab])
+    } else {
+      setPromptText('')
+    }
+  }, [activeTab, editingAgent, promptType, customAgents])
+
+  const currentSubtypes = Object.keys(customAgents[editingAgent]?.prompts[promptType] || {})
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="p-6 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-white">
+              Editar Prompts - {agentName}
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <p className="text-gray-400 mt-1">
+            {getPromptTypeLabel(promptType)}
+          </p>
+        </div>
+        
+        <div className="flex flex-col md:flex-row h-[70vh]">
+          {/* Sidebar with subtypes */}
+          <div className="w-full md:w-64 bg-gray-900 border-r border-gray-700 flex flex-col">
+            <div className="p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-white">Subtipos</h4>
+                <button
+                  onClick={() => setShowAddSubtype(!showAddSubtype)}
+                  className="text-purple-400 hover:text-purple-300"
+                  title="Adicionar novo subtipo"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+              
+              {showAddSubtype && (
+                <div className="mt-2 space-y-2">
+                  <input
+                    type="text"
+                    value={newSubtypeName}
+                    onChange={(e) => setNewSubtypeName(e.target.value)}
+                    placeholder="Nome do novo subtipo"
+                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  />
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={handleAddNewSubtype}
+                      className="flex-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                    >
+                      Adicionar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddSubtype(false)
+                        setNewSubtypeName('')
+                      }}
+                      className="flex-1 px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {currentSubtypes.map((subtype) => (
+                <div
+                  key={subtype}
+                  className={`flex items-center justify-between group rounded px-2 py-1.5 cursor-pointer transition-colors ${
+                    activeTab === subtype ? 'bg-purple-600 text-white' : 'hover:bg-gray-700 text-gray-300'
+                  }`}
+                  onClick={() => setActiveTab(subtype)}
+                >
+                  <span className="text-sm truncate">{getPromptSubtypeLabel(subtype)}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSubtype(subtype)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 ml-1"
+                    title="Excluir subtipo"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              
+              {currentSubtypes.length === 0 && (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  Nenhum subtipo encontrado
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col">
+            <div className="p-6 flex-1 overflow-y-auto">
+              {activeTab ? (
+                <>
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-300">
+                        Prompt - {getPromptSubtypeLabel(activeTab)}
+                      </label>
+                    </div>
+                    <textarea
+                      value={promptText}
+                      onChange={(e) => setPromptText(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+                      rows={12}
+                      placeholder="Digite o prompt personalizado..."
+                    />
+                  </div>
+                  
+                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <Info size={20} className="text-blue-400 mt-0.5" />
+                      <div>
+                        <h4 className="text-blue-300 font-medium mb-2">Variáveis Disponíveis</h4>
+                        <div className="text-blue-200 text-sm space-y-1">
+                          {getAvailableVariables().map((variable, index) => (
+                            <p key={index}>{variable}</p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>Selecione um subtipo para editar ou crie um novo</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-700 flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Fechar
+              </button>
+              {activeTab && (
+                <button
+                  onClick={handleSaveSubtype}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Salvar Prompt
+                </button>
+              )}
             </div>
           </div>
         </div>

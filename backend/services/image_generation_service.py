@@ -79,14 +79,21 @@ class ImageGenerationService:
                 
                 # Adicionar informação do agente selecionado ao prompt, se disponível
                 if selected_agent:
-                    final_prompt = f"{final_prompt}, Agente: {selected_agent}"
+                    final_prompt = f"{final_prompt}, Agent: {selected_agent}"
+                
+                # Garantir que o prompt final esteja em inglês para melhor geração com Pollinations
+                final_prompt = self._ensure_english_prompt(final_prompt)
+                
+                # Log para depuração
+                self._log('info', f'Texto da cena: {scene_text[:100]}...')
+                self._log('info', f'Prompt final em inglês: {final_prompt}')
                 
                 prompts_to_generate.append(final_prompt)
             
             # Gerar imagens para cada prompt
             for i, prompt in enumerate(prompts_to_generate):
                 try:
-                    self._log('info', f'Gerando imagem {i + 1}/{len(prompts_to_generate)}: {prompt[:50]}...')
+                    self._log('info', f'Gerando imagem {i + 1}/{len(prompts_to_generate)}: {prompt}')
                     
                     # Gerar imagem baseado no provedor (usando funções da aba de automações)
                     image_bytes = None
@@ -106,7 +113,7 @@ class ImageGenerationService:
                             image_bytes = generate_image_together(prompt, api_key, width, height, 'standard', 'gpt')
                     
                     if image_bytes is None:
-                        self._log('warning', f'Falha ao gerar imagem {i+1}/{len(prompts_to_generate)}: {prompt[:50]}...')
+                        self._log('warning', f'Falha ao gerar imagem {i+1}/{len(prompts_to_generate)}: {prompt}')
                         continue
                     
                     # Salvar a imagem na pasta do projeto
@@ -176,13 +183,84 @@ class ImageGenerationService:
     def _get_api_key(self, provider: str) -> Optional[str]:
         """Obter chave da API para o provedor especificado"""
         try:
-            import os
             if provider == 'gemini':
-                return os.getenv('GEMINI_API_KEY')
+                # Importar a função de rotação de chaves do módulo de automações
+                from routes.automations import get_next_gemini_key
+                return get_next_gemini_key()
             elif provider == 'together':
                 return os.getenv('TOGETHER_API_KEY')
             return None
         except Exception:
+            return None
+    
+    def _ensure_english_prompt(self, prompt: str) -> str:
+        """Garante que o prompt esteja em inglês para melhor geração de imagens"""
+        try:
+            # Verificar se o prompt já está em inglês
+            if self._is_likely_english(prompt):
+                return prompt
+            
+            # Tentar traduzir o prompt para inglês
+            translated_prompt = self._translate_prompt_to_english(prompt)
+            
+            if translated_prompt:
+                self._log('info', 'Prompt traduzido para inglês com sucesso')
+                return translated_prompt
+            else:
+                self._log('warning', 'Não foi possível traduzir o prompt, usando original')
+                return prompt
+                
+        except Exception as e:
+            self._log('error', f'Erro ao garantir prompt em inglês: {str(e)}')
+            return prompt  # Retorna o prompt original em caso de erro
+    
+    def _is_likely_english(self, text: str) -> bool:
+        """Verifica se o texto provavelmente já está em inglês"""
+        try:
+            # Palavras comuns em português que indicam que o texto não está em inglês
+            portuguese_indicators = [
+                ' e ', ' de ', ' para ', ' com ', ' um ', ' uma ', ' o ', ' a ', ' os ', ' as ',
+                ' que ', ' do ', ' da ', ' em ', ' no ', ' na ', ' por ', ' como ', ' mais ',
+                ' muito ', ' muito ', ' foi ', ' ser ', ' ter ', ' estar ', ' fazer ', ' ir ',
+                ' este ', ' esta ', ' isto ', ' aquele ', ' aquela ', ' aquilo ', ' seu ',
+                ' sua ', ' dele ', ' dela ', ' deles ', ' delas ', ' nosso ', ' nossa '
+            ]
+            
+            # Contar ocorrências de indicadores de português
+            portuguese_count = sum(1 for indicator in portuguese_indicators if indicator.lower() in text.lower())
+            
+            # Se houver mais de 3 indicadores de português, considerar que o texto está em português
+            return portuguese_count < 3
+            
+        except Exception:
+            return False  # Em caso de erro, assumir que não está em inglês
+    
+    def _translate_prompt_to_english(self, text: str) -> str:
+        """Traduz texto para inglês usando Gemini"""
+        try:
+            # Importar a função de rotação de chaves do módulo de automações
+            from routes.automations import get_next_gemini_key
+            api_key = get_next_gemini_key()
+            
+            if not api_key:
+                self._log('warning', 'Chave da API Gemini não encontrada para tradução')
+                return None
+            
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-pro')
+            
+            prompt = f"Translate the following text from Portuguese to English. Maintain the original meaning, tone and structure. Only return the translated text, without any additional comments or explanations:\n\n{text}"
+            
+            response = model.generate_content(prompt)
+            
+            if response and hasattr(response, 'text'):
+                return response.text.strip()
+            
+            return None
+            
+        except Exception as e:
+            self._log('error', f'Erro na tradução do prompt: {str(e)}')
             return None
     
     def generate_images_for_script_total(self, script_text: str, provider: str, style: str, 

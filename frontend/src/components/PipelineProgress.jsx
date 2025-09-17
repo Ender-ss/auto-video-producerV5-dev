@@ -25,8 +25,10 @@ import {
 import PromptSourceIndicator from './PromptSourceIndicator'
 
 // Componente auxiliar para seções de conteúdo
-const ContentSection = ({ title, icon, content, downloadData, filename }) => {
+const ContentSection = ({ title, icon, content, downloadData, filename, editable, onEdit, contentType, pipelineId }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
 
   const downloadContent = () => {
     if (!downloadData) return
@@ -42,6 +44,30 @@ const ContentSection = ({ title, icon, content, downloadData, filename }) => {
     URL.revokeObjectURL(url)
   }
 
+  const handleEdit = () => {
+    if (editable) {
+      // Se o conteúdo for um array (como no caso dos títulos), converter para string
+      if (Array.isArray(downloadData)) {
+        setEditValue(downloadData.join('\n'))
+      } else {
+        setEditValue(downloadData || '')
+      }
+      setIsEditing(true)
+    }
+  }
+
+  const handleSave = () => {
+    if (onEdit && editValue.trim()) {
+      onEdit(contentType, editValue.trim(), pipelineId)
+      setIsEditing(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setEditValue('')
+  }
+
   return (
     <div className="border border-gray-600 rounded">
       <div className="flex items-center justify-between p-3 bg-gray-700">
@@ -50,6 +76,15 @@ const ContentSection = ({ title, icon, content, downloadData, filename }) => {
           <span className="font-medium text-white">{title}</span>
         </div>
         <div className="flex items-center space-x-2">
+          {editable && !isEditing && (
+            <button
+              onClick={handleEdit}
+              className="text-gray-400 hover:text-blue-400 transition-colors"
+              title="Editar conteúdo"
+            >
+              <FileText size={14} />
+            </button>
+          )}
           {downloadData && (
             <button
               onClick={downloadContent}
@@ -69,7 +104,34 @@ const ContentSection = ({ title, icon, content, downloadData, filename }) => {
       </div>
       {isExpanded && (
         <div className="p-3">
-          {content}
+          {isEditing ? (
+            <div className="space-y-3">
+              <textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
+                rows={8}
+                placeholder="Digite o conteúdo editado..."
+              />
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleSave}
+                  disabled={!editValue.trim()}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded transition-colors"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            content
+          )}
         </div>
       )}
     </div>
@@ -208,6 +270,44 @@ const formatFileSize = (bytes) => {
 const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingContent, setEditingContent] = useState('')
+  const [editingType, setEditingType] = useState('')
+
+  // Função para lidar com a edição de conteúdo
+  const handleContentEdit = async (contentType, newContent, pipelineId) => {
+    try {
+      // Simulação de atualização - em um ambiente real, isso faria uma chamada de API
+      console.log(`Atualizando ${contentType} para o pipeline ${pipelineId}:`, newContent)
+      
+      // Aqui você faria uma chamada de API para atualizar o conteúdo
+      // Exemplo: await updatePipelineContent(pipelineId, contentType, newContent)
+      
+      // Por enquanto, vamos apenas atualizar o estado local para demonstração
+      if (pipeline.results) {
+        if (contentType === 'titles' && pipeline.results.titles) {
+          // Para títulos, precisamos converter o texto de volta para um array
+          const titlesArray = newContent.split('\n').filter(title => title.trim())
+          pipeline.results.titles.generated_titles = titlesArray
+        } else if (contentType === 'premises' && pipeline.results.premises) {
+          pipeline.results.premises.premise = newContent
+        } else if (contentType === 'scripts' && pipeline.results.scripts) {
+          pipeline.results.scripts.script = newContent
+        }
+      }
+      
+      // Forçar uma atualização do componente
+      setIsEditing(false)
+      setEditingContent('')
+      setEditingType('')
+      
+      // Mostrar mensagem de sucesso
+      alert(`${contentType === 'titles' ? 'Títulos' : contentType === 'premises' ? 'Premissa' : 'Roteiro'} atualizado com sucesso!`)
+    } catch (error) {
+      console.error('Erro ao atualizar conteúdo:', error)
+      alert('Erro ao atualizar conteúdo. Tente novamente.')
+    }
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -918,6 +1018,10 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   }
                   downloadData={pipeline.results.titles.generated_titles?.join('\n')}
                   filename={`titulos_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
+                  editable={true}
+                  onEdit={handleContentEdit}
+                  contentType="titles"
+                  pipelineId={pipeline.pipeline_id}
                 />
               )}
               
@@ -954,6 +1058,10 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   }
                   downloadData={pipeline.results.premises.premise}
                   filename={`premissa_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
+                  editable={true}
+                  onEdit={handleContentEdit}
+                  contentType="premises"
+                  pipelineId={pipeline.pipeline_id}
                 />
               )}
               
@@ -983,6 +1091,10 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   }
                   downloadData={pipeline.results.scripts.script}
                   filename={`roteiro_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
+                  editable={true}
+                  onEdit={handleContentEdit}
+                  contentType="scripts"
+                  pipelineId={pipeline.pipeline_id}
                 />
               )}
               

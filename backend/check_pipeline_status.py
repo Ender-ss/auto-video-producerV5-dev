@@ -1,27 +1,31 @@
-from app import app, Pipeline, db
+import requests
+import json
 
-# Carregar todos os pipelines
-try:
-    with app.app_context():
-        # Verificar pipeline específica que falhou no log
-        pipeline_id = "c3bc9381-28a3-4876-b6fe-5275d8c31540"
-        pipeline = Pipeline.query.filter_by(id=pipeline_id).first()
-        
-        if pipeline:
-            print(f"Pipeline {pipeline_id} encontrada!")
-            print(f"Status: {pipeline.status}")
-            print(f"Erro: {pipeline.error_message or 'Nenhum'}")
-            print(f"Data de início: {pipeline.started_at}")
-            print(f"Data de conclusão: {pipeline.completed_at or 'Não concluída'}")
-            print(f"Progresso: {pipeline.progress}%")
-        else:
-            print(f"Pipeline {pipeline_id} não encontrada no banco de dados.")
-            
-        # Verificar pipelines recentes para comparação
-        print("\nÚltimos 5 pipelines:")
-        recent_pipelines = Pipeline.query.order_by(Pipeline.started_at.desc()).limit(5).all()
-        for p in recent_pipelines:
-            print(f"ID: {p.id}, Status: {p.status}, Iniciado em: {p.started_at}, Erro: {p.error_message or 'Nenhum'}")
-            
-except Exception as e:
-    print(f"Erro ao consultar pipelines: {str(e)}")
+# ID do pipeline retornado na criação
+pipeline_id = "5a4600a3-cc34-4f42-ae18-44e1ffd0fc9f"
+
+# URL do backend
+url = f"http://localhost:5000/api/pipeline/status/{pipeline_id}"
+
+# Headers
+headers = {
+    "Content-Type": "application/json"
+}
+
+# Enviar requisição
+response = requests.get(url, headers=headers)
+
+# Verificar resposta
+print(f"Status Code: {response.status_code}")
+print(f"Response: {response.text}")
+
+if response.status_code == 200:
+    try:
+        response_json = json.loads(response.text)
+        print("\nResponse JSON:")
+        print(json.dumps(response_json, indent=2))
+    except:
+        print("\nResponse is not valid JSON")
+else:
+    print("\nHeaders:")
+    print(response.headers)

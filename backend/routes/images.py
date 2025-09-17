@@ -537,7 +537,7 @@ Retorne apenas os prompts, um por linha, sem numeração ou formatação extra.
             payload = {
                 "model": "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
                 "messages": [
-                    {"role": "system", "content": "Você é um especialista em criação de prompts para geração de imagens por IA."},
+                    {"role": "system", "content": "You are an expert in creating prompts for AI image generation."},
                     {"role": "user", "content": system_prompt}
                 ],
                 "max_tokens": 1000,
