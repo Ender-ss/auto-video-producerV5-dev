@@ -63,32 +63,94 @@ class ImageGenerationService:
             # Distribuir cenas uniformemente (função da aba de automações)
             scenes_to_use = self._distribute_scenes_evenly(scenes, image_count)
             
-            # Gerar prompts finais com estilo
+            # Gerar prompts detalhados usando Gemini para cada cena
             prompts_to_generate = []
-            for scene_text in scenes_to_use:
-                # Se houver um prompt personalizado, use-o substituindo o contexto
-                if custom_image_prompt:
-                    # Substituir {context} pelo texto da cena
-                    final_prompt = custom_image_prompt.replace('{context}', scene_text)
-                    # Adicionar o estilo no final, se não estiver já no prompt
-                    if style.lower() not in final_prompt.lower():
-                        final_prompt = f"{final_prompt}, {style}"
-                else:
-                    # Usar a lógica padrão se não houver prompt personalizado
-                    final_prompt = f"{scene_text}, {style}"
-                
-                # Adicionar informação do agente selecionado ao prompt, se disponível
-                if selected_agent:
-                    final_prompt = f"{final_prompt}, Agent: {selected_agent}"
-                
-                # Garantir que o prompt final esteja em inglês para melhor geração com Pollinations
-                final_prompt = self._ensure_english_prompt(final_prompt)
-                
-                # Log para depuração
-                self._log('info', f'Texto da cena: {scene_text[:100]}...')
-                self._log('info', f'Prompt final em inglês: {final_prompt}')
-                
-                prompts_to_generate.append(final_prompt)
+            for i, scene_text in enumerate(scenes_to_use):
+                try:
+                    # Usar Gemini para gerar um prompt detalhado para esta cena
+                    self._log('info', f'Gerando prompt detalhado com Gemini para cena {i+1}/{len(scenes_to_use)}')
+                    
+                    # Tratar cada cena como um capítulo para usar o método _generate_prompts_for_chapter
+                    detailed_prompts = self._generate_prompts_for_chapter(
+                        chapter_text=scene_text,
+                        chapter_num=i+1,
+                        per_chapter=1,  # Um prompt por cena
+                        style=style
+                    )
+                    
+                    if detailed_prompts and len(detailed_prompts) > 0:
+                        # Usar o prompt detalhado gerado pelo Gemini
+                        detailed_prompt = detailed_prompts[0]['full_prompt']
+                        
+                        # Se houver um prompt personalizado, substituir o contexto
+                        if custom_image_prompt:
+                            # Substituir {context} pelo prompt detalhado
+                            final_prompt = custom_image_prompt.replace('{context}', detailed_prompt)
+                            # Adicionar o estilo no final, se não estiver já no prompt
+                            if style.lower() not in final_prompt.lower():
+                                final_prompt = f"{final_prompt}, {style}"
+                        else:
+                            # Usar o prompt detalhado gerado pelo Gemini
+                            final_prompt = detailed_prompt
+                        
+                        # Adicionar informação do agente selecionado ao prompt, se disponível
+                        if selected_agent:
+                            final_prompt = f"{final_prompt}, Agent: {selected_agent}"
+                        
+                        # Garantir que o prompt final esteja em inglês para melhor geração com Pollinations
+                        # Comentado pois os prompts já são gerados em inglês pelo Gemini
+                        # final_prompt = self._ensure_english_prompt(final_prompt)
+                        
+                        prompts_to_generate.append(final_prompt)
+                    else:
+                        # Fallback: usar o método original se o Gemini falhar
+                        self._log('warning', f'Falha ao gerar prompt detalhado para cena {i+1}, usando método original')
+                        
+                        # Se houver um prompt personalizado, use-o substituindo o contexto
+                        if custom_image_prompt:
+                            # Substituir {context} pelo texto da cena
+                            final_prompt = custom_image_prompt.replace('{context}', scene_text)
+                            # Adicionar o estilo no final, se não estiver já no prompt
+                            if style.lower() not in final_prompt.lower():
+                                final_prompt = f"{final_prompt}, {style}"
+                        else:
+                            # Usar a lógica padrão se não houver prompt personalizado
+                            final_prompt = f"{scene_text}, {style}"
+                        
+                        # Adicionar informação do agente selecionado ao prompt, se disponível
+                        if selected_agent:
+                            final_prompt = f"{final_prompt}, Agent: {selected_agent}"
+                        
+                        # Garantir que o prompt final esteja em inglês para melhor geração com Pollinations
+                        # Comentado pois os prompts já são gerados em inglês pelo Gemini
+                        # final_prompt = self._ensure_english_prompt(final_prompt)
+                        
+                        prompts_to_generate.append(final_prompt)
+                        
+                except Exception as e:
+                    self._log('warning', f'Erro ao gerar prompt detalhado para cena {i+1}: {str(e)}, usando método original')
+                    
+                    # Fallback: usar o método original se houver exceção
+                    # Se houver um prompt personalizado, use-o substituindo o contexto
+                    if custom_image_prompt:
+                        # Substituir {context} pelo texto da cena
+                        final_prompt = custom_image_prompt.replace('{context}', scene_text)
+                        # Adicionar o estilo no final, se não estiver já no prompt
+                        if style.lower() not in final_prompt.lower():
+                            final_prompt = f"{final_prompt}, {style}"
+                    else:
+                        # Usar a lógica padrão se não houver prompt personalizado
+                        final_prompt = f"{scene_text}, {style}"
+                    
+                    # Adicionar informação do agente selecionado ao prompt, se disponível
+                    if selected_agent:
+                        final_prompt = f"{final_prompt}, Agent: {selected_agent}"
+                    
+                    # Garantir que o prompt final esteja em inglês para melhor geração com Pollinations
+                        # Comentado pois os prompts já são gerados em inglês pelo Gemini
+                        # final_prompt = self._ensure_english_prompt(final_prompt)
+                    
+                    prompts_to_generate.append(final_prompt)
             
             # Gerar imagens para cada prompt
             for i, prompt in enumerate(prompts_to_generate):
@@ -200,18 +262,13 @@ class ImageGenerationService:
             if self._is_likely_english(prompt):
                 return prompt
             
-            # Tentar traduzir o prompt para inglês
-            translated_prompt = self._translate_prompt_to_english(prompt)
-            
-            if translated_prompt:
-                self._log('info', 'Prompt traduzido para inglês com sucesso')
-                return translated_prompt
-            else:
-                self._log('warning', 'Não foi possível traduzir o prompt, usando original')
-                return prompt
+            # Como os prompts agora são gerados diretamente em inglês pelo Gemini,
+            # não precisamos mais traduzir. Apenas registrar um aviso.
+            self._log('warning', 'Prompt não está em inglês, mas a tradução foi desativada. Usando original.')
+            return prompt
                 
         except Exception as e:
-            self._log('error', f'Erro ao garantir prompt em inglês: {str(e)}')
+            self._log('error', f'Erro ao verificar prompt: {str(e)}')
             return prompt  # Retorna o prompt original em caso de erro
     
     def _is_likely_english(self, text: str) -> bool:
@@ -248,7 +305,7 @@ class ImageGenerationService:
             
             import google.generativeai as genai
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
             prompt = f"Translate the following text from Portuguese to English. Maintain the original meaning, tone and structure. Only return the translated text, without any additional comments or explanations:\n\n{text}"
             
@@ -410,43 +467,44 @@ class ImageGenerationService:
             
             # Definir estilos de prompt
             style_descriptions = {
-                'cinematic': 'cinematográfico, iluminação dramática, composição profissional, alta qualidade',
-                'realistic': 'fotorrealista, detalhado, natural, alta resolução',
-                'artistic': 'artístico, estilizado, criativo, expressivo',
-                'minimalist': 'minimalista, limpo, simples, elegante',
-                'vibrant': 'vibrante, colorido, energético, dinâmico'
+                'cinematic': 'cinematic, dramatic lighting, professional composition, high quality',
+                'realistic': 'photorealistic, detailed, natural, high resolution',
+                'artistic': 'artistic, stylized, creative, expressive',
+                'minimalist': 'minimalist, clean, simple, elegant',
+                'vibrant': 'vibrant, colorful, energetic, dynamic'
             }
             
             style_desc = style_descriptions.get(style, style_descriptions['cinematic'])
             
-            # Prompt para Gemini
+            # Prompt para Gemini - agora pedindo para retornar prompts já em inglês
             gemini_prompt = f"""
-            Baseado no seguinte texto de roteiro do Capítulo {chapter_num}, crie {per_chapter} prompts detalhados para geração de imagens.
+            Based on the following Portuguese script text from Chapter {chapter_num}, create {per_chapter} detailed image generation prompts in English.
             
-            Texto do capítulo:
+            Chapter text in Portuguese:
             {chapter_text[:1000]}...
             
-            Estilo desejado: {style_desc}
+            Desired style: {style_desc}
             
-            Para cada prompt, você deve:
-            1. Identificar os elementos visuais principais do texto
-            2. Criar uma descrição visual detalhada e específica
-            3. Incluir detalhes de estilo, iluminação e composição
-            4. Usar termos técnicos de fotografia/cinema quando apropriado
-            5. Manter consistência com o estilo "{style}"
+            For each prompt, you must:
+            1. Identify the main visual elements from the Portuguese text
+            2. Create a detailed and specific visual description in English
+            3. Include style, lighting and composition details
+            4. Use technical photography/cinematography terms when appropriate
+            5. Maintain consistency with the "{style}" style
+            6. Return the final prompts already in English, ready for image generation
             
-            Retorne APENAS um JSON válido no formato:
+            Return ONLY a valid JSON in the format:
             {{
                 "prompts": [
                     {{
-                        "description": "descrição detalhada da imagem",
-                        "scene": "resumo da cena",
-                        "style_tags": "tags de estilo separadas por vírgula"
+                        "description": "detailed image description in English",
+                        "scene": "scene summary in English",
+                        "style_tags": "style tags separated by commas"
                     }}
                 ]
             }}
             
-            Exemplo de prompt bem detalhado:
+            Example of a well-detailed prompt:
             "A professional AI agent working at a modern computer setup, multiple monitors displaying code and data analytics, sleek office environment, soft blue lighting, shallow depth of field, cinematic composition, high-tech atmosphere, 4K quality, photorealistic"
             """
             
@@ -487,7 +545,7 @@ class ImageGenerationService:
                     'chapter': chapter_num,
                     'index': 1,
                     'description': response_text[:200],
-                    'scene': f'Capítulo {chapter_num}',
+                    'scene': f'Chapter {chapter_num}',
                     'style_tags': style,
                     'full_prompt': self._build_full_prompt(response_text[:200], style)
                 }]

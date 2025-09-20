@@ -1094,8 +1094,8 @@ def generate_image_gemini_reddit(prompt, width, height, quality='standard'):
         
         # URL do endpoint do Gemini 2.5 Flash
         # NOTA: O modelo gemini-2.5-flash-exp pode não estar mais disponível
-        # Vamos tentar com gemini-pro-visioning que é o modelo para geração de imagens
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
+        # Vamos tentar com gemini-1.5-flash que é o modelo atual para geração de imagens
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
         
         print(f"🔄 Enviando requisição para Gemini 2.5 Flash via método Reddit")
         
