@@ -1,6 +1,7 @@
 import logging
 import time
 import json
+import re
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 from improved_header_removal import ImprovedHeaderRemoval
@@ -49,7 +50,33 @@ class ScriptProcessingService:
             Dict com resultado do processamento
         """
         start_time = time.time()
-        processing_config = {**self.default_config, **(config or {})}
+        
+        # Configuração padrão com opções de otimização
+        default_config = {
+            "enabled": True,
+            "remove_chapter_headers": True,
+            "remove_markdown": True,
+            "preserve_dialogue": True,
+            "preserve_context": True,
+            "preserve_content": True,
+            "min_script_length": 100,
+            "max_script_length": 50000,
+            "required_preservation_ratio": 0.8,
+            "timeout_seconds": 30,
+            "max_retries": 3,
+            "normalize_whitespace": True,
+            "remove_empty_lines": True,
+            "min_content_length": 10,
+            "min_length": 10,
+            "optimize_for_tts": False,
+            "improve_readability": False,
+            "adjust_pacing": False,
+            "enhance_emotions": False,
+            "custom_prompt": "",
+            "custom_instructions": ""
+        }
+        
+        processing_config = {**default_config, **(config or {})}
         
         try:
             self.logger.info(f"Iniciando processamento de roteiro para pipeline {pipeline_id}", extra={
@@ -80,6 +107,23 @@ class ScriptProcessingService:
             
             # Processar o script
             processed_script = self._apply_processing(raw_script, processing_config)
+            
+            # Aplicar otimizações adicionais se solicitado
+            if processing_config.get('optimize_for_tts', False):
+                processed_script = self._optimize_for_tts(processed_script, processing_config)
+            
+            if processing_config.get('improve_readability', False):
+                processed_script = self._improve_readability(processed_script, processing_config)
+            
+            if processing_config.get('adjust_pacing', False):
+                processed_script = self._adjust_pacing(processed_script, processing_config)
+            
+            if processing_config.get('enhance_emotions', False):
+                processed_script = self._enhance_emotions(processed_script, processing_config)
+            
+            # Aplicar instruções personalizadas se fornecidas
+            if processing_config.get('custom_instructions', ''):
+                processed_script = self._apply_custom_instructions(processed_script, processing_config.get('custom_instructions', ''))
             
             # Validar resultado
             if not self.validate_output(processed_script, raw_script, processing_config):
@@ -345,3 +389,198 @@ class ScriptProcessingService:
         except Exception as e:
             self.logger.error(f"Erro ao obter status: {str(e)}")
             return None
+    
+    def _optimize_for_tts(self, script: str, config: dict) -> str:
+        """
+        Otimizar roteiro para síntese de voz (TTS)
+        
+        Args:
+            script: Roteiro a ser otimizado
+            config: Configuração de otimização
+            
+        Returns:
+            str: Roteiro otimizado para TTS
+        """
+        try:
+            optimized_script = script
+            
+            # Remover abreviações que podem ser mal pronunciadas
+            abbreviations = {
+                'etc.': 'etcétera',
+                'ex.': 'exemplo',
+                'p.ex.': 'por exemplo',
+                'dr.': 'doutor',
+                'dra.': 'doutora',
+                'sr.': 'senhor',
+                'sra.': 'senhora',
+                'prof.': 'professor',
+                'profa.': 'professora'
+            }
+            
+            for abbr, expansion in abbreviations.items():
+                optimized_script = optimized_script.replace(abbr, expansion)
+            
+            # Adicionar pausas para pontuação importante
+            punctuation_marks = ['.', '!', '?', ':', ';']
+            for mark in punctuation_marks:
+                optimized_script = optimized_script.replace(mark, mark + ' ')
+            
+            # Normalizar espaços após otimizações
+            optimized_script = ' '.join(optimized_script.split())
+            
+            return optimized_script
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao otimizar roteiro para TTS: {str(e)}")
+            return script
+    
+    def _improve_readability(self, script: str, config: dict) -> str:
+        """
+        Melhorar legibilidade do roteiro
+        
+        Args:
+            script: Roteiro a ser melhorado
+            config: Configuração de melhoria
+            
+        Returns:
+            str: Roteiro com legibilidade melhorada
+        """
+        try:
+            improved_script = script
+            
+            # Dividir parágrafos muito longos
+            paragraphs = improved_script.split('\n\n')
+            improved_paragraphs = []
+            
+            for paragraph in paragraphs:
+                # Se parágrafo for muito longo, dividir em frases
+                if len(paragraph) > 300:
+                    sentences = paragraph.split('. ')
+                    if len(sentences) > 3:
+                        # Manter primeiro e último parágrafo, dividir o meio
+                        first_part = '. '.join(sentences[:len(sentences)//2]) + '.'
+                        second_part = '. '.join(sentences[len(sentences)//2:])
+                        improved_paragraphs.append(first_part)
+                        improved_paragraphs.append(second_part)
+                    else:
+                        improved_paragraphs.append(paragraph)
+                else:
+                    improved_paragraphs.append(paragraph)
+            
+            improved_script = '\n\n'.join(improved_paragraphs)
+            
+            # Garantir que haja espaços adequados após pontuação
+            import re
+            improved_script = re.sub(r'([.,!?;:])([^\s])', r'\1 \2', improved_script)
+            
+            return improved_script
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao melhorar legibilidade: {str(e)}")
+            return script
+    
+    def _adjust_pacing(self, script: str, config: dict) -> str:
+        """
+        Ajustar ritmo do roteiro
+        
+        Args:
+            script: Roteiro a ter ritmo ajustado
+            config: Configuração de ajuste
+            
+        Returns:
+            str: Roteiro com ritmo ajustado
+        """
+        try:
+            adjusted_script = script
+            
+            # Identificar frases muito longas e adicionar pausas
+            sentences = adjusted_script.split('. ')
+            adjusted_sentences = []
+            
+            for sentence in sentences:
+                # Se frase for muito longa, adicionar vírgulas para pausas naturais
+                if len(sentence) > 150 and ',' not in sentence:
+                    # Encontrar posição ideal para vírgula (após conjunções)
+                    conjunctions = [' e ', ' mas ', ' ou ', ' pois ', ' que ', ' como ']
+                    for conj in conjunctions:
+                        if conj in sentence:
+                            parts = sentence.split(conj, 1)
+                            if len(parts) == 2:
+                                sentence = parts[0] + conj + parts[1]
+                                break
+                
+                adjusted_sentences.append(sentence)
+            
+            adjusted_script = '. '.join(adjusted_sentences)
+            
+            # Garantir que o script termine com pontuação adequada
+            if not adjusted_script.endswith(('.', '!', '?')):
+                adjusted_script += '.'
+            
+            return adjusted_script
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao ajustar ritmo: {str(e)}")
+            return script
+    
+    def _enhance_emotions(self, script: str, config: dict) -> str:
+        """
+        Melhorar expressão de emoções no roteiro
+        
+        Args:
+            script: Roteiro a ter emoções melhoradas
+            config: Configuração de melhoria
+            
+        Returns:
+            str: Roteiro com emoções melhoradas
+        """
+        try:
+            enhanced_script = script
+            
+            # Adicionar ênfase a palavras emocionais importantes
+            emotional_words = [
+                'incrível', 'fantástico', 'surpreendente', 'extraordinário',
+                'importante', 'essencial', 'crucial', 'fundamental',
+                'amor', 'paixão', 'alegria', 'felicidade', 'tristeza',
+                'medo', 'raiva', 'nojo', 'surpresa'
+            ]
+            
+            for word in emotional_words:
+                # Adicionar ênfase usando repetição controlada
+                pattern = r'\b' + word + r'\b'
+                enhanced_script = re.sub(pattern, word + ' - ' + word, enhanced_script)
+            
+            # Adicionar indicações de entonação para perguntas e exclamações
+            enhanced_script = enhanced_script.replace('?', '? (com entonação de pergunta)')
+            enhanced_script = enhanced_script.replace('!', '! (com entonação de ênfase)')
+            
+            return enhanced_script
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao melhorar emoções: {str(e)}")
+            return script
+    
+    def _apply_custom_instructions(self, script: str, instructions: str) -> str:
+        """
+        Aplicar instruções personalizadas ao roteiro
+        
+        Args:
+            script: Roteiro a ser modificado
+            instructions: Instruções personalizadas
+            
+        Returns:
+            str: Roteiro com instruções aplicadas
+        """
+        try:
+            if not instructions.strip():
+                return script
+            
+            # Aqui poderíamos implementar lógica mais complexa para interpretar instruções
+            # Por enquanto, vamos apenas adicionar as instruções como comentário no início
+            processed_script = f"[INSTRUÇÕES PERSONALIZADAS: {instructions}]\n\n{script}"
+            
+            return processed_script
+            
+        except Exception as e:
+            self.logger.error(f"Erro ao aplicar instruções personalizadas: {str(e)}")
+            return script

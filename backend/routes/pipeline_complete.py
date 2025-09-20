@@ -445,7 +445,13 @@ def start_complete_automation():
                 'enabled': True,
                 'remove_chapter_markers': True,
                 'clean_formatting': True,
-                'preserve_structure': True
+                'preserve_structure': True,
+                'optimize_for_tts': False,
+                'improve_readability': False,
+                'adjust_pacing': False,
+                'enhance_emotions': False,
+                'custom_prompt': False,
+                'custom_instructions': ''
             },
             'tts': {
                 'enabled': True,

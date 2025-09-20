@@ -21,9 +21,7 @@ import {
   Eye,
   User,
   RotateCcw,
-  Loader2,
-  Plus,
-  Trash2
+  Loader2
 } from 'lucide-react'
 
 const AutomationCompleteForm = ({ onSubmit, onClose }) => {
@@ -1117,21 +1115,29 @@ A imagem deve destacar:
             setPromptText('');
           }}
           onSave={() => {
-            // Salvamento é feito individualmente por subtipo no modal
-            setEditingAgent(null);
-            setEditingPromptType(null);
-            setEditingPromptSubtype(null);
-            setPromptText('');
+            if (editingAgent && editingPromptType && promptText) {
+              const updatedAgents = { ...customAgents };
+              
+              if (editingPromptSubtype) {
+                updatedAgents[editingAgent].prompts[editingPromptType][editingPromptSubtype] = promptText;
+              } else {
+                updatedAgents[editingAgent].prompts[editingPromptType] = promptText;
+              }
+              
+              setCustomAgents(updatedAgents);
+              localStorage.setItem('customAgents', JSON.stringify(updatedAgents));
+              
+              setEditingAgent(null);
+              setEditingPromptType(null);
+              setEditingPromptSubtype(null);
+              setPromptText('');
+            }
           }}
           agentName={customAgents[editingAgent]?.name || ''}
           promptType={editingPromptType}
           promptSubtype={editingPromptSubtype}
           promptText={promptText}
           setPromptText={setPromptText}
-          customAgents={customAgents}
-          setCustomAgents={setCustomAgents}
-          editingAgent={editingAgent}
-          editingPromptType={editingPromptType}
         />
       )}
     </motion.div>
@@ -1318,22 +1324,13 @@ const AgentSection = ({ formData, onChange, customAgents, onUpdateAgent, openPro
                               onClick={() => openPromptEditor(key, 'titles')}
                               className="text-xs text-gray-400 hover:text-blue-400"
                             >
-                              Editar todos
+                              Editar
                             </button>
                           </div>
                           <div className="text-xs text-gray-300">
                             {agent.prompts.titles && Object.entries(agent.prompts.titles).map(([style, prompt]) => (
-                              <div key={style} className="mb-1 flex items-start justify-between group">
-                                <div className="flex-1">
-                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => openPromptEditor(key, 'titles', style)}
-                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  Editar
-                                </button>
+                              <div key={style} className="mb-1">
+                                <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
                               </div>
                             ))}
                           </div>
@@ -1350,22 +1347,13 @@ const AgentSection = ({ formData, onChange, customAgents, onUpdateAgent, openPro
                               onClick={() => openPromptEditor(key, 'premises')}
                               className="text-xs text-gray-400 hover:text-blue-400"
                             >
-                              Editar todos
+                              Editar
                             </button>
                           </div>
                           <div className="text-xs text-gray-300">
                             {agent.prompts.premises && Object.entries(agent.prompts.premises).map(([style, prompt]) => (
-                              <div key={style} className="mb-1 flex items-start justify-between group">
-                                <div className="flex-1">
-                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => openPromptEditor(key, 'premises', style)}
-                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  Editar
-                                </button>
+                              <div key={style} className="mb-1">
+                                <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
                               </div>
                             ))}
                           </div>
@@ -1382,22 +1370,13 @@ const AgentSection = ({ formData, onChange, customAgents, onUpdateAgent, openPro
                               onClick={() => openPromptEditor(key, 'scripts')}
                               className="text-xs text-gray-400 hover:text-blue-400"
                             >
-                              Editar todos
+                              Editar
                             </button>
                           </div>
                           <div className="text-xs text-gray-300">
                             {agent.prompts.scripts && Object.entries(agent.prompts.scripts).map(([style, prompt]) => (
-                              <div key={style} className="mb-1 flex items-start justify-between group">
-                                <div className="flex-1">
-                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => openPromptEditor(key, 'scripts', style)}
-                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  Editar
-                                </button>
+                              <div key={style} className="mb-1">
+                                <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
                               </div>
                             ))}
                           </div>
@@ -1414,22 +1393,13 @@ const AgentSection = ({ formData, onChange, customAgents, onUpdateAgent, openPro
                               onClick={() => openPromptEditor(key, 'images')}
                               className="text-xs text-gray-400 hover:text-blue-400"
                             >
-                              Editar todos
+                              Editar
                             </button>
                           </div>
                           <div className="text-xs text-gray-300">
                             {agent.prompts.images && Object.entries(agent.prompts.images).map(([style, prompt]) => (
-                              <div key={style} className="mb-1 flex items-start justify-between group">
-                                <div className="flex-1">
-                                  <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => openPromptEditor(key, 'images', style)}
-                                  className="ml-2 text-xs text-gray-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  Editar
-                                </button>
+                              <div key={style} className="mb-1">
+                                <span className="text-gray-400 capitalize">{style}:</span> {prompt && prompt.length > 60 ? `${prompt.substring(0, 60)}...` : prompt}
                               </div>
                             ))}
                           </div>
@@ -2989,17 +2959,9 @@ const PromptEditorModal = ({
   promptType, 
   promptSubtype, 
   promptText, 
-  setPromptText,
-  customAgents,
-  setCustomAgents,
-  editingAgent,
-  editingPromptType
+  setPromptText 
 }) => {
   if (!isOpen) return null
-
-  const [activeTab, setActiveTab] = useState(promptSubtype || Object.keys(customAgents[editingAgent]?.prompts[promptType] || {})[0] || '')
-  const [newSubtypeName, setNewSubtypeName] = useState('')
-  const [showAddSubtype, setShowAddSubtype] = useState(false)
 
   const getPromptTypeLabel = (type) => {
     const labels = {
@@ -3017,12 +2979,8 @@ const PromptEditorModal = ({
     const labels = {
       'viral': 'Viral',
       'educational': 'Educacional',
-      'professional': 'Profissional',
       'narrative': 'Narrativa',
-      'informative': 'Informativa',
       'cinematic': 'Cinematográfico',
-      'minimalist': 'Minimalista',
-      'artistic': 'Artística',
       'contrast': 'Contraste',
       'inicio': 'Início',
       'meio': 'Meio',
@@ -3031,91 +2989,13 @@ const PromptEditorModal = ({
     return labels[subtype] || subtype
   }
 
-  const getAvailableVariables = () => {
-    const variables = {
-      'titles': ['{topic} - Tópico do vídeo'],
-      'premises': ['{title} - Título', '{word_count} - Contagem de palavras'],
-      'scripts': ['{title} - Título', '{premise} - Premissa', '{duration} - Duração', '{previousContent} - Conteúdo anterior'],
-      'images': ['{scene_description} - Descrição da cena']
-    }
-    return variables[promptType] || []
-  }
-
-  const handleSaveSubtype = () => {
-    if (activeTab && promptText.trim()) {
-      const updatedAgents = { ...customAgents }
-      if (!updatedAgents[editingAgent].prompts[promptType]) {
-        updatedAgents[editingAgent].prompts[promptType] = {}
-      }
-      updatedAgents[editingAgent].prompts[promptType][activeTab] = promptText.trim()
-      
-      setCustomAgents(updatedAgents)
-      localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
-      
-      // Show success message
-      alert(`Prompt ${getPromptSubtypeLabel(activeTab)} salvo com sucesso!`)
-    }
-  }
-
-  const handleAddNewSubtype = () => {
-    if (newSubtypeName.trim()) {
-      const subtypeKey = newSubtypeName.toLowerCase().replace(/\s+/g, '_')
-      const updatedAgents = { ...customAgents }
-      if (!updatedAgents[editingAgent].prompts[promptType]) {
-        updatedAgents[editingAgent].prompts[promptType] = {}
-      }
-      updatedAgents[editingAgent].prompts[promptType][subtypeKey] = ''
-      
-      setCustomAgents(updatedAgents)
-      localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
-      
-      setActiveTab(subtypeKey)
-      setPromptText('')
-      setNewSubtypeName('')
-      setShowAddSubtype(false)
-    }
-  }
-
-  const handleDeleteSubtype = (subtypeKey) => {
-    if (window.confirm(`Tem certeza que deseja excluir o subtipo "${getPromptSubtypeLabel(subtypeKey)}"?`)) {
-      const updatedAgents = { ...customAgents }
-      if (updatedAgents[editingAgent].prompts[promptType]) {
-        delete updatedAgents[editingAgent].prompts[promptType][subtypeKey]
-        
-        setCustomAgents(updatedAgents)
-        localStorage.setItem('customAgents', JSON.stringify(updatedAgents))
-        
-        // Switch to first available subtype or clear if none left
-        const remainingSubtypes = Object.keys(updatedAgents[editingAgent].prompts[promptType] || {})
-        if (remainingSubtypes.length > 0) {
-          setActiveTab(remainingSubtypes[0])
-          setPromptText(updatedAgents[editingAgent].prompts[promptType][remainingSubtypes[0]] || '')
-        } else {
-          setActiveTab('')
-          setPromptText('')
-        }
-      }
-    }
-  }
-
-  // Update promptText when activeTab changes
-  useEffect(() => {
-    if (activeTab && customAgents[editingAgent]?.prompts[promptType]?.[activeTab]) {
-      setPromptText(customAgents[editingAgent].prompts[promptType][activeTab])
-    } else {
-      setPromptText('')
-    }
-  }, [activeTab, editingAgent, promptType, customAgents])
-
-  const currentSubtypes = Object.keys(customAgents[editingAgent]?.prompts[promptType] || {})
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-white">
-              Editar Prompts - {agentName}
+              Editar Prompt - {agentName}
             </h3>
             <button
               onClick={onClose}
@@ -3126,146 +3006,53 @@ const PromptEditorModal = ({
           </div>
           <p className="text-gray-400 mt-1">
             {getPromptTypeLabel(promptType)}
+            {promptSubtype && ` - ${getPromptSubtypeLabel(promptSubtype)}`}
           </p>
         </div>
         
-        <div className="flex flex-col md:flex-row h-[70vh]">
-          {/* Sidebar with subtypes */}
-          <div className="w-full md:w-64 bg-gray-900 border-r border-gray-700 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium text-white">Subtipos</h4>
-                <button
-                  onClick={() => setShowAddSubtype(!showAddSubtype)}
-                  className="text-purple-400 hover:text-purple-300"
-                  title="Adicionar novo subtipo"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-              
-              {showAddSubtype && (
-                <div className="mt-2 space-y-2">
-                  <input
-                    type="text"
-                    value={newSubtypeName}
-                    onChange={(e) => setNewSubtypeName(e.target.value)}
-                    placeholder="Nome do novo subtipo"
-                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                  />
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={handleAddNewSubtype}
-                      className="flex-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-                    >
-                      Adicionar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowAddSubtype(false)
-                        setNewSubtypeName('')
-                      }}
-                      className="flex-1 px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {currentSubtypes.map((subtype) => (
-                <div
-                  key={subtype}
-                  className={`flex items-center justify-between group rounded px-2 py-1.5 cursor-pointer transition-colors ${
-                    activeTab === subtype ? 'bg-purple-600 text-white' : 'hover:bg-gray-700 text-gray-300'
-                  }`}
-                  onClick={() => setActiveTab(subtype)}
-                >
-                  <span className="text-sm truncate">{getPromptSubtypeLabel(subtype)}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteSubtype(subtype)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 ml-1"
-                    title="Excluir subtipo"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-              
-              {currentSubtypes.length === 0 && (
-                <div className="text-center py-4 text-gray-500 text-sm">
-                  Nenhum subtipo encontrado
-                </div>
-              )}
-            </div>
+        <div className="p-6 overflow-y-auto max-h-[60vh]">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Prompt Personalizado
+            </label>
+            <textarea
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+              rows={10}
+              placeholder="Digite o prompt personalizado..."
+            />
           </div>
           
-          {/* Main content area */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-6 flex-1 overflow-y-auto">
-              {activeTab ? (
-                <>
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-300">
-                        Prompt - {getPromptSubtypeLabel(activeTab)}
-                      </label>
-                    </div>
-                    <textarea
-                      value={promptText}
-                      onChange={(e) => setPromptText(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
-                      rows={12}
-                      placeholder="Digite o prompt personalizado..."
-                    />
-                  </div>
-                  
-                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <Info size={20} className="text-blue-400 mt-0.5" />
-                      <div>
-                        <h4 className="text-blue-300 font-medium mb-2">Variáveis Disponíveis</h4>
-                        <div className="text-blue-200 text-sm space-y-1">
-                          {getAvailableVariables().map((variable, index) => (
-                            <p key={index}>{variable}</p>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="text-center">
-                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>Selecione um subtipo para editar ou crie um novo</p>
-                  </div>
+          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Info size={20} className="text-blue-400 mt-0.5" />
+              <div>
+                <h4 className="text-blue-300 font-medium mb-2">Variáveis Disponíveis</h4>
+                <div className="text-blue-200 text-sm space-y-1">
+                  <p><strong>Títulos:</strong> {'{topic}'} - Tópico do vídeo</p>
+                  <p><strong>Premissas:</strong> {'{title}'}, {'{word_count}'} - Título e contagem de palavras</p>
+                  <p><strong>Roteiros:</strong> {'{title}'}, {'{premise}'}, {'{duration}'} - Título, premissa e duração</p>
+                  <p><strong>Imagens:</strong> {'{scene_description}'} - Descrição da cena</p>
                 </div>
-              )}
-            </div>
-            
-            <div className="p-6 border-t border-gray-700 flex justify-end space-x-3">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-              >
-                Fechar
-              </button>
-              {activeTab && (
-                <button
-                  onClick={handleSaveSubtype}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                >
-                  Salvar Prompt
-                </button>
-              )}
+              </div>
             </div>
           </div>
+        </div>
+        
+        <div className="p-6 border-t border-gray-700 flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSave}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+          >
+            Salvar Prompt
+          </button>
         </div>
       </div>
     </div>

@@ -582,10 +582,11 @@ def init_database():
 # Inicializar banco de dados
 init_database()
 
+# Registrar blueprints
+register_blueprints()
+
 # Registrar blueprints apenas se executado diretamente
 if __name__ == '__main__':
-    register_blueprints()
-    
     # Adicionar logs iniciais ao sistema em tempo real
     try:
         from routes.system import add_real_time_log

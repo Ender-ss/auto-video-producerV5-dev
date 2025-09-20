@@ -66,26 +66,27 @@ class ImageGenerationService:
             # Gerar prompts finais com estilo
             prompts_to_generate = []
             for scene_text in scenes_to_use:
+                # Traduzir o texto da cena para inglês antes de combiná-lo com o prompt do agente
+                translated_scene_text = self._ensure_english_prompt(scene_text)
+                
                 # Se houver um prompt personalizado, use-o substituindo o contexto
                 if custom_image_prompt:
-                    # Substituir {context} pelo texto da cena
-                    final_prompt = custom_image_prompt.replace('{context}', scene_text)
+                    # Substituir {context} pelo texto da cena traduzido
+                    final_prompt = custom_image_prompt.replace('{context}', translated_scene_text)
                     # Adicionar o estilo no final, se não estiver já no prompt
                     if style.lower() not in final_prompt.lower():
                         final_prompt = f"{final_prompt}, {style}"
                 else:
                     # Usar a lógica padrão se não houver prompt personalizado
-                    final_prompt = f"{scene_text}, {style}"
+                    final_prompt = f"{translated_scene_text}, {style}"
                 
                 # Adicionar informação do agente selecionado ao prompt, se disponível
                 if selected_agent:
                     final_prompt = f"{final_prompt}, Agent: {selected_agent}"
                 
-                # Garantir que o prompt final esteja em inglês para melhor geração com Pollinations
-                final_prompt = self._ensure_english_prompt(final_prompt)
-                
                 # Log para depuração
-                self._log('info', f'Texto da cena: {scene_text[:100]}...')
+                self._log('info', f'Texto da cena original: {scene_text[:100]}...')
+                self._log('info', f'Texto da cena traduzido: {translated_scene_text[:100]}...')
                 self._log('info', f'Prompt final em inglês: {final_prompt}')
                 
                 prompts_to_generate.append(final_prompt)
@@ -198,12 +199,13 @@ class ImageGenerationService:
         try:
             # Verificar se o prompt já está em inglês
             if self._is_likely_english(prompt):
+                self._log('info', 'Prompt já está em inglês')
                 return prompt
             
             # Tentar traduzir o prompt para inglês
             translated_prompt = self._translate_prompt_to_english(prompt)
             
-            if translated_prompt:
+            if translated_prompt and translated_prompt != prompt:
                 self._log('info', 'Prompt traduzido para inglês com sucesso')
                 return translated_prompt
             else:
@@ -244,7 +246,7 @@ class ImageGenerationService:
             
             if not api_key:
                 self._log('warning', 'Chave da API Gemini não encontrada para tradução')
-                return None
+                return text  # Retorna o texto original em vez de None
             
             import google.generativeai as genai
             genai.configure(api_key=api_key)
@@ -255,13 +257,16 @@ class ImageGenerationService:
             response = model.generate_content(prompt)
             
             if response and hasattr(response, 'text'):
-                return response.text.strip()
+                translated_text = response.text.strip()
+                if translated_text:
+                    return translated_text
             
-            return None
+            self._log('warning', 'Resposta da API Gemini inválida ou vazia')
+            return text  # Retorna o texto original em caso de resposta inválida
             
         except Exception as e:
             self._log('error', f'Erro na tradução do prompt: {str(e)}')
-            return None
+            return text  # Retorna o texto original em caso de erro
     
     def generate_images_for_script_total(self, script_text: str, provider: str, style: str, 
                                         resolution: str, total_images: int, custom_image_prompt: str = "", 

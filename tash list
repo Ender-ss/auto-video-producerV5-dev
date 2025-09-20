@@ -1,0 +1,44 @@
+[33m5a86eb4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33m5a86eb4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: checkout: moving from dev to main
+[33m10dba47[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2}: pull origin dev: Fast-forward
+[33mcb9f08a[m HEAD@{3}: checkout: moving from 30ff23f2e4dd3bc81e916d82ef6b757ef4a8b8e6 to dev
+[33m30ff23f[m HEAD@{4}: commit (merge): Resolução de conflitos de mesclagem - Resolvidos conflitos em app.py, requirements.txt, premise.py, video_creation_service.py, AutomationCompleteForm.jsx e restart_pipeline.py
+[33mab8a960[m HEAD@{5}: commit: Atualização do sistema de geração de imagens e correção de bugs
+[33m253c15b[m HEAD@{6}: checkout: moving from 5a86eb41da13f76bf5d8404abdf675ee19f6a58f to 253c15b
+[33m5a86eb4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{7}: checkout: moving from main to 5a86eb4
+[33m5a86eb4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{8}: commit: Correção de problemas com geração de prompts e uso de chaves Gemini
+[33m253c15b[m HEAD@{9}: commit: Melhorias no sistema: correção do cálculo de progresso do pipeline, atualização de comentários em image_queue.py e melhorias na interface do usuário
+[33macbd8c2[m HEAD@{10}: commit: Correção do cálculo do tempo decorrido do pipeline
+[33mbbfd44f[m HEAD@{11}: commit: Implementação de divisão inteligente de roteiro e geração de imagens aprimorada
+[33m02047a7[m HEAD@{12}: commit: feat: Melhorias na geração de imagens e implementação de divisão inteligente de roteiros
+[33m589826c[m HEAD@{13}: commit: feat: Implementação de suporte a prompts personalizados por agente na geração de imagens
+[33md172989[m HEAD@{14}: commit: Correção de importação de módulo video_distribution_config
+[33ma64ec21[m HEAD@{15}: commit: fix: Correção da distribuição de imagens e melhoria dos testes automatizados
+[33me7c7dc5[m HEAD@{16}: commit: Corrigido problema de distribuição não uniforme de imagens
+[33mac8774d[m HEAD@{17}: commit: Implementada distribuição uniforme de imagens no vídeo\n\n- Modificado método _calculate_image_timings para usar distribuição uniforme por padrão\n- Cada imagem agora recebe tempo de exibição igual, distribuído por todo o vídeo\n- Removida lógica de análise de script que concentrava imagens no início
+[33m574ca70[m HEAD@{18}: commit: Correções na pipeline de criação de vídeo
+[33m3d407e3[m HEAD@{19}: commit: Melhorias na pipeline de criação de vídeos e correção de problemas de tela preta
+[33md8c824a[m HEAD@{20}: commit: Corrigido erro 'must be real number, not str' na pipeline de vídeo
+[33madc4e13[m HEAD@{21}: commit: Adicionados novos parâmetros do MoviePy à seção 'Configurações de Vídeo'
+[33m144f6e3[m HEAD@{22}: commit: Adicionados novos parâmetros do MoviePy à seção 'Configurações de Vídeo': formato de saída, codec de vídeo, bitrate, qualidade de renderização, opção de áudio e threads de renderização
+[33m0180454[m HEAD@{23}: commit: Reorganização da seção 'Configuração de Mídia e Vídeo': removidas seções 'Geração de Premissas' e 'Geração de Roteiros', mantidas 'Geração de Áudio' e 'Geração de Imagens', e adicionada nova seção 'Configurações de Vídeo' com opções de resolução, FPS e legenda
+[33m22b215f[m HEAD@{24}: commit: Atualização do sistema de vídeo: otimizações de renderização e correções de UI
+[33m6b9ad2d[m HEAD@{25}: commit: Correção de erro de referência e melhoria na exibição de logs
+[33m28f19c5[m HEAD@{26}: commit (merge): Implementação de sistema de predefinições no formulário da pipeline e correção de reprodutores de áudio e vídeo
+[33m19ba3a5[m HEAD@{27}: commit: Correção e verificação do sistema de rotação de chaves Gemini, incluindo scripts de debug, testes e melhoria na integração com a pipeline
+[33me1aa1c8[m HEAD@{28}: commit: Correção de execução do sistema: Resolvido problema de caminho do Python e inicialização dos servidores
+[33me5b4b7c[m HEAD@{29}: commit: Atualiza dependência yt-dlp no requirements.txt do backend
+[33mcb9f08a[m HEAD@{30}: checkout: moving from yt_dlp_update_branch to main
+[33m2b0f769[m[33m ([m[1;32myt_dlp_update_branch[m[33m, [m[1;32mtemp_branch[m[33m)[m HEAD@{31}: checkout: moving from main to yt_dlp_update_branch
+[33mcb9f08a[m HEAD@{32}: checkout: moving from main to main
+[33mcb9f08a[m HEAD@{33}: reset: moving to HEAD
+[33mcb9f08a[m HEAD@{34}: checkout: moving from temp_branch to main
+[33m2b0f769[m[33m ([m[1;32myt_dlp_update_branch[m[33m, [m[1;32mtemp_branch[m[33m)[m HEAD@{35}: checkout: moving from 2b0f76954925154d31ba08e9a880152fd8d93f57 to temp_branch
+[33m2b0f769[m[33m ([m[1;32myt_dlp_update_branch[m[33m, [m[1;32mtemp_branch[m[33m)[m HEAD@{36}: commit: Atualiza dependência yt-dlp no requirements.txt do backend
+[33m6becbcd[m HEAD@{37}: commit: Corrige erro 'No module named routes.test_config' no app.py: removidas referências inválidas, testes confirmam rotas funcionando com status 200 OK
+[33m0669c0f[m HEAD@{38}: checkout: moving from dev to 0669c0f430f8cf426852a77678b24545894dc38c
+[33mcb9f08a[m HEAD@{39}: reset: moving to HEAD
+[33mcb9f08a[m HEAD@{40}: reset: moving to cb9f08a29cf9a9173fbb017f1d2e0385c9fa5652
+[33md5defd5[m HEAD@{41}: reset: moving to d5defd55efc1bdcc5083406de2c6783a57493781
+[33m10dba47[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m HEAD@{42}: checkout: moving from main to dev
+[33mcb9f08a[m HEAD@{43}: clone: from https://github.com/Ender-ss/auto-video-producerV5-dev.git
