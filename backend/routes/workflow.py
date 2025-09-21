@@ -266,7 +266,8 @@ def test_workflow():
         add_workflow_log("🎯 ETAPA 2: Gerando novos títulos com IA...")
         check_workflow_status()  # Verificar pausa/cancelamento
         titles_result = execute_title_generation(
-            title_generator, simulated_extraction['videos'], ai_provider, api_keys, titles_count, use_custom_prompt, custom_prompt
+            title_generator, simulated_extraction['videos'], ai_provider, api_keys, titles_count, use_custom_prompt, custom_prompt,
+            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
         )
 
         if not titles_result['success']:
@@ -291,7 +292,8 @@ def test_workflow():
             add_workflow_log(f"   {i}. {title}", "info")
 
         premises_result = execute_premise_generation(
-            title_generator, selected_titles, ai_provider, openrouter_model, api_keys
+            title_generator, selected_titles, ai_provider, openrouter_model, api_keys,
+            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
         )
 
         if not premises_result['success']:
@@ -312,7 +314,7 @@ def test_workflow():
 
         scripts_result = execute_script_generation(
             title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
+            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
         )
 
         if not scripts_result['success']:
@@ -465,7 +467,8 @@ def complete_workflow():
         print("🎯 ETAPA 2: Gerando novos títulos com IA...")
         check_workflow_status()  # Verificar pausa/cancelamento
         titles_result = execute_title_generation(
-            title_generator, extraction_result['data']['videos'], ai_provider, api_keys, titles_count, use_custom_prompt, custom_prompt
+            title_generator, extraction_result['data']['videos'], ai_provider, api_keys, titles_count, use_custom_prompt, custom_prompt,
+            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
         )
         
         if not titles_result['success']:
@@ -489,7 +492,8 @@ def complete_workflow():
             print(f"   {i}. {title}")
 
         premises_result = execute_premise_generation(
-            title_generator, selected_titles, ai_provider, openrouter_model, api_keys
+            title_generator, selected_titles, ai_provider, openrouter_model, api_keys,
+            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
         )
         
         if not premises_result['success']:
@@ -509,7 +513,7 @@ def complete_workflow():
         
         scripts_result = execute_script_generation(
             title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
+            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
         )
         
         if not scripts_result['success']:
@@ -736,7 +740,7 @@ def execute_youtube_extraction(channel_url, max_titles, min_views, days, api_key
             'error': str(e)
         }
 
-def execute_title_generation(title_generator, source_videos, ai_provider, api_keys, titles_count=5, use_custom_prompt=False, custom_prompt=''):
+def execute_title_generation(title_generator, source_videos, ai_provider, api_keys, titles_count=5, use_custom_prompt=False, custom_prompt='', agent_config=None, specialized_agents=None):
     """Executar geração de títulos"""
     try:
         if not source_videos:
@@ -776,6 +780,30 @@ def execute_title_generation(title_generator, source_videos, ai_provider, api_ke
             add_workflow_log("   3. Gemini é gratuito e recomendado", "info")
             add_workflow_log("   4. Clique em 'Salvar Alterações'", "info")
             raise Exception("Nenhuma API de IA configurada. Configure pelo menos uma chave de API (Gemini, OpenAI ou OpenRouter) nas configurações.")
+
+        # Verificar se há agente especializado configurado
+        use_agent = (agent_config and agent_config.get('type') == 'specialized' and 
+                    agent_config.get('specialized_type') and specialized_agents)
+        
+        if use_agent:
+            agent_type = agent_config['specialized_type']
+            if agent_type in specialized_agents:
+                # Usar prompt personalizado do agente especializado
+                agent_name = specialized_agents[agent_type].get('name', agent_type)
+                agent_prompts = specialized_agents[agent_type].get('prompts', {})
+                titles_prompt = agent_prompts.get('titles', '')
+                
+                if titles_prompt:
+                    add_workflow_log(f"🎆 Usando agente especializado para títulos: {agent_name}")
+                    add_workflow_log(f"📝 Prompt do agente: {titles_prompt[:100]}...")
+                    
+                    # Usar o prompt do agente como prompt personalizado
+                    custom_prompt = titles_prompt
+                    use_custom_prompt = True
+                else:
+                    add_workflow_log(f"⚠️ Agente {agent_name} não tem prompt de títulos, usando método padrão")
+            else:
+                add_workflow_log(f"⚠️ Agente {agent_type} não encontrado, usando método padrão")
 
         # Verificar se deve usar prompt personalizado
         if use_custom_prompt and custom_prompt.strip():
@@ -944,12 +972,17 @@ def execute_title_generation(title_generator, source_videos, ai_provider, api_ke
             'error': error_msg
         }
 
-def execute_premise_generation(title_generator, selected_titles, ai_provider, openrouter_model, api_keys):
+def execute_premise_generation(title_generator, selected_titles, ai_provider, openrouter_model, api_keys, agent_config=None, specialized_agents=None):
     """Executar geração de premissas"""
     try:
         # Usar a mesma lógica do endpoint de premissas
         from routes.premise import generate_premises_openrouter, generate_premises_gemini, generate_premises_openai
         
+        # Verificar se há agente especializado configurado
+        use_agent = (agent_config and agent_config.get('type') == 'specialized' and 
+                    agent_config.get('specialized_type') and specialized_agents)
+        
+        # Prompt padrão
         default_prompt = """# Gerador de Premissas Profissionais para Vídeos
 
 Você é um especialista em criação de conteúdo e storytelling para YouTube. Sua tarefa é criar premissas envolventes e profissionais baseadas nos títulos fornecidos.
@@ -973,7 +1006,30 @@ Para cada título, forneça:
 
 ## Títulos para análise:"""
 
-        prompt = f"{default_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
+        # Verificar se deve usar prompt do agente especializado
+        if use_agent:
+            agent_type = agent_config['specialized_type']
+            if agent_type in specialized_agents:
+                # Usar prompt personalizado do agente especializado
+                agent_name = specialized_agents[agent_type].get('name', agent_type)
+                agent_prompts = specialized_agents[agent_type].get('prompts', {})
+                premises_prompt = agent_prompts.get('premises', '')
+                
+                if premises_prompt:
+                    add_workflow_log(f"🎆 Usando agente especializado para premissas: {agent_name}")
+                    add_workflow_log(f"📝 Prompt do agente: {premises_prompt[:100]}...")
+                    
+                    # Usar o prompt do agente como prompt personalizado
+                    custom_prompt = f"{premises_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
+                else:
+                    add_workflow_log(f"⚠️ Agente {agent_name} não tem prompt de premissas, usando método padrão")
+                    custom_prompt = f"{default_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
+            else:
+                add_workflow_log(f"⚠️ Agente {agent_type} não encontrado, usando método padrão")
+                custom_prompt = f"{default_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
+        else:
+            # Usar prompt padrão
+            custom_prompt = f"{default_prompt}\n\n{chr(10).join(f'{i+1}. {title}' for i, title in enumerate(selected_titles))}"
         
         premises = []
         
@@ -984,23 +1040,23 @@ Para cada título, forneça:
             for provider in providers:
                 try:
                     if provider == 'openrouter' and api_keys.get('openrouter'):
-                        premises = generate_premises_openrouter(selected_titles, prompt, openrouter_model, api_keys['openrouter'])
+                        premises = generate_premises_openrouter(selected_titles, custom_prompt, openrouter_model, api_keys['openrouter'])
                         break
                     elif provider == 'gemini' and title_generator.gemini_model:
-                        premises = generate_premises_gemini(selected_titles, prompt, title_generator)
+                        premises = generate_premises_gemini(selected_titles, custom_prompt, title_generator)
                         break
                     elif provider == 'openai' and title_generator.openai_client:
-                        premises = generate_premises_openai(selected_titles, prompt, title_generator)
+                        premises = generate_premises_openai(selected_titles, custom_prompt, title_generator)
                         break
                 except Exception as e:
                     print(f"❌ Erro com {provider}: {e}")
                     continue
         elif ai_provider == 'openrouter':
-            premises = generate_premises_openrouter(selected_titles, prompt, openrouter_model, api_keys['openrouter'])
+            premises = generate_premises_openrouter(selected_titles, custom_prompt, openrouter_model, api_keys['openrouter'])
         elif ai_provider == 'gemini':
-            premises = generate_premises_gemini(selected_titles, prompt, title_generator)
+            premises = generate_premises_gemini(selected_titles, custom_prompt, title_generator)
         elif ai_provider == 'openai':
-            premises = generate_premises_openai(selected_titles, prompt, title_generator)
+            premises = generate_premises_openai(selected_titles, custom_prompt, title_generator)
         
         if not premises:
             raise Exception("Falha ao gerar premissas com todos os providers")

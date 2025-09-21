@@ -26,11 +26,12 @@ const ImageGeneration = () => {
     const [pollinationsModel, setPollinationsModel] = useState('gpt'); // flux ou gpt
     const [isCancelled, setIsCancelled] = useState(false);
     const [abortController, setAbortController] = useState(null);
+    const [googleCookies, setGoogleCookies] = useState('');
 
     useEffect(() => {
         const fetchApiKey = async () => {
-            // Não precisa de chave de API para gemini-reddit ou pollinations
-            if (provider === 'gemini-reddit' || provider === 'pollinations') {
+            // Não precisa de chave de API para gemini-reddit, pollinations, gemini-imagen3 ou gemini-imagen3-rohitaryal
+            if (provider === 'gemini-reddit' || provider === 'pollinations' || provider === 'gemini-imagen3' || provider === 'gemini-imagen3-rohitaryal') {
                 setApiKey('');
                 setError(null);
                 return;
@@ -78,8 +79,8 @@ const ImageGeneration = () => {
     }, []);
 
     const handleGenerateImages = async () => {
-        // Verificar se a chave de API é necessária (não é necessária para Pollinations.ai ou Gemini Reddit)
-        if (!apiKey && provider !== 'pollinations' && provider !== 'gemini-reddit') {
+        // Verificar se a chave de API é necessária (não é necessária para Pollinations.ai, Gemini Reddit, Gemini Imagen3 ou Gemini Imagen3-rohitaryal)
+        if (!apiKey && provider !== 'pollinations' && provider !== 'gemini-reddit' && provider !== 'gemini-imagen3' && provider !== 'gemini-imagen3-rohitaryal') {
             const providerName = provider === 'gemini' ? 'Gemini' : 'Together.ai';
             setError(`A chave da API do ${providerName} não está configurada.`);
             return;
@@ -195,7 +196,7 @@ const ImageGeneration = () => {
         setImages([]);
         
         try {
-            const response = await fetch('/api/images/generate', {
+            const response = await fetch('/api/images/generate-enhanced', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -208,7 +209,8 @@ const ImageGeneration = () => {
                     format: format,
                     quality: quality,
                     pollinations_model: pollinationsModel,
-                    image_count: 1
+                    image_count: 1,
+                    google_cookies: (provider === 'gemini-imagen3-rohitaryal' || provider === 'gemini-imagen3') ? googleCookies : undefined
                 }),
                 signal: controller.signal
             });
@@ -216,18 +218,18 @@ const ImageGeneration = () => {
             const data = await response.json();
 
             if (data.success) {
-                const newImages = data.image_urls;
+                const newImages = data.images || [];
                 setImages(prev => [...prev, ...newImages]);
                 
                 // Salvar imagens no localStorage para uso na criação de vídeos
                 const existingImages = JSON.parse(localStorage.getItem('generated_images') || '[]');
-                const imagesToSave = newImages.map((url, index) => ({
+                const imagesToSave = newImages.map((img, index) => ({
                     id: Date.now() + index,
-                    url: url,
+                    url: img.url,
                     filename: `imagem_gerada_${Date.now()}_${index + 1}.png`,
-                    prompt: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
+                    prompt: img.prompt || promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
                     style: style,
-                    provider: provider,
+                    provider: img.provider || provider,
                     format: format,
                     quality: quality,
                     timestamp: new Date().toISOString(),
@@ -261,7 +263,7 @@ const ImageGeneration = () => {
 
         try {
             setIsLoading(true);
-            const response = await fetch('/api/images/generate', {
+            const response = await fetch('/api/images/generate-enhanced', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -274,7 +276,8 @@ const ImageGeneration = () => {
                     format: format,
                     quality: quality,
                     pollinations_model: pollinationsModel,
-                    image_count: batchCount
+                    image_count: batchCount,
+                    google_cookies: (provider === 'gemini-imagen3-rohitaryal' || provider === 'gemini-imagen3') ? googleCookies : undefined
                 }),
                 signal: controller.signal
             });
@@ -282,7 +285,7 @@ const ImageGeneration = () => {
             const data = await response.json();
 
             if (data.success) {
-                const newImages = data.image_urls;
+                const newImages = data.images || [];
                 setImages(prev => [...prev, ...newImages]);
                 
                 // Salvar imagens no localStorage para uso na criação de vídeos
@@ -321,8 +324,9 @@ const ImageGeneration = () => {
         setCurrentBatch(0);
     };
 
-    const downloadImage = async (imageUrl, index) => {
+    const downloadImage = async (image, index) => {
         try {
+            const imageUrl = typeof image === 'string' ? image : image.url;
             const response = await fetch(imageUrl);
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -525,6 +529,8 @@ const ImageGeneration = () => {
                         >
                             <option value="together">Together.ai (GPT)</option>
                             <option value="gemini">Google Gemini</option>
+                            <option value="gemini-imagen3">Google Imagen 3 (ImageFX) - Novo!</option>
+                            <option value="gemini-imagen3-rohitaryal">Google Imagen 3 (ImageFX-api by rohitaryal) - Com suporte a cookies</option>
                             <option value="gemini-reddit">Google Gemini (via Reddit - Sem API Key)</option>
                             <option value="pollinations">Pollinations.ai (Gratuito)</option>
                         </select>
@@ -558,6 +564,113 @@ const ImageGeneration = () => {
                                             '📸 GPT Image: Ideal para fotos realistas e cenários do mundo real'
                                         }
                                     </p>
+                                </div>
+                            </div>
+                        )}
+                        {provider === 'gemini-imagen3' && (
+                            <div className="mt-4 space-y-4">
+                                <div className="p-3 bg-indigo-900/30 border border-indigo-600 rounded-lg">
+                                    <h4 className="text-indigo-400 font-semibold mb-2">🚀 Google Imagen 3 (ImageFX) - Vantagens</h4>
+                                    <ul className="text-sm text-indigo-300 space-y-1">
+                                        <li>• ✅ Última tecnologia de geração de imagens do Google</li>
+                                        <li>• 🎨 Qualidade superior com o modelo Imagen 3</li>
+                                        <li>• 🚀 Modo gratuito disponível</li>
+                                        <li>• 🔗 Acesso via API do Gemini</li>
+                                        <li>• 🔄 Sistema de fallback automático</li>
+                                        <li>• 🍪 Suporte para cookies do Google (opcional)</li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Cookies do Google (Opcional)</label>
+                                    <textarea 
+                                        id="googleCookies"
+                                        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 h-32"
+                                        placeholder="Cole aqui os cookies do Google para autenticação...\n\nExemplo:\n__Secure-1PSID=...; __Secure-1PSIDTS=...; __Secure-1PSIDCC=..." 
+                                        value={googleCookies}
+                                        onChange={(e) => setGoogleCookies(e.target.value)}
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">Para obter os cookies, acesse o site do Google Imagen 3, faça login e copie os cookies usando a ferramenta de desenvolvedor do navegador.</p>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Estilo da Imagem</label>
+                                    <select 
+                                        id="style"
+                                        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                                        value={style}
+                                        onChange={(e) => setStyle(e.target.value)}
+                                    >
+                                        <option value="">Padrão</option>
+                                        <option value="fotorealista">Fotorealista</option>
+                                        <option value="desenho">Desenho</option>
+                                        <option value="pintura">Pintura</option>
+                                        <option value="anime">Anime</option>
+                                        <option value="cartoon">Cartoon</option>
+                                        <option value="pixel-art">Pixel Art</option>
+                                        <option value="cyberpunk">Cyberpunk</option>
+                                        <option value="steampunk">Steampunk</option>
+                                        <option value="fantasia">Fantasia</option>
+                                        <option value="ficcao-cientifica">Ficção Científica</option>
+                                        <option value="abstracto">Abstracto</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+                        {provider === 'gemini-imagen3-rohitaryal' && (
+                            <div className="mt-4 space-y-4">
+                                <div className="p-3 bg-indigo-900/30 border border-indigo-600 rounded-lg">
+                                    <h4 className="text-indigo-400 font-semibold mb-2">🚀 Google Imagen 3 (ImageFX-api by rohitaryal) - Vantagens</h4>
+                                    <ul className="text-sm text-indigo-300 space-y-1">
+                                        <li>• ✅ Implementação baseada no repositório GitHub rohitaryal/imageFX-api</li>
+                                        <li>• 🍪 Suporte completo para cookies do Google</li>
+                                        <li>• 🎨 Qualidade superior com o modelo Imagen 3</li>
+                                        <li>• 🔄 Sistema de fallback automático</li>
+                                        <li>• ⚡ Geração rápida de imagens em alta resolução</li>
+                                    </ul>
+                                </div>
+                                
+                                {/* Mensagem de aviso sobre prompt necessário */}
+                                {(!script && !customPrompt && !pastedText && !selectedSavedScript) && (
+                                    <div className="p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
+                                        <h4 className="text-yellow-400 font-semibold mb-2">⚠️ Aviso Importante</h4>
+                                        <p className="text-sm text-yellow-300">
+                                            O botão "Gerar Imagem" permanecerá desativado até que você preencha um dos campos de prompt (Roteiro Manual, Prompt Personalizado, Texto Colado ou Roteiro Salvo).
+                                        </p>
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Cookies do Google (Opcional)</label>
+                                    <textarea 
+                                        id="googleCookies"
+                                        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 h-32"
+                                        placeholder="Cole aqui os cookies do Google para autenticação...\n\nExemplo:\n__Secure-1PSID=...; __Secure-1PSIDTS=...; __Secure-1PSIDCC=..." 
+                                        value={googleCookies}
+                                        onChange={(e) => setGoogleCookies(e.target.value)}
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">Para obter os cookies, acesse o site do Google Imagen 3, faça login e copie os cookies usando a ferramenta de desenvolvedor do navegador.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Estilo da Imagem</label>
+                                    <select 
+                                        id="style"
+                                        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                                        value={style}
+                                        onChange={(e) => setStyle(e.target.value)}
+                                    >
+                                        <option value="">Padrão</option>
+                                        <option value="fotorealista">Fotorealista</option>
+                                        <option value="desenho">Desenho</option>
+                                        <option value="pintura">Pintura</option>
+                                        <option value="anime">Anime</option>
+                                        <option value="cartoon">Cartoon</option>
+                                        <option value="pixel-art">Pixel Art</option>
+                                        <option value="cyberpunk">Cyberpunk</option>
+                                        <option value="steampunk">Steampunk</option>
+                                        <option value="fantasia">Fantasia</option>
+                                        <option value="ficcao-cientifica">Ficção Científica</option>
+                                        <option value="abstracto">Abstracto</option>
+                                    </select>
                                 </div>
                             </div>
                         )}
@@ -681,7 +794,7 @@ const ImageGeneration = () => {
                 <div className="space-y-3">
                     <button 
                         onClick={handleGenerateImages}
-                        disabled={isLoading || isGeneratingBatch || (!script && !customPrompt && !pastedText && !selectedSavedScript) || (!apiKey && provider !== 'pollinations' && provider !== 'gemini-reddit')}
+                        disabled={isLoading || isGeneratingBatch || (!script && !customPrompt && !pastedText && !selectedSavedScript) || (!apiKey && provider !== 'pollinations' && provider !== 'gemini-reddit' && provider !== 'gemini-imagen3' && provider !== 'gemini-imagen3-rohitaryal')}
                         className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-lg font-semibold disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
                     >
                         {isGeneratingBatch ? 
@@ -732,16 +845,16 @@ const ImageGeneration = () => {
                         </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {images.map((url, index) => (
+                        {images.map((image, index) => (
                             <div key={index} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg group relative">
                                 <img 
-                                    src={url} 
+                                    src={image.url} 
                                     alt={`Imagem gerada ${index + 1}`} 
                                     className="w-full h-auto object-cover" 
                                 />
                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
                                     <button
-                                        onClick={() => downloadImage(url, index)}
+                                        onClick={() => downloadImage(image.url, index)}
                                         className="opacity-0 group-hover:opacity-100 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-semibold transition-all duration-300 transform scale-90 group-hover:scale-100"
                                     >
                                         📥 Baixar

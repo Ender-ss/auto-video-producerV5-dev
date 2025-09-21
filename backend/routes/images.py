@@ -9,6 +9,7 @@ import requests
 import base64
 import time
 import datetime
+import json
 from utils.error_messages import auto_format_error, format_error_response
 from routes.prompts_config import load_prompts_config
 
@@ -63,9 +64,23 @@ def generate_images_enhanced_route():
                 return jsonify(error_response), 400
 
         # Pollinations.ai e Gemini Reddit não requerem chave de API (são gratuitos)
-        if not api_key and provider not in ['pollinations', 'gemini-reddit']:
+        if not api_key and provider not in ['pollinations', 'gemini-reddit', 'gemini-imagen3', 'gemini-imagen3-rohitaryal']:
             error_response = format_error_response('api_key_missing', f'Chave da API ({provider}) é obrigatória', 'Geração de Imagens')
             return jsonify(error_response), 400
+
+        # Validar cookies para provedores que exigem autenticação
+        if provider == 'gemini-imagen3-rohitaryal':
+            google_cookies = data.get('google_cookies', '')
+            if not google_cookies:
+                error_response = format_error_response('cookies_missing', 'Cookies de autenticação do Google são obrigatórios para o provedor gemini-imagen3-rohitaryal', 'Geração de Imagens')
+                return jsonify(error_response), 400
+
+        # Validar cookies para provedores que exigem autenticação
+        if provider == 'gemini-imagen3-rohitaryal':
+            google_cookies = data.get('google_cookies', '')
+            if not google_cookies:
+                error_response = format_error_response('cookies_missing', 'Cookies de autenticação do Google são obrigatórios para o provedor gemini-imagen3-rohitaryal', 'Geração de Imagens')
+                return jsonify(error_response), 400
 
         # Processar formato da imagem
         try:
@@ -119,6 +134,14 @@ def generate_images_enhanced_route():
                 # Gerar imagem baseado no provedor
                 if provider == 'gemini':
                     image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                elif provider == 'gemini-imagen3':
+                    # Extrair cookies do provedor da requisição (se houver)
+                    google_cookies = data.get('google_cookies', '')
+                    image_bytes = generate_image_gemini_imagen3(prompt, api_key, width, height, quality, google_cookies)
+                elif provider == 'gemini-imagen3-rohitaryal':
+                    # Extrair cookies do provedor da requisição (se houver)
+                    google_cookies = data.get('google_cookies', '')
+                    image_bytes = generate_image_gemini_imagen3_rohitaryal(prompt, width, height, quality, google_cookies)
                 elif provider == 'gemini-reddit':
                     image_bytes = generate_image_gemini_reddit(prompt, width, height, quality)
                 elif provider == 'pollinations':
@@ -186,6 +209,44 @@ def generate_images_enhanced_route():
 def generate_images_route():
     """
     Gera imagens a partir de um roteiro usando uma API de IA com suporte a IA Agent e processamento em fila.
+    
+    Provedores suportados:
+    - pollinations: Gratuito, não requer API key
+    - gemini-reddit: Gratuito, não requer API key
+    - gemini: Requer API key do Google Gemini
+    - together: Requer API key do Together AI
+    - gemini-imagen3: Usa ImageFX do Google, opcionalmente com cookies para melhor acesso
+    - gemini-imagen3-rohitaryal: Usa ImageFX do Google via API não oficial (REQUER cookies de autenticação)
+    
+    Parâmetros obrigatórios:
+    - script: Roteiro para gerar imagens (ou custom_prompt se use_custom_prompt=True)
+    
+    Parâmetros opcionais:
+    - api_key: Chave da API (não obrigatório para pollinations, gemini-reddit, gemini-imagen3 e gemini-imagen3-rohitaryal)
+    - provider: Provedor de IA (padrão: 'pollinations')
+    - model: Modelo a ser usado (padrão: 'gpt')
+    - style: Estilo da imagem (padrão: 'cinematic, high detail, 4k')
+    - format: Formato da imagem (padrão: '1024x1024')
+    - quality: Qualidade da imagem (padrão: 'standard')
+    - pollinations_model: Modelo do Pollinations (padrão: 'gpt')
+    - use_ai_agent: Usar IA Agent para criar prompts (padrão: False)
+    - ai_agent_prompt: Prompt para o IA Agent
+    - use_custom_prompt: Usar prompt personalizado (padrão: False)
+    - custom_prompt: Prompt personalizado
+    - use_custom_image_prompt: Usar prompt de imagem personalizado (padrão: False)
+    - custom_image_prompt: Prompt de imagem personalizado
+    - image_count: Número de imagens a gerar (padrão: 1)
+    - selected_agent: Agente selecionado
+    - split_strategy: Estratégia de divisão do roteiro (padrão: 'intelligent')
+    - enable_variations: Habilitar variações (padrão: False)
+    - variation_intensity: Intensidade das variações (padrão: 1.0)
+    - target_scenes: Número alvo de cenas
+    - google_cookies: Cookies de autenticação do Google (OBRIGATÓRIO para provider gemini-imagen3-rohitaryal)
+    
+    Importante:
+    - Para usar o provider gemini-imagen3-rohitaryal, é essencial fornecer cookies válidos de uma sessão
+      autenticada do Google através do parâmetro google_cookies. Sem cookies, a geração falhará.
+    - Os cookies podem ser obtidos fazendo login no Google ImageFX e copiando os cookies do navegador.
     """
     try:
         data = request.get_json()
@@ -221,7 +282,7 @@ def generate_images_route():
                 return jsonify(error_response), 400
 
         # Pollinations.ai e Gemini Reddit não requerem chave de API (são gratuitos)
-        if not api_key and provider not in ['pollinations', 'gemini-reddit']:
+        if not api_key and provider not in ['pollinations', 'gemini-reddit', 'gemini-imagen3', 'gemini-imagen3-rohitaryal']:
             error_response = format_error_response('api_key_missing', f'Chave da API ({provider}) é obrigatória', 'Geração de Imagens')
             return jsonify(error_response), 400
 
@@ -273,6 +334,14 @@ def generate_images_route():
                 # Gerar imagem baseado no provedor
                 if provider == 'gemini':
                     image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                elif provider == 'gemini-imagen3':
+                    # Extrair cookies do provedor da requisição (se houver)
+                    google_cookies = data.get('google_cookies', '')
+                    image_bytes = generate_image_gemini_imagen3(prompt, api_key, width, height, quality, google_cookies)
+                elif provider == 'gemini-imagen3-rohitaryal':
+                    # Extrair cookies do provedor da requisição (se houver)
+                    google_cookies = data.get('google_cookies', '')
+                    image_bytes = generate_image_gemini_imagen3_rohitaryal(prompt, width, height, quality, google_cookies)
                 elif provider == 'gemini-reddit':
                     image_bytes = generate_image_gemini_reddit(prompt, width, height, quality)
                 elif provider == 'pollinations':
@@ -303,6 +372,16 @@ def generate_images_route():
                     else:
                         time.sleep(2)  # 2 segundos para outras APIs
                         
+            except ValueError as e:
+                # Tratar especificamente o erro de cookies ausentes
+                print(f"🔍 ValueError capturado: {str(e)}")
+                if "Cookies de autenticação do Google são obrigatórios para o provedor gemini-imagen3-rohitaryal" in str(e):
+                    print("✅ Erro de cookies detectado, retornando resposta 400")
+                    error_response = format_error_response('cookies_missing', 'Cookies de autenticação do Google são obrigatórios para o provedor gemini-imagen3-rohitaryal', 'Geração de Imagens')
+                    return jsonify(error_response), 400
+                else:
+                    print(f"Erro ao processar imagem {i+1}: {str(e)}")
+                    continue
             except Exception as e:
                 print(f"Erro ao processar imagem {i+1}: {str(e)}")
                 continue
@@ -1025,6 +1104,619 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
     
     print("❌ Falha na geração de imagem com Gemini após todas as tentativas")
     return None
+
+def generate_image_gemini_imagen3(prompt, api_key=None, width=1024, height=1024, quality="standard", cookies=None):
+    """
+    Gera imagem usando o Imagen 3 (ImageFX) do Google através da API do Gemini
+    Utiliza o modo gratuito do Google Gemini
+    
+    Esta função tenta múltiplos métodos em ordem de prioridade:
+    1. Método rohitaryal (imageFX-api) - REQUER cookies de autenticação do Google
+    2. Método oficial com API key do Gemini
+    3. Método não oficial (sem autenticação)
+    4. API oficial do Gemini (generateContent)
+    5. Método Reddit
+    
+    Args:
+        prompt (str): Texto descritivo da imagem
+        api_key (str, optional): Chave da API do Gemini
+        width (int): Largura da imagem
+        height (int): Altura da imagem
+        quality (str): Qualidade da imagem ("standard" ou "hd")
+        cookies (str, optional): Cookies de autenticação do Google (OBRIGATÓRIO para método rohitaryal)
+    
+    Returns:
+        bytes: Imagem gerada em formato PNG ou None se falhar
+    
+    Note:
+        Para usar o método rohitaryal (imageFX-api), é essencial fornecer cookies válidos
+        de uma sessão autenticada do Google. Sem cookies, a função tentará outros métodos.
+    """
+    try:
+        print(f"🎨 Gerando imagem com Imagen 3 (ImageFX) do Google")
+        print(f"📝 Prompt: {prompt}")
+        print(f"📏 Dimensões: {width}x{height}")
+        print(f"🎯 Qualidade: {quality}")
+        print(f"🍪 Cookies fornecidos: {'Sim' if cookies else 'Não'}")
+        
+        # PRIORIDADE 1: Usar o método rohitaryal (imageFX-api)
+        print("🔒 Tentando método rohitaryal (imageFX-api)...")
+        rohitaryal_result = generate_image_gemini_imagen3_rohitaryal(prompt, width, height, quality, cookies)
+        
+        if rohitaryal_result is not None:
+            return rohitaryal_result
+        
+        # PRIORIDADE 2: Se tiver cookies, tentar novamente com o método rohitaryal (já tentado acima, mas mantido para clareza)
+        if cookies:
+            print("🔒 Usando método com cookies para autenticação...")
+            return generate_image_gemini_imagen3_rohitaryal(prompt, width, height, quality, cookies)
+        
+        # PRIORIDADE 3: Se tiver API key, tentar método oficial
+        if api_key:
+            print("🔑 Tentando com chave de API do Gemini...")
+            try:
+                # Configurar o cliente Gemini
+                genai.configure(api_key=api_key)
+                
+                # Selecionar o modelo Imagen 3
+                model = genai.ImageGenerationModel("imagen-3.0-generate-001")
+                
+                # Configurar parâmetros de geração
+                generation_config = {
+                    "number_of_images": 1,
+                    "aspect_ratio": f"{width}:{height}",
+                    "safety_filter_level": "block_none",
+                    "person_generation": "allow_adult"
+                }
+                
+                # Ajustar configuração baseado na qualidade
+                if quality == "hd":
+                    generation_config["sample_count"] = 1
+                    generation_config["quality"] = "hd"
+                
+                # Gerar a imagem
+                response = model.generate_images(
+                    prompt=prompt,
+                    **generation_config
+                )
+                
+                # Verificar se a imagem foi gerada com sucesso
+                if response and response.generated_images and len(response.generated_images) > 0:
+                    generated_image = response.generated_images[0]
+                    
+                    # Converter para bytes
+                    image_bytes = generated_image.image_bytes
+                    
+                    print(f"✅ Imagem gerada com sucesso usando Imagen 3!")
+                    print(f"📊 Tamanho: {len(image_bytes)} bytes")
+                    
+                    return image_bytes
+                else:
+                    print("❌ Nenhuma imagem foi gerada")
+            except Exception as e:
+                print(f"❌ Erro ao gerar imagem com API key do Gemini: {str(e)}")
+        
+        # PRIORIDADE 4: Tentar método não oficial
+        print("🔑 Tentando método não oficial...")
+        unofficial_result = generate_image_gemini_imagen3_unofficial(prompt, width, height, quality)
+        
+        if unofficial_result is not None:
+            return unofficial_result
+        
+        # PRIORIDADE 5: Tentar com a API oficial do Gemini (generateContent)
+        print("🔄 Tentando com API oficial do Gemini (generateContent)...")
+        official_result = generate_image_gemini_official(prompt, width, height, quality)
+        
+        if official_result is not None:
+            return official_result
+        
+        # PRIORIDADE 6: Tentar com o método Reddit
+        print("🔄 Tentando com método Reddit...")
+        return generate_image_gemini_reddit(prompt, width, height, quality)
+            
+    except Exception as e:
+        print(f"❌ Erro crítico ao gerar imagem com Imagen 3: {str(e)}")
+        
+        # Tentar fallback para o método não oficial
+        print("🔄 Tentando fallback para método não oficial...")
+        unofficial_result = generate_image_gemini_imagen3_unofficial(prompt, width, height, quality)
+        
+        if unofficial_result is not None:
+            return unofficial_result
+        
+        # Se o método não oficial também falhar, tentar com a API oficial do Gemini
+        print("🔄 Método não oficial falhou, tentando com API oficial do Gemini...")
+        official_result = generate_image_gemini_official(prompt, width, height, quality)
+        
+        if official_result is not None:
+            return official_result
+        
+        # Se tudo falhar, tentar com o método Reddit
+        print("🔄 API oficial do Gemini falhou, tentando com método Reddit...")
+        return generate_image_gemini_reddit(prompt, width, height, quality)
+
+def generate_image_gemini_imagen3_unofficial(prompt, width=1024, height=1024, quality="standard"):
+    """
+    Gera imagem usando o Imagen 3 (ImageFX) do Google através de método não oficial
+    Não requer chave de API, utiliza endpoints públicos do Google
+    
+    Args:
+        prompt (str): Texto descritivo da imagem
+        width (int): Largura da imagem
+        height (int): Altura da imagem
+        quality (str): Qualidade da imagem ("standard" ou "hd")
+    
+    Returns:
+        bytes: Imagem gerada em formato PNG ou None se falhar
+    """
+    try:
+        print(f"🎨 Gerando imagem com Imagen 3 (ImageFX) - Método não oficial")
+        print(f"📝 Prompt: {prompt}")
+        print(f"📏 Dimensões: {width}x{height}")
+        print(f"🎯 Qualidade: {quality}")
+        
+        # Headers para simular um navegador real
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0'
+        }
+        
+        # Configurar sessão
+        session = requests.Session()
+        session.headers.update(headers)
+        
+        # URL do ImageFX do Google
+        base_url = "https://imagen.research.google"
+        
+        # Payload para a requisição
+        payload = {
+            "prompt": prompt,
+            "aspectRatio": f"{width}:{height}",
+            "outputFormat": "png",
+            "quality": quality,
+            "safetyFilterLevel": "block_none",
+            "personGeneration": "allow_adult"
+        }
+        
+        # Tentar gerar a imagem
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(f"🔄 Tentativa {attempt + 1}/{max_retries}")
+                
+                # Fazer a requisição para o endpoint do ImageFX
+                response = session.post(
+                    f"{base_url}/_/ImageFxGenerateService/generate",
+                    json=payload,
+                    timeout=60
+                )
+                
+                if response.status_code == 200:
+                    # Verificar se a resposta contém dados de imagem
+                    content_type = response.headers.get('content-type', '').lower()
+                    
+                    if 'image' in content_type:
+                        print(f"✅ Imagem gerada com sucesso!")
+                        print(f"📊 Tamanho: {len(response.content)} bytes")
+                        return response.content
+                    else:
+                        # Tentar extrair imagem da resposta JSON
+                        try:
+                            json_response = response.json()
+                            if 'imageData' in json_response:
+                                import base64
+                                image_data = base64.b64decode(json_response['imageData'])
+                                print(f"✅ Imagem extraída da resposta JSON!")
+                                print(f"📊 Tamanho: {len(image_data)} bytes")
+                                return image_data
+                        except:
+                            pass
+                        
+                        print(f"⚠️ Resposta não contém imagem válida")
+                        print(f"🔍 Content-Type: {content_type}")
+                        continue
+                else:
+                    print(f"❌ Erro HTTP {response.status_code}")
+                    if response.status_code == 429:
+                        print("⚠️ Limite de taxa excedido, aguardando...")
+                        time.sleep(5)
+                    continue
+                    
+            except requests.exceptions.Timeout:
+                print(f"⏰ Timeout na tentativa {attempt + 1}")
+                continue
+            except Exception as e:
+                print(f"❌ Erro na tentativa {attempt + 1}: {str(e)}")
+                continue
+        
+        # Se todas as tentativas falharem, tentar fallback para o método Gemini Reddit
+        print("🔄 Todas as tentativas falharam, tentando fallback para Gemini Reddit...")
+        return generate_image_gemini_reddit(prompt, width, height, quality)
+        
+    except Exception as e:
+        print(f"❌ Erro crítico ao gerar imagem com Imagen 3 não oficial: {str(e)}")
+        return None
+        
+
+def generate_image_gemini_imagen3_rohitaryal(prompt, width=1024, height=1024, quality="standard", cookies=None):
+    """
+    Gera imagem usando a API imageFX-api do GitHub (rohitaryal/imageFX-api)
+    Utiliza cookies para autenticação e acesso ao serviço
+    
+    Esta implementação segue o padrão do repositório imageFX-api, que inclui:
+    - Autenticação via sessão do Google com cookies
+    - Obtenção de token de acesso via endpoint /auth/session
+    - Uso do endpoint https://aisandbox-pa.googleapis.com/v1:runImageFx
+    - Formato de payload específico com userInput, clientContext, modelInput e aspectRatio
+    
+    Args:
+        prompt (str): Texto descritivo da imagem
+        width (int): Largura da imagem
+        height (int): Altura da imagem
+        quality (str): Qualidade da imagem ("standard" ou "hd")
+        cookies (str, optional): Cookies de autenticação do Google (obrigatório)
+    
+    Returns:
+        bytes: Imagem gerada em formato PNG ou None se falhar
+    
+    Raises:
+        ValueError: Se cookies não forem fornecidos
+        requests.exceptions.RequestException: Se houver erro na requisição
+    """
+    print(f"🎨 Gerando imagem com ImageFX API (rohitaryal)")
+    print(f"📝 Prompt: {prompt}")
+    print(f"📏 Dimensões: {width}x{height}")
+    print(f"🎯 Qualidade: {quality}")
+    print(f"🍪 Cookies fornecidos: {'Sim' if cookies else 'Não'}")
+    
+    # Verificar se temos cookies de autenticação (fora do try-catch principal)
+    if not cookies or cookies.strip() == "":
+        print("❌ Nenhum cookie fornecido")
+        print(f"🍪 Valor dos cookies: '{cookies}'")
+        raise ValueError("Cookies de autenticação do Google são obrigatórios para o provedor gemini-imagen3-rohitaryal")
+    
+    try:
+        
+        # Configurar headers baseados no repositório imageFX-api
+        headers = {
+            'Origin': 'https://labs.google',
+            'content-type': 'application/json',
+            'Referer': 'https://labs.google/fx/tools/image-fx',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive'
+        }
+        
+        # Configurar sessão
+        session = requests.Session()
+        session.headers.update(headers)
+        
+        # Processar cookies
+        if isinstance(cookies, str):
+            # Separar cookies por ; e processar cada um
+            cookie_pairs = cookies.split(';')
+            for cookie in cookie_pairs:
+                if '=' in cookie:
+                    key, value = cookie.strip().split('=', 1)
+                    session.cookies.set(key, value)
+                    print(f"🍪 Cookie adicionado: {key}")
+        elif isinstance(cookies, dict):
+            for key, value in cookies.items():
+                session.cookies.set(key, value)
+                print(f"🍪 Cookie adicionado: {key}")
+        
+        # Obter token de autenticação
+        print("🔑 Obtendo token de autenticação...")
+        auth_response = session.get("https://labs.google/fx/api/auth/session")
+        
+        if auth_response.status_code != 200:
+            print(f"❌ Falha na autenticação: {auth_response.status_code}")
+            print(f"📤 Resposta: {auth_response.text[:500]}...")
+            return None
+        
+        auth_data = auth_response.json()
+        if not auth_data.get('access_token'):
+            print("❌ Token de acesso não encontrado na resposta")
+            return None
+        
+        access_token = auth_data['access_token']
+        print("✅ Token de autenticação obtido com sucesso")
+        
+        # Atualizar headers com o token de acesso
+        session.headers.update({
+            'Authorization': f'Bearer {access_token}'
+        })
+        
+        # Determinar o modelo com base na qualidade
+        if quality == "hd":
+            model = "IMAGEN_3_5"  # Modelo mais avançado para alta qualidade
+        else:
+            model = "IMAGEN_3"    # Modelo padrão
+        
+        # Determinar a proporção de aspecto
+        if width == height:
+            aspect_ratio = "IMAGE_ASPECT_RATIO_SQUARE"
+        elif width > height:
+            aspect_ratio = "IMAGE_ASPECT_RATIO_LANDSCAPE"
+        else:
+            aspect_ratio = "IMAGE_ASPECT_RATIO_PORTRAIT"
+        
+        # Preparar payload no formato correto baseado no repositório imageFX-api
+        payload = {
+            "userInput": {
+                "candidatesCount": 1,
+                "prompts": [prompt],
+                "seed": 0
+            },
+            "clientContext": {
+                "sessionId": ";1757113025397",
+                "tool": "IMAGE_FX"
+            },
+            "modelInput": {
+                "modelNameType": model
+            },
+            "aspectRatio": aspect_ratio
+        }
+        
+        print(f"📤 Enviando requisição para: https://aisandbox-pa.googleapis.com/v1:runImageFx")
+        print(f"📋 Payload: {json.dumps(payload, indent=2)}")
+        
+        # Tentar gerar a imagem
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(f"🔄 Tentativa {attempt + 1}/{max_retries}")
+                
+                # Fazer a requisição para o endpoint correto do ImageFX
+                response = session.post(
+                    "https://aisandbox-pa.googleapis.com/v1:runImageFx",
+                    json=payload,
+                    timeout=90  # Timeout mais longo para lidar com processamento
+                )
+                
+                print(f"📊 Status da resposta: {response.status_code}")
+                
+                # Tratar diferentes tipos de respostas
+                if response.status_code == 200:
+                    try:
+                        json_response = response.json()
+                        print(f"📋 Resposta JSON recebida")
+                        
+                        # Extrair imagem da resposta JSON
+                        generated_images = json_response.get('imagePanels', [])
+                        if generated_images and len(generated_images) > 0:
+                            panel = generated_images[0]
+                            images = panel.get('generatedImages', [])
+                            if images and len(images) > 0:
+                                image_data = images[0]
+                                encoded_image = image_data.get('encodedImage')
+                                
+                                if encoded_image:
+                                    import base64
+                                    image_bytes = base64.b64decode(encoded_image)
+                                    print(f"✅ Imagem gerada com sucesso usando ImageFX API!")
+                                    print(f"📊 Tamanho: {len(image_bytes)} bytes")
+                                    return image_bytes
+                        
+                        print("❌ Nenhuma imagem encontrada na resposta")
+                        print(f"📋 Estrutura da resposta: {json.dumps(json_response, indent=2)[:500]}...")
+                        
+                    except Exception as json_err:
+                        print(f"❌ Erro ao processar JSON: {str(json_err)}")
+                        print(f"📤 Resposta bruta: {response.text[:500]}...")
+                        continue
+                        
+                else:
+                    print(f"❌ Erro HTTP {response.status_code}")
+                    print(f"📤 Mensagem: {response.text[:500]}...")
+                    
+                    # Tratamento especial para erros comuns
+                    if response.status_code == 403:
+                        print("🚫 Acesso negado - verifique os cookies de autenticação")
+                    elif response.status_code == 429:
+                        print("⚠️ Limite de taxa excedido, aguardando...")
+                        time.sleep(10)  # Pausa mais longa para este tipo de erro
+                    elif response.status_code == 500:
+                        print("⚠️ Erro interno do servidor, tentando novamente...")
+                    
+                    continue
+                    
+            except requests.exceptions.Timeout:
+                print(f"⏰ Timeout na tentativa {attempt + 1}")
+                time.sleep(3)
+                continue
+            except requests.exceptions.ConnectionError:
+                print(f"🔌 Erro de conexão na tentativa {attempt + 1}")
+                time.sleep(3)
+                continue
+            except Exception as e:
+                print(f"❌ Erro na tentativa {attempt + 1}: {str(e)}")
+                continue
+        
+        # Se todas as tentativas falharem, tentar fallback para o método Gemini não oficial
+        print("🔄 Todas as tentativas falharam, tentando fallback para Imagen 3 não oficial...")
+        return generate_image_gemini_imagen3_unofficial(prompt, width, height, quality)
+        
+    except ValueError as e:
+        # Não fazer fallback para erros de validação (como cookies ausentes)
+        print(f"❌ Erro de validação: {str(e)}")
+        raise e
+    except Exception as e:
+        print(f"❌ Erro crítico ao gerar imagem com ImageFX API (rohitaryal): {str(e)}")
+        # Tentar fallback em caso de erro crítico
+        try:
+            return generate_image_gemini_imagen3_unofficial(prompt, width, height, quality)
+        except:
+            return None
+
+def generate_image_gemini_official(prompt, width, height, quality='standard'):
+    """
+    Gera imagem usando a API oficial do Google Gemini com o modelo gemini-1.5-flash
+    Esta é uma alternativa funcional ao Imagen 3 que utiliza a API oficial do Google
+    
+    Args:
+        prompt (str): Texto descritivo da imagem
+        width (int): Largura da imagem
+        height (int): Altura da imagem
+        quality (str): Qualidade da imagem ("standard" ou "hd")
+    
+    Returns:
+        bytes: Imagem gerada em formato PNG ou None se falhar
+    """
+    try:
+        import json
+        import base64
+        import os
+        from pathlib import Path
+        
+        print(f"🎨 Iniciando geração com API oficial do Gemini")
+        print(f"📝 Prompt: {prompt[:50]}...")
+        print(f"📏 Dimensões: {width}x{height}")
+        
+        # Melhorar o prompt com instruções de tamanho e qualidade
+        enhanced_prompt = f"{prompt}. Generate a {width}x{height} image."
+        if quality == "hd":
+            enhanced_prompt += " High quality, detailed, professional, 4K resolution."
+        
+        # Preparar o payload para a requisição
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": enhanced_prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "responseModalities": [
+                    "Text",
+                    "Image"
+                ],
+                "temperature": 1.0,
+                "topK": 32,
+                "topP": 1.0
+            },
+            "safetySettings": [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                }
+            ]
+        }
+        
+        # Headers para a requisição
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        # Tentar carregar uma API key de Gemini
+        config_path = Path(__file__).parent.parent / "config" / "api_keys.json"
+        
+        if not config_path.exists():
+            print("❌ Arquivo de configuração de API keys não encontrado")
+            return None
+        
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Verificar se há alguma chave de Gemini disponível
+        gemini_keys = [key for key in config.keys() if key.startswith('gemini_') and config[key]]
+        
+        if not gemini_keys:
+            print("❌ Nenhuma API key de Gemini encontrada no arquivo de configuração")
+            return None
+        
+        # Tentar com cada chave disponível até encontrar uma que funcione
+        for key_name in gemini_keys:
+            try:
+                api_key = config[key_name]
+                print(f"🔑 Tentando com API key: {key_name}")
+                
+                # URL do endpoint do Gemini 1.5 Flash
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                
+                # Fazer a requisição
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=60
+                )
+                
+                print(f"📊 Status da resposta: {response.status_code}")
+                
+                if response.status_code == 200:
+                    # Processar a resposta
+                    response_data = response.json()
+                    
+                    # Verificar se há candidatos na resposta
+                    if "candidates" not in response_data or not response_data["candidates"]:
+                        print("❌ Nenhum candidato encontrado na resposta")
+                        continue
+                    
+                    # Extrair a imagem da resposta
+                    for candidate in response_data["candidates"]:
+                        if "content" in candidate and "parts" in candidate["content"]:
+                            for part in candidate["content"]["parts"]:
+                                if "inlineData" in part and "data" in part["inlineData"]:
+                                    # Obter os dados da imagem em base64
+                                    image_data_base64 = part["inlineData"]["data"]
+                                    
+                                    # Decodificar de base64 para bytes
+                                    image_bytes = base64.b64decode(image_data_base64)
+                                    
+                                    print(f"✅ Sucesso! Imagem gerada com API oficial do Gemini")
+                                    print(f"📊 Tamanho dos dados da imagem: {len(image_bytes)} bytes")
+                                    
+                                    return image_bytes
+                    
+                    print("❌ Nenhum dado de imagem encontrado na resposta")
+                elif response.status_code == 429:
+                    print("⚠️ Limite de taxa excedido, tentando próxima chave...")
+                    continue
+                elif response.status_code == 403:
+                    print("⚠️ Chave de API inválida ou sem permissão, tentando próxima chave...")
+                    continue
+                else:
+                    print(f"❌ Erro na resposta: {response.text}")
+                    continue
+                    
+            except Exception as e:
+                print(f"❌ Erro ao tentar com chave {key_name}: {str(e)}")
+                continue
+        
+        print("❌ Todas as chaves de API falharam")
+        return None
+        
+    except Exception as e:
+        print(f"❌ Erro ao gerar imagem com API oficial do Gemini: {str(e)}")
+        return None
 
 def generate_image_gemini_reddit(prompt, width, height, quality='standard'):
     """

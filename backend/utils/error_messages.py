@@ -114,6 +114,17 @@ def get_user_friendly_error(error_type, original_error="", context=""):
             ]
         },
         
+        # Erros de Cookies
+        'cookies_missing': {
+            'title': '🍪 Cookies de Autenticação Ausentes',
+            'message': 'Para usar este recurso, você precisa fornecer cookies de autenticação válidos.',
+            'suggestions': [
+                'Faça login no serviço Google ImageFX',
+                'Copie os cookies de autenticação do navegador',
+                'Cole os cookies no campo de configuração de cookies'
+            ]
+        },
+        
         # Erros de Sistema
         'internal_error': {
             'title': '🔧 Erro Interno',
@@ -211,7 +222,10 @@ def detect_error_type(error_message):
     
     # Erros de Validação
     if any(keyword in error_message_lower for keyword in ['validation', 'invalid', 'required', 'missing']):
-        return 'validation_error'
+        if 'cookie' in error_message_lower:
+            return 'cookies_missing'
+        else:
+            return 'validation_error'
     
     # Erros de Pipeline
     if any(keyword in error_message_lower for keyword in ['dependency', 'prerequisite', 'depends']):

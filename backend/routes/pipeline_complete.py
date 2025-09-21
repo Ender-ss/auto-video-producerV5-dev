@@ -502,7 +502,8 @@ def start_complete_automation():
         
         # Processar configuração de agentes especializados
         agent_config = data.get('agent', {})
-        specialized_agents = data.get('specialized_agents', {})
+        # O frontend envia os agentes especializados como 'customAgents'
+        specialized_agents = data.get('customAgents', {})
         
         # Integrar prompts especializados se agente estiver ativo
         if agent_config.get('type') == 'specialized' and agent_config.get('specialized_type'):
