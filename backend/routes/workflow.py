@@ -267,7 +267,7 @@ def test_workflow():
         check_workflow_status()  # Verificar pausa/cancelamento
         titles_result = execute_title_generation(
             title_generator, simulated_extraction['videos'], ai_provider, api_keys, titles_count, use_custom_prompt, custom_prompt,
-            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
 
         if not titles_result['success']:
@@ -293,7 +293,7 @@ def test_workflow():
 
         premises_result = execute_premise_generation(
             title_generator, selected_titles, ai_provider, openrouter_model, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
 
         if not premises_result['success']:
@@ -314,7 +314,7 @@ def test_workflow():
 
         scripts_result = execute_script_generation(
             title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
 
         if not scripts_result['success']:
@@ -468,7 +468,7 @@ def complete_workflow():
         check_workflow_status()  # Verificar pausa/cancelamento
         titles_result = execute_title_generation(
             title_generator, extraction_result['data']['videos'], ai_provider, api_keys, titles_count, use_custom_prompt, custom_prompt,
-            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
         
         if not titles_result['success']:
@@ -493,7 +493,7 @@ def complete_workflow():
 
         premises_result = execute_premise_generation(
             title_generator, selected_titles, ai_provider, openrouter_model, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
         
         if not premises_result['success']:
@@ -513,7 +513,7 @@ def complete_workflow():
         
         scripts_result = execute_script_generation(
             title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
-            agent_config=data.get('agent'), specialized_agents=data.get('customAgents')
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
         
         if not scripts_result['success']:
