@@ -39,6 +39,11 @@ def create_image_queue():
         format_size = data.get('format', '1024x1024')
         quality = data.get('quality', 'standard')
         
+        # Salvar dados adicionais (como google_cookies) no campo data
+        additional_data = {
+            'google_cookies': data.get('google_cookies', '')
+        }
+        
         if not title:
             return jsonify({'success': False, 'error': 'Título é obrigatório'}), 400
             
@@ -59,7 +64,8 @@ def create_image_queue():
             style=style,
             format_size=format_size,
             quality=quality,
-            generated_images=json.dumps([])
+            generated_images=json.dumps([]),
+            data=json.dumps(additional_data)
         )
         
         db.session.add(queue)
@@ -311,10 +317,23 @@ def process_image_queue(queue_id, app):
                     image_bytes = None
                     full_prompt = f"{prompt}, {queue.style}"
                     
-                    if queue.provider == 'gemini':
-                        image_bytes = generate_image_pollinations(full_prompt, width, height, queue.quality, queue.model)
+                    # Importar google_cookies do queue.data (se existir)
+                    try:
+                        queue_data = json.loads(queue.data or '{}')
+                        google_cookies = queue_data.get('google_cookies', '')
+                    except:
+                        google_cookies = ''
+                    
+                    if queue.provider == 'gemini-imagen3':
+                        image_bytes = generate_image_gemini_imagen3(full_prompt, None, width, height, queue.quality, google_cookies)
+                    elif queue.provider == 'gemini-imagen3-rohitaryal':
+                        image_bytes = generate_image_gemini_imagen3_rohitaryal(full_prompt, width, height, queue.quality, google_cookies)
+                    elif queue.provider == 'gemini-reddit':
+                        image_bytes = generate_image_gemini_reddit(full_prompt, width, height, queue.quality)
+                    elif queue.provider == 'gemini':
+                        image_bytes = generate_image_gemini(full_prompt, '', width, height, queue.quality)
                     elif queue.provider == 'together':
-                        image_bytes = generate_image_pollinations(full_prompt, width, height, queue.quality, queue.model)
+                        image_bytes = generate_image_together(full_prompt, '', width, height, queue.quality, queue.model)
                     else:  # pollinations
                         image_bytes = generate_image_pollinations(full_prompt, width, height, queue.quality, queue.model)
                     

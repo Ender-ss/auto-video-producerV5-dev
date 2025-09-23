@@ -16,7 +16,8 @@ const ImageQueue = () => {
     model: 'gpt',
     style: 'cinematic, high detail, 4k',
     format: '1024x1024',
-    quality: 'standard'
+    quality: 'standard',
+    google_cookies: ''
   });
   
   // Estados para geração automática
@@ -30,7 +31,8 @@ const ImageQueue = () => {
     model: 'gpt',
     style: 'cinematic, high detail, 4k',
     format: '1024x1024',
-    quality: 'standard'
+    quality: 'standard',
+    google_cookies: ''
   });
 
   useEffect(() => {
@@ -107,7 +109,8 @@ const ImageQueue = () => {
           model: 'gpt',
           style: 'cinematic, high detail, 4k',
           format: '1024x1024',
-          quality: 'standard'
+          quality: 'standard',
+          google_cookies: ''
         });
         fetchQueues();
         alert('Fila criada com sucesso!');
@@ -491,6 +494,8 @@ const ImageQueue = () => {
                       <option value="pollinations">Pollinations.ai</option>
                       <option value="together">Together.ai</option>
                       <option value="gemini">Google Gemini</option>
+                      <option value="gemini-imagen3">Google Imagen 3 (ImageFX)</option>
+                      <option value="gemini-imagen3-rohitaryal">Google Imagen 3 (ImageFX-api)</option>
                     </select>
                   </div>
                   
@@ -508,6 +513,22 @@ const ImageQueue = () => {
                     </select>
                   </div>
                 </div>
+                
+                {/* Campo de cookies do Google - exibido apenas para provedores Imagen 3 */}
+                {(newQueue.provider === 'gemini-imagen3' || newQueue.provider === 'gemini-imagen3-rohitaryal') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cookies do Google (Opcional)
+                    </label>
+                    <textarea
+                      value={newQueue.google_cookies}
+                      onChange={(e) => setNewQueue({...newQueue, google_cookies: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32"
+                      placeholder="Cole aqui os cookies do Google para autenticação...\n\nExemplo:\n__Secure-1PSID=...; __Secure-1PSIDTS=...; __Secure-1PSIDCC=..."
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Para obter os cookies, acesse o site do Google Imagen 3, faça login e copie os cookies usando a ferramenta de desenvolvedor do navegador.</p>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -639,6 +660,8 @@ const ImageQueue = () => {
                           <option value="pollinations">Pollinations.ai</option>
                           <option value="together">Together.ai</option>
                           <option value="gemini">Google Gemini</option>
+                          <option value="gemini-imagen3">Google Imagen 3 (ImageFX)</option>
+                          <option value="gemini-imagen3-rohitaryal">Google Imagen 3 (ImageFX-api)</option>
                         </select>
                       </div>
                       
