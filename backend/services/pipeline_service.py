@@ -1011,7 +1011,8 @@ class PipelineService:
                 num_chapters=num_chapters,
                 provider='gemini',
                 progress_callback=update_scripts_partial,
-                remove_chapter_headers=True  # Remove cabeçalhos de capítulos do roteiro final
+                remove_chapter_headers=True,  # Remove cabeçalhos de capítulos do roteiro final
+                custom_agent_context=scripts_config.get('custom_agent_context')  # Passa o contexto personalizado do agente
                 # api_key não é mais necessário - usa rotação automática
             )
             

@@ -347,6 +347,9 @@ def generate_storyteller_script():
         # Extrair parâmetro de remoção de cabeçalhos (padrão False para compatibilidade)
         remove_chapter_headers = data.get('remove_chapter_headers', False)
         
+        # Extrair parâmetro de contexto personalizado do agente
+        custom_agent_context = data.get('custom_agent_context')
+        
         # Usar o serviço para gerar o roteiro completo
         result = storyteller_service.generate_storyteller_script(
             title=title,
@@ -354,7 +357,8 @@ def generate_storyteller_script():
             agent_type=agent_type,
             num_chapters=num_chapters,
             provider='gemini',
-            remove_chapter_headers=remove_chapter_headers
+            remove_chapter_headers=remove_chapter_headers,
+            custom_agent_context=custom_agent_context
         )
         
         return jsonify(result)

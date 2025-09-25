@@ -1747,6 +1747,57 @@ const AISection = ({ formData, onChange, onOpenPromptManager }) => {
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                   />
                 </div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="scripts-custom-agent-context"
+                    checked={formData.config.scripts.custom_agent_context_enabled || false}
+                    onChange={(e) => onChange('config.scripts.custom_agent_context_enabled', e.target.checked)}
+                    className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="scripts-custom-agent-context" className="text-sm font-medium text-gray-300">
+                    Personalizar contexto, tom e elementos do agente
+                  </label>
+                </div>
+                
+                {/* Campos de personalização de contexto, tom e elementos */}
+                {formData.config.scripts.custom_agent_context_enabled && (
+                  <div className="space-y-3 mt-3 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Contexto Personalizado
+                      </label>
+                      <textarea
+                        value={formData.config.scripts.custom_agent_context?.context || ''}
+                        onChange={(e) => onChange('config.scripts.custom_agent_context.context', e.target.value)}
+                        placeholder="Ex: história de superação financeira e empreendedorismo"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm h-20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Tom Personalizado
+                      </label>
+                      <textarea
+                        value={formData.config.scripts.custom_agent_context?.tone || ''}
+                        onChange={(e) => onChange('config.scripts.custom_agent_context.tone', e.target.value)}
+                        placeholder="Ex: inspirador e motivacional"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm h-20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Elementos Personalizados
+                      </label>
+                      <textarea
+                        value={formData.config.scripts.custom_agent_context?.elements || ''}
+                        onChange={(e) => onChange('config.scripts.custom_agent_context.elements', e.target.value)}
+                        placeholder="Ex: jornada do zero ao sucesso, desafios financeiros, estratégias de negócio"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm h-20"
+                      />
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <>

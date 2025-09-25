@@ -26,7 +26,7 @@ class ScriptProcessingService:
             "preserve_context": True,
             "preserve_content": True,
             "min_script_length": 100,
-            "max_script_length": 50000,
+            "max_script_length": 100000,
             "required_preservation_ratio": 0.8,
             "timeout_seconds": 30,
             "max_retries": 3,

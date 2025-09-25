@@ -365,7 +365,8 @@ class PromptVariator:
                              target_chars: int, chapter_num: int, total_chapters: int,
                              previous_context: Optional[Dict] = None, 
                              previous_chapters: List[str] = None,
-                             remove_chapter_headers: bool = False) -> str:
+                             remove_chapter_headers: bool = False,
+                             custom_agent_context: Optional[Dict] = None) -> str:
         """Gera prompt variado para evitar repetições"""
         
         # Seleciona variações aleatórias
@@ -393,7 +394,11 @@ class PromptVariator:
             }
         }
         
-        context = agent_contexts.get(agent_type, agent_contexts['millionaire_stories'])
+        # Usar contexto personalizado se fornecido, senão usa o padrão do agente
+        if custom_agent_context:
+            context = custom_agent_context
+        else:
+            context = agent_contexts.get(agent_type, agent_contexts['millionaire_stories'])
         
         # Adiciona instruções anti-repetição se há capítulos anteriores
         anti_repetition = ""
@@ -723,7 +728,7 @@ class StorytellerService:
         return script_metadata
 
     def generate_storyteller_script(self, title: str, premise: str, agent_type: str, 
-                                  num_chapters: int, api_key: str = None, provider: str = "gemini", progress_callback: Optional[Callable[[List[Dict]], None]] = None, remove_chapter_headers: bool = False) -> Dict:
+                                  num_chapters: int, api_key: str = None, provider: str = "gemini", progress_callback: Optional[Callable[[List[Dict]], None]] = None, remove_chapter_headers: bool = False, custom_agent_context: Optional[Dict] = None) -> Dict:
         """
         Método principal para gerar roteiro completo com Storyteller Unlimited - AGORA COM CHUNKING POR CAPÍTULO
         
@@ -778,7 +783,8 @@ class StorytellerService:
                         total_chapters=num_chapters,
                         previous_context=previous_context,
                         previous_chapters=previous_chapters_content,
-                        remove_chapter_headers=remove_chapter_headers
+                        remove_chapter_headers=remove_chapter_headers,
+                        custom_agent_context=custom_agent_context
                     )
                     
                     # Verifica repetições se há capítulos anteriores
@@ -905,7 +911,8 @@ class StorytellerService:
                               chapter_num: int = 1, total_chapters: int = 1,
                               previous_context: Optional[Dict] = None,
                               previous_chapters: List[str] = None,
-                              remove_chapter_headers: bool = False) -> str:
+                              remove_chapter_headers: bool = False,
+                              custom_agent_context: Optional[Dict] = None) -> str:
         """
         Gera conteúdo real usando integração com LLM - OTIMIZADO CONTRA REPETIÇÕES
         
@@ -935,7 +942,8 @@ class StorytellerService:
             total_chapters=total_chapters,
             previous_context=previous_context,
             previous_chapters=previous_chapters or [],
-            remove_chapter_headers=remove_chapter_headers
+            remove_chapter_headers=remove_chapter_headers,
+            custom_agent_context=custom_agent_context
         )
         
         try:
