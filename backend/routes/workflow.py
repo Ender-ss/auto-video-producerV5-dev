@@ -1304,7 +1304,7 @@ def execute_tts_generation(scripts_data, tts_provider, api_keys, workflow_data):
         elif tts_provider == 'gemini':
             # Configurações Gemini (usar rotação automática)
             voice_name = workflow_data.get('gemini_voice_name', 'Aoede')
-            model = workflow_data.get('gemini_model', 'gemini-2.0-flash-exp')
+            model = workflow_data.get('gemini_model', 'gemini-2.0-flash-lite')
             speed = workflow_data.get('gemini_speed', 1.0)
 
             add_workflow_log(f"🤖 Gerando com Gemini TTS - Voz: {voice_name}")

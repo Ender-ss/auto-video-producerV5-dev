@@ -141,7 +141,7 @@ def generate_titles_with_gemini(source_titles, instructions, api_key, update_cal
                     print(f"🔄 Tentativa {attempt + 1}/{max_retries}: Usando rotação de chaves Gemini para títulos")
                 
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.0-flash-lite')
                 
                 titles_text = '\n'.join([f"- {title}" for title in source_titles])
                 
@@ -493,7 +493,7 @@ def generate_script_chapters_with_gemini(title, context, num_chapters, api_key=N
             
             # Configurar Gemini
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             base_prompt = f"""
 Você é um roteirista especializado em conteúdo viral para YouTube.

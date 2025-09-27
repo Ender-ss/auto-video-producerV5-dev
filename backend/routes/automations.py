@@ -1673,7 +1673,7 @@ def generate_premise_with_gemini(title, resume, prompt, api_key=None):
             
             # Configurar Gemini diretamente
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             # Criar prompt completo
             full_prompt = f"""
@@ -4929,7 +4929,7 @@ def generate_content_with_gemini_retry(prompt, max_retries=None):
             
             # Configurar Gemini diretamente
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             print(f"🔍 DEBUG: Enviando prompt para Gemini ({len(prompt)} chars) - Tentativa {attempt + 1}/{max_retries}")
             response = model.generate_content(prompt)

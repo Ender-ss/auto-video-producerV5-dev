@@ -820,8 +820,8 @@ def test_openai_connection(api_key):
 def test_gemini_connection(api_key):
     """Testar Google Gemini API"""
     try:
-        # URL correta da API Gemini v1beta
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # URL correta da API Gemini v1beta com Gemini 2.0 Flash-Lite
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={api_key}"
 
         payload = {
             "contents": [{

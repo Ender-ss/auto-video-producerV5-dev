@@ -707,7 +707,7 @@ class PipelineService:
                 api_key = get_next_gemini_key()
                 
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.0-flash-lite')
                 premise_text = ''
                 for chunk in model.generate_content(instructions, stream=True):
                     premise_text += chunk.text
@@ -776,7 +776,7 @@ class PipelineService:
                                 raise Exception('Nenhuma chave Gemini disponível para fallback.')
 
                             genai.configure(api_key=api_key)
-                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            model = genai.GenerativeModel('gemini-2.0-flash-lite')
                             premise_text = ''
                             for chunk in model.generate_content(instructions, stream=True):
                                 premise_text += chunk.text
@@ -1535,7 +1535,7 @@ class PipelineService:
             
             import google.generativeai as genai
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             prompt = f"Translate the following text from Portuguese to English. Maintain the original meaning, tone and structure. Only return the translated text, without any additional comments or explanations:\n\n{text}"
             

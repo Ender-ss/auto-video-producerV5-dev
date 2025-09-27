@@ -412,7 +412,7 @@ def generate_content_with_gemini_retry(prompt):
             
             # Configurar Gemini diretamente
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             print(f"🔍 DEBUG: Enviando prompt para Gemini ({len(prompt)} chars) - Tentativa {attempt + 1}")
             response = model.generate_content(prompt)

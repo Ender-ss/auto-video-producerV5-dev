@@ -1043,7 +1043,7 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
             
             # Configurar Gemini
             genai.configure(api_key=current_api_key)
-            model = genai.GenerativeModel('gemini-2.0-flash-preview-image-generation')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             # Prepare the prompt with size specifications
             enhanced_prompt = f"{prompt}. Generate a {width}x{height} image."
@@ -1562,7 +1562,7 @@ def generate_image_gemini_imagen3_rohitaryal(prompt, width=1024, height=1024, qu
 
 def generate_image_gemini_official(prompt, width, height, quality='standard'):
     """
-    Gera imagem usando a API oficial do Google Gemini com o modelo gemini-1.5-flash
+    Gera imagem usando a API oficial do Google Gemini com o modelo gemini-2.0-flash-lite
     Esta é uma alternativa funcional ao Imagen 3 que utiliza a API oficial do Google
     
     Args:
@@ -1658,8 +1658,8 @@ def generate_image_gemini_official(prompt, width, height, quality='standard'):
                 api_key = config[key_name]
                 print(f"🔑 Tentando com API key: {key_name}")
                 
-                # URL do endpoint do Gemini 1.5 Flash
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                # URL do endpoint do Gemini 2.0 Flash-Lite
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={api_key}"
                 
                 # Fazer a requisição
                 response = requests.post(
@@ -1786,8 +1786,8 @@ def generate_image_gemini_reddit(prompt, width, height, quality='standard'):
         
         # URL do endpoint do Gemini 2.5 Flash
         # NOTA: O modelo gemini-2.5-flash-exp pode não estar mais disponível
-        # Vamos tentar com gemini-1.5-flash que é o modelo atual para geração de imagens
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        # Vamos tentar com gemini-2.0-flash-lite que é o modelo atual para geração de imagens
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
         
         print(f"🔄 Enviando requisição para Gemini 2.5 Flash via método Reddit")
         

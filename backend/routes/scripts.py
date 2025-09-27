@@ -474,9 +474,9 @@ def call_gemini(prompt, title_generator=None):
                     
                     print(f"🔍 DEBUG: Tentativa {attempt + 1}/{max_retries}: Enviando prompt para Gemini ({len(prompt)} chars)")
                     
-                    # Configurar Gemini diretamente
+                    # Configurar Gemini diretamente com Gemini 2.0 Flash-Lite
                     genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    model = genai.GenerativeModel('gemini-2.0-flash-lite')
                     
                     # Gerar conteúdo
                     response = model.generate_content(prompt)

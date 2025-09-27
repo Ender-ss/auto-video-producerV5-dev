@@ -58,9 +58,9 @@ class TitleGenerator:
             print(f"🔍 DEBUG: Tentando configurar Gemini com chave: {api_key[:20]}...")
             genai.configure(api_key=api_key)
             print("🔍 DEBUG: Gemini configurado com sucesso")
-            # Usar o modelo mais recente disponível
-            self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-            print("✅ Gemini configurado com modelo: gemini-1.5-flash")
+            # Usar o modelo mais recente disponível - Gemini 2.0 Flash-Lite
+            self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-lite')
+            print("✅ Gemini configurado com modelo: gemini-2.0-flash-lite")
             return True
         except Exception as e:
             print(f"❌ Erro ao configurar Gemini: {e}")
@@ -68,8 +68,9 @@ class TitleGenerator:
             self.gemini_model = None
             # Tentar modelo alternativo
             try:
-                self.gemini_model = genai.GenerativeModel('gemini-1.5-pro')
-                print("✅ Gemini configurado com modelo alternativo: gemini-1.5-pro")
+# Tentar modelo alternativo - Gemini 2.0 Flash
+                self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-lite')
+                print("✅ Gemini configurado com modelo alternativo: gemini-2.0-flash-lite")
                 return True
             except Exception as e2:
                 print(f"❌ Erro ao configurar Gemini (modelo alternativo): {e2}")

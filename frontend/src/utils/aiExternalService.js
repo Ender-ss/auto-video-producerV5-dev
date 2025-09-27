@@ -76,7 +76,7 @@ class AIService {
    */
   async generateWithGemini(prompt, maxTokens, temperature) {
     const response = await fetch(
-      `${this.geminiBaseUrl}/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`,
+      `${this.geminiBaseUrl}/models/gemini-2.0-flash-lite:generateContent?key=${this.apiKey}`,
       {
         method: 'POST',
         headers: {

@@ -1048,7 +1048,7 @@ class StorytellerService:
             logger.warning(f"Não foi possível carregar rotação de chaves. Usando apenas chave fornecida/ambiente. Detalhes: {e}")
     
         models_to_try = [
-            "gemini-1.5-flash",
+            "gemini-2.0-flash-lite",
             "gemini-1.5-pro",
         ]
     

@@ -305,7 +305,7 @@ class ImageGenerationService:
             
             import google.generativeai as genai
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             prompt = f"Translate the following text from Portuguese to English. Maintain the original meaning, tone and structure. Only return the translated text, without any additional comments or explanations:\n\n{text}"
             
@@ -463,7 +463,7 @@ class ImageGenerationService:
             api_key = get_next_gemini_key()
             
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash-lite')
             
             # Definir estilos de prompt
             style_descriptions = {

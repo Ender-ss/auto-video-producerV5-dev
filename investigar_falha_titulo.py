@@ -143,7 +143,7 @@ def verificar_quotas_reais():
             print(f"\n🔑 Testando Chave {i}:")
             try:
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.0-flash-lite')
                 
                 # Teste simples
                 response = model.generate_content("Diga apenas 'teste'")

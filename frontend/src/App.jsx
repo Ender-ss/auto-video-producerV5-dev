@@ -50,7 +50,7 @@ const mockSystemStatus = {
     youtube_api: true
   },
   available_services: {
-    text_models: ['gemini:gemini-1.5-flash', 'openai:gpt-3.5-turbo'],
+    text_models: ['gemini:gemini-2.0-flash-lite', 'openai:gpt-3.5-turbo'],
     tts_services: ['gemini', 'edge'],
     image_services: ['gpt']
   }
